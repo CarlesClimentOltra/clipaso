@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOutIcon, PlusIcon } from "lucide-react";
+import { LogOutIcon, PlusIcon, UserIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
 import { UsageMeter } from "@/components/usage-meter";
@@ -79,6 +79,10 @@ export function AppHeader() {
                 </div>
               )}
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push("/account")}>
+                <UserIcon />
+                Mi cuenta
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={async () => {
                   await signOut();

@@ -109,7 +109,7 @@ export default function TermsPage() {
 
       <h2>8. Suspensión y baja</h2>
       <ul>
-        <li>Puedes dejar de usar el servicio y pedir que eliminemos tu cuenta cuando quieras.</li>
+        <li>Puedes dejar de usar el servicio y eliminar tu cuenta cuando quieras desde «Mi cuenta».</li>
         <li>
           Podemos suspender o cerrar una cuenta que incumpla gravemente estos términos, en particular el apartado 4. Salvo
           casos urgentes o ilegales, te avisaremos antes y podrás descargar tus clips.

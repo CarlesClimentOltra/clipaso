@@ -17,6 +17,8 @@ USER_MESSAGES: dict[str, str] = {
     "video_too_long": "El vídeo es más largo de lo que permite tu plan.",
     "too_many_jobs": "Ya tienes el máximo de vídeos procesándose a la vez. Espera a que termine alguno.",
     "too_many_clips": "Tu plan no permite tantos clips por vídeo.",
+    # cuenta
+    "account_busy": "Tienes vídeos procesándose. Espera a que terminen para eliminar tu cuenta.",
     # subidas
     "upload_too_large": "El archivo supera el tamaño máximo de tu plan.",
     "unsupported_format": "Formato no compatible. Sube un vídeo MP4, MOV, MKV o WEBM.",

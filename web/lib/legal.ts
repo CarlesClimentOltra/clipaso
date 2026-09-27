@@ -3,10 +3,10 @@
 export const legal = {
   updatedAt: "28 de septiembre de 2026",
   owner: {
-    name: "PENDIENTE",
-    taxId: "PENDIENTE", // NIF
-    address: "PENDIENTE",
-    email: "PENDIENTE",
+    name: "Carles Climent Oltra",
+    taxId: "20496132G", // NIF
+    address: "Calle Cervantes, 3, Llocnou d'En Fenollet (Valencia), España",
+    email: "carlesco03@gmail.com",
   },
   site: "smartcuts-kohl.vercel.app",
   minAge: 18,

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from sqlalchemy import select
 
-from smartcuts.interfaces.api.deps import SessionDep, UserDep
+from smartcuts.interfaces.api.auth import delete_identity
+from smartcuts.interfaces.api.deps import SessionDep, SettingsDep, StorageDep, UserDep
 from smartcuts.interfaces.api.schemas import MeOut, PlanOut, UsageOut
 from smartcuts.saas import services
 from smartcuts.saas.db import utcnow
@@ -28,3 +29,13 @@ def me(user: UserDep, session: SessionDep) -> MeOut:
         usage=UsageOut(period=usage.period, used_minutes=usage.used_minutes,
                        limit_minutes=usage.limit_minutes, remaining_minutes=usage.remaining_minutes),
     )
+
+
+@router.delete("/me", status_code=204)
+def delete_me(user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep) -> Response:
+    """Elimina la cuenta: vídeos, clips, historial y consumo, y después el usuario de Supabase Auth."""
+    subject = user.id
+    services.delete_account(session, storage, user)
+    session.commit()  # los datos primero: si falla Supabase, se puede reintentar
+    delete_identity(subject, settings.auth)
+    return Response(status_code=204)

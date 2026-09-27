@@ -17,7 +17,7 @@ from smartcuts.interfaces.api.app import create_app
 from smartcuts.saas import worker as worker_mod
 from smartcuts.saas.db import session_scope, utcnow
 from smartcuts.saas.dispatch import redispatch_queued
-from smartcuts.saas.models import Job, JobStatus, UsageEvent
+from smartcuts.saas.models import Job, JobStatus, Upload, UsageEvent
 from smartcuts.saas.worker import JobRunner
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="necesita ffmpeg")
@@ -448,3 +448,54 @@ def test_email_outage_does_not_break_the_job(client, sample_video, monkeypatch):
     job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
     _runner_with(client, monkeypatch, FakePipeline(), RecordingNotifier(fail=True)).process(job_id)
     assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["status"] == "done"
+
+
+def _stored_files(client) -> list[str]:
+    root = client.app.state.settings.storage_root()
+    return [p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file() and ".multipart" not in p.parts]
+
+
+def test_delete_account_removes_everything(client, sample_video, monkeypatch):
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    run_worker(client, monkeypatch, FakePipeline())
+    pending = client.post("/uploads", json={"filename": "b.mp4", "size_bytes": 1000}, headers=AUTH).json()
+    other = {"Authorization": "Bearer dev:otro@example.com"}
+    client.get("/me", headers=other)
+    assert any(f.startswith("clips/") for f in _stored_files(client))
+
+    assert client.delete("/me", headers=AUTH).status_code == 204
+
+    assert _stored_files(client) == []
+    with session_scope(client.app.state.sessions) as s:
+        assert s.get(Job, job_id) is None
+        assert s.scalars(select(UsageEvent).where(UsageEvent.user_id == "dev|ana@example.com")).all() == []
+        assert s.get(Upload, pending["upload_id"]) is None
+    # El otro usuario no se ve afectado; si Ana vuelve a entrar, empieza de cero.
+    assert client.get("/me", headers=other).status_code == 200
+    assert client.get("/jobs", headers=AUTH).json() == []
+
+
+def test_delete_account_waits_for_running_jobs(client, sample_video):
+    upload_id = upload_video(client, sample_video)
+    client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH)
+    r = client.delete("/me", headers=AUTH)
+    assert r.status_code == 409 and r.json()["error"]["code"] == "account_busy"
+
+
+def test_delete_identity_calls_supabase_admin(monkeypatch):
+    from smartcuts.infra.config import AuthSettings
+    from smartcuts.interfaces.api import auth as auth_mod
+
+    calls = []
+
+    class Resp:
+        status_code, is_error, text = 200, False, ""
+
+    monkeypatch.setattr(auth_mod.httpx, "delete", lambda url, headers, timeout: calls.append((url, headers)) or Resp())
+    cfg = AuthSettings(mode="supabase", supabase_url="https://abc.supabase.co/", supabase_service_key="sb_secret_x")
+    auth_mod.delete_identity("user-123", cfg)
+    assert calls == [("https://abc.supabase.co/auth/v1/admin/users/user-123", {"apikey": "sb_secret_x"})]
+
+    with pytest.raises(auth_mod.AppError):
+        auth_mod.delete_identity("user-123", AuthSettings(mode="supabase", supabase_url="https://abc.supabase.co"))

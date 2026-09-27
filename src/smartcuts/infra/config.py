@@ -88,6 +88,8 @@ class AuthSettings(BaseModel):
     supabase_url: str = ""  # https://<proyecto>.supabase.co
     # Solo proyectos con claves JWT heredadas (HS256). Si está vacío se validan con las claves públicas (JWKS).
     supabase_jwt_secret: str = ""
+    # Clave secreta de Supabase (sb_secret_… o service_role). Solo la usa la API para eliminar cuentas.
+    supabase_service_key: str = ""
     audience: str = "authenticated"
 
 

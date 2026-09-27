@@ -12,10 +12,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 
+import httpx
 import jwt
 
 from smartcuts.infra.config import AuthSettings
+from smartcuts.infra.logging import get_logger
 from smartcuts.saas.errors import AppError
+
+log = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -50,3 +54,22 @@ def verify_token(token: str, cfg: AuthSettings) -> Identity:
     if not subject:
         raise AppError("auth_required", 401)
     return Identity(subject=subject, email=claims.get("email", ""))
+
+
+def delete_identity(subject: str, cfg: AuthSettings) -> None:
+    """Borra el usuario del proveedor de identidad (email y contraseña). En dev no hay nada que borrar."""
+    if cfg.mode == "dev":
+        return
+    key = cfg.supabase_service_key
+    if not key:
+        raise AppError("internal_error", 503, detail="Falta SMARTCUTS_AUTH__SUPABASE_SERVICE_KEY")
+    # Las claves nuevas (sb_secret_…) van solo en `apikey`; las heredadas (JWT service_role) también como Bearer.
+    headers = {"apikey": key}
+    if not key.startswith("sb_"):
+        headers["Authorization"] = f"Bearer {key}"
+    r = httpx.delete(f"{cfg.supabase_url.rstrip('/')}/auth/v1/admin/users/{subject}", headers=headers, timeout=15)
+    if r.status_code == 404:
+        return  # ya no existía
+    if r.is_error:
+        raise AppError("internal_error", 502, detail=f"Supabase admin {r.status_code}: {r.text[:300]}")
+    log.info("auth.identity_deleted")

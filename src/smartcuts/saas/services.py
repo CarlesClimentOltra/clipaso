@@ -328,3 +328,24 @@ def delete_job(session: Session, storage: Storage, user: User, job_id: str, now:
             storage.delete_prefix(upload.storage_key)
             session.delete(upload)
     session.delete(job)
+
+
+# --------------------------------------------------------------------------- cuenta
+
+
+def delete_account(session: Session, storage: Storage, user: User) -> None:
+    """Borra todos los datos del usuario: archivos (subidas, clips, miniaturas) y filas de la BD.
+
+    La identidad en el proveedor de autenticación (Supabase) la borra quien llama, después de
+    confirmar esta transacción: así, si eso falla, reintentar sigue funcionando.
+    """
+    if running_jobs(session, user) > 0:
+        raise AppError("account_busy", 409)
+    for upload in session.scalars(select(Upload).where(Upload.user_id == user.id, Upload.multipart_id.is_not(None))):
+        storage.abort_multipart(upload.storage_key, upload.multipart_id)
+    folder = user_folder(user.id)
+    removed = storage.delete_prefix(f"clips/{folder}/") + storage.delete_prefix(f"uploads/{folder}/")
+    # Uploads, jobs, clips y consumo se borran en cascada (ON DELETE CASCADE).
+    session.delete(user)
+    session.flush()
+    log.info("account.deleted", files=removed)

@@ -106,3 +106,13 @@ export function useCreateProject() {
     },
   });
 }
+
+/** Elimina la cuenta y todos sus datos. Tras el éxito, quien llama cierra la sesión. */
+export function useDeleteAccount() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => unwrap(api.DELETE("/me")),
+    onSuccess: () => qc.clear(), // que ninguna consulta pendiente vuelva a pedir datos de la cuenta borrada
+  });
+}

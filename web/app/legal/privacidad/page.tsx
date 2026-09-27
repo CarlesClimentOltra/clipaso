@@ -152,8 +152,9 @@ export default function PrivacyPage() {
           solo con su título y fechas.
         </li>
         <li>
-          <strong>Cuenta e historial:</strong> mientras mantengas la cuenta. Si la eliminas, se borran tu cuenta, tus
-          proyectos y tus clips en un plazo máximo de 30 días.
+          <strong>Cuenta e historial:</strong> mientras mantengas la cuenta. Puedes eliminarla tú mismo en cualquier
+          momento desde «Mi cuenta»: se borran al instante tu cuenta, tus proyectos, tus clips y tu historial de consumo.
+          Las copias de seguridad de la base de datos pueden conservarlos hasta 30 días más, hasta que se renuevan.
         </li>
         <li>
           <strong>Registro de consumo y facturación:</strong> el tiempo que exija la ley (por ejemplo, 6 años para la
@@ -183,8 +184,8 @@ export default function PrivacyPage() {
       </ul>
       <p>
         Escríbenos a <a href={`mailto:${owner.email}`}>{owner.email}</a> desde el email de tu cuenta indicando qué derecho
-        quieres ejercer. Te responderemos en un plazo máximo de un mes. Puedes borrar tus proyectos y clips en cualquier
-        momento desde la propia aplicación.
+        quieres ejercer. Te responderemos en un plazo máximo de un mes. Además, puedes borrar proyectos y clips, o
+        eliminar tu cuenta con todos sus datos, en cualquier momento desde la propia aplicación («Mi cuenta»).
       </p>
       <p>
         Si consideras que no hemos atendido correctamente tu solicitud, puedes presentar una reclamación ante la Agencia

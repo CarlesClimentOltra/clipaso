@@ -163,6 +163,49 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Delete Me",
+        "description": "Elimina la cuenta: vídeos, clips, historial y consumo, y después el usuario de Supabase Auth.",
+        "operationId": "delete_me_me_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/uploads": {
