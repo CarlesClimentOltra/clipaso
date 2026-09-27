@@ -8,6 +8,7 @@ from smartcuts.interfaces.api.deps import DispatcherDep, SessionDep, SettingsDep
 from smartcuts.interfaces.api.schemas import ClipOut, JobCreateIn, JobOut, JobSummary
 from smartcuts.saas import services
 from smartcuts.saas.db import utcnow
+from smartcuts.saas.dispatch import dispatch_job
 from smartcuts.saas.errors import user_message
 from smartcuts.saas.models import Clip, Job
 
@@ -49,11 +50,13 @@ def create_job(
     body: JobCreateIn, user: UserDep, session: SessionDep, storage: StorageDep,
     settings: SettingsDep, dispatcher: DispatcherDep,
 ) -> JobOut:
+    now = utcnow()
     job = services.create_job(
-        session, user, upload_id=body.upload_id, max_clips=body.max_clips, language=body.language, now=utcnow()
+        session, user, upload_id=body.upload_id, max_clips=body.max_clips, language=body.language, now=now
     )
     session.commit()  # el job debe existir antes de que un worker lo busque
-    dispatcher.dispatch(job.id)
+    if dispatch_job(dispatcher, job, now):
+        session.commit()
     return job_out(job, storage, settings.api.signed_url_ttl_seconds)
 
 

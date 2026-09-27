@@ -35,6 +35,10 @@ gpu = [
     "nvidia-cublas-cu12",
     "nvidia-cudnn-cu12>=9,<10",
 ]
+# La API la necesita para enviar los jobs al worker de Modal (y para desplegarlo).
+modal = [
+    "modal>=1.0",
+]
 dev = [
     "httpx>=0.27",
     "mypy>=1.10",

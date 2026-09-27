@@ -16,6 +16,7 @@ from smartcuts.infra.config import Settings
 from smartcuts.interfaces.api.app import create_app
 from smartcuts.saas import worker as worker_mod
 from smartcuts.saas.db import session_scope, utcnow
+from smartcuts.saas.dispatch import redispatch_queued
 from smartcuts.saas.models import Job, JobStatus, UsageEvent
 from smartcuts.saas.worker import JobRunner
 
@@ -335,3 +336,68 @@ def test_part_size_stays_within_protocol_limits():
     for size in (2 * gib, 20 * gib, 200 * gib):
         part = choose_part_size(size)
         assert part >= MIN_PART_SIZE and -(-size // part) <= MAX_PARTS
+
+
+class FakeRemoteDispatcher:
+    """Como Modal: registra los envíos; `down` simula que Modal no responde."""
+
+    remote = True
+
+    def __init__(self):
+        self.sent: list[str] = []
+        self.down = False
+
+    def dispatch(self, job_id: str) -> None:
+        if self.down:
+            raise ConnectionError("modal caído")
+        self.sent.append(job_id)
+
+
+def test_remote_dispatch_survives_outage_and_duplicates(client, sample_video, monkeypatch):
+    app = client.app
+    remote = FakeRemoteDispatcher()
+    remote.down = True
+    app.state.dispatcher = remote
+    upload_id = upload_video(client, sample_video)
+
+    # Modal caído: el usuario no ve un error, el job queda en cola sin marca de envío.
+    r = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH)
+    assert r.status_code == 201 and r.json()["status"] == "queued"
+    job_id = r.json()["id"]
+
+    # Vuelve Modal: el barrido lo reenvía una vez, y no lo repite mientras el envío sea reciente.
+    remote.down = False
+    settings, sessions = app.state.settings, app.state.sessions
+    assert redispatch_queued(settings, sessions, remote) == 1
+    assert redispatch_queued(settings, sessions, remote) == 0
+    assert remote.sent == [job_id]
+
+    # Si el envío no arranca a tiempo, se reenvía.
+    with session_scope(sessions) as s:
+        s.get(Job, job_id).dispatched_at = utcnow() - timedelta(hours=1)
+    assert redispatch_queued(settings, sessions, remote) == 1
+
+    # Dos envíos del mismo job: solo uno lo procesa.
+    monkeypatch.setattr(worker_mod, "build_pipeline", lambda *a, **k: FakePipeline())
+    runner = JobRunner(settings, sessions, app.state.storage)
+    assert runner.process(job_id) is True
+    assert runner.process(job_id) is False
+    assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["status"] == "done"
+
+
+def test_requeued_stale_job_is_redispatched_immediately(client, sample_video):
+    app = client.app
+    remote = FakeRemoteDispatcher()
+    app.state.dispatcher = remote
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    assert remote.sent == [job_id]
+
+    settings, sessions = app.state.settings, app.state.sessions
+    runner = JobRunner(settings, sessions, app.state.storage)
+    assert runner.claim(job_id)
+    with session_scope(sessions) as s:
+        s.get(Job, job_id).heartbeat_at = utcnow() - timedelta(hours=1)  # el worker murió
+    runner.recover_stale()
+    assert redispatch_queued(settings, sessions, remote) == 1
+    assert remote.sent == [job_id, job_id]

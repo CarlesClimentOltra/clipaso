@@ -111,7 +111,11 @@ class ApiSettings(BaseModel):
 
 
 class WorkerSettings(BaseModel):
+    # local: `smartcuts worker` sondea la tabla jobs. modal: cada job lanza una GPU en Modal (deploy/modal_app.py).
     dispatcher: Literal["local", "modal"] = "local"
+    modal_app: str = "smartcuts-worker"
+    # Un job en cola cuyo envío a Modal no ha arrancado en este tiempo se vuelve a enviar.
+    redispatch_after_seconds: int = 900
     poll_seconds: float = 2.0
     # Un job 'running' sin latido en este tiempo se considera huérfano (worker caído).
     stale_after_seconds: int = 900

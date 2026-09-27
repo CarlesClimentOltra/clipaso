@@ -2,8 +2,8 @@
 
 La tabla `jobs` hace de cola: el worker reclama un job con un UPDATE atómico
 (`status queued → running`), por lo que pueden correr varios workers a la vez
-sin procesar dos veces el mismo job. En producción (Modal) el dispatcher lanza
-`JobRunner.run(job_id)` directamente; en local, `run_forever()` sondea la tabla.
+sin procesar dos veces el mismo job. En producción (Modal) cada envío ejecuta
+`JobRunner.process(job_id)`; en local, `run_forever()` sondea la tabla.
 """
 
 from __future__ import annotations
@@ -94,11 +94,20 @@ class JobRunner:
             for job in stale:
                 if job.attempts < self.settings.worker.max_attempts:
                     job.status, job.stage, job.progress = JobStatus.QUEUED, "queued", 0.0
+                    job.dispatched_at = None  # con worker remoto, el barrido lo reenvía enseguida
                     log.warning("job.requeued", job_id=job.id, attempts=job.attempts)
                 else:
                     self._mark_failed(s, job, "worker_lost", "sin latido del worker")
 
     # ------------------------------------------------------------------ ejecución
+
+    def process(self, job_id: str) -> bool:
+        """Reclama y ejecuta un job concreto (worker remoto). False si otro worker ya lo tenía."""
+        if not self.claim(job_id):
+            log.info("job.not_claimed", job_id=job_id)
+            return False
+        self.run(job_id)
+        return True
 
     def run(self, job_id: str) -> None:
         bind_job(job_id=job_id)

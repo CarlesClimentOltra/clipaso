@@ -26,7 +26,7 @@ Next.js (web/) ──JWT──▶ FastAPI (api) ──SQL──▶ Postgres ◀�
 | Entorno | BD | Auth | Almacenamiento | Worker | LLM |
 |---|---|---|---|---|---|
 | dev | SQLite (`data/`) | `dev` (email sin contraseña) | disco (`data/storage`) | local (tu GPU) | tu suscripción (`claude_cli`) o API |
-| prod (UE) | Supabase Postgres | Supabase Auth | Cloudflare R2 (jurisdicción EU) | Modal (fase 2) | API de Anthropic |
+| prod (UE) | Supabase Postgres | Supabase Auth | Cloudflare R2 (jurisdicción EU) | Modal (GPU T4, región UE) | API de Anthropic |
 
 La configuración de producción se valida al arrancar: rechaza clave por defecto, auth `dev`, SQLite,
 almacenamiento local o el proveedor `claude_cli`.
@@ -42,7 +42,7 @@ py -3.12 -m venv .venv
 copy .env.example .env
 cd web; npm install; copy .env.example .env.local; cd ..
 
-# tres terminales
+# tres terminales (o todo de golpe: doble clic en dev.cmd)
 .venv\Scripts\smartcuts api --reload     # http://localhost:8000  (docs en /docs)
 .venv\Scripts\smartcuts worker
 cd web; npm run dev                      # http://localhost:3000
@@ -59,6 +59,25 @@ Otros comandos:
 
 Cambiar el modelo de datos: edita `src/smartcuts/saas/models.py` y genera la migración con
 `python -c "from smartcuts.infra.config import Settings; from smartcuts.saas.migrations import make_migration; make_migration(Settings(), 'descripcion')"`.
+
+## Worker en Modal
+
+Cada vídeo arranca una GPU en Modal (`deploy/modal_app.py`) que solo cuesta mientras procesa. La imagen lleva
+ya dentro ffmpeg, el modelo de Whisper, el detector de caras y la fuente de los subtítulos. Dos tareas
+programadas cubren los fallos: cada 5 min se reenvían los jobs que no arrancaron o cuyo worker murió, y cada
+hora se ejecuta la limpieza (caducidad, subidas abandonadas).
+
+```powershell
+.venv\Scripts\python -m pip install -e ".[modal]"
+.venv\Scripts\python deploy\modal_cli.py token new             # una vez: vincula tu cuenta de Modal
+.venv\Scripts\python deploy\modal_secret.py                    # copia la config de prod desde .env al secreto de Modal
+.venv\Scripts\python deploy\modal_cli.py run deploy/modal_app.py::smoke   # diagnóstico de la imagen con GPU
+.venv\Scripts\python deploy\modal_cli.py deploy deploy/modal_app.py       # publica (repetir tras cada cambio del core)
+```
+
+`deploy/modal_cli.py` es la CLI de `modal` usando los certificados de Windows (necesario si un antivirus
+inspecciona HTTPS). Para que la API envíe los vídeos a Modal: `SMARTCUTS_WORKER__DISPATCHER=modal` en su
+entorno; con eso `dev.cmd` ya no abre el worker local.
 
 ## Planes y consumo
 

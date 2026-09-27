@@ -117,6 +117,8 @@ class Job(Base):
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     heartbeat_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    # Último envío a un worker remoto (Modal); si se pierde, el barrido lo reenvía.
+    dispatched_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
     expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime)  # retención según plan
 
     clips: Mapped[list[Clip]] = relationship(
