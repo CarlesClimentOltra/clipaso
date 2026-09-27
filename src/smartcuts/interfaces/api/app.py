@@ -11,10 +11,12 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sentry_sdk import capture_exception
 
 from smartcuts.bootstrap import build_storage
 from smartcuts.infra.config import Settings, get_settings
 from smartcuts.infra.logging import configure_logging, get_logger
+from smartcuts.infra.observability import init_sentry
 from smartcuts.infra.tls import use_system_trust_store
 from smartcuts.interfaces.api.routers import account, dev_storage, jobs, uploads
 from smartcuts.interfaces.api.schemas import ErrorResponse
@@ -31,6 +33,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     settings = settings or get_settings()
     use_system_trust_store()
     configure_logging(settings.log_level, settings.log_json)
+    init_sentry(settings, "api")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -62,6 +65,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
             return await call_next(request)
         except Exception as exc:
             log.exception("api.unhandled", path=request.url.path, error=str(exc))
+            capture_exception(exc)
             return JSONResponse(
                 {"error": {"code": "internal_error", "message": user_message("internal_error")}}, status_code=500
             )

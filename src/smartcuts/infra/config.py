@@ -130,6 +130,7 @@ class Settings(BaseSettings):
     env: Literal["dev", "prod"] = "dev"
     log_level: str = "INFO"
     log_json: bool = False
+    sentry_dsn: str = ""  # vacío = Sentry desactivado
 
     data_dir: Path = PROJECT_ROOT / "data"
     output_dir: Path = PROJECT_ROOT / "output"

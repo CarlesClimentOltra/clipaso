@@ -171,10 +171,86 @@ def doctor() -> None:
     else:
         has_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
         check("ANTHROPIC_API_KEY", has_key, s.llm.model if has_key else "necesaria para el proveedor 'anthropic'")
+        if has_key:
+            try:
+                import anthropic
+
+                anthropic.Anthropic(max_retries=0, timeout=20).models.retrieve(s.llm.model)
+                check("API de Anthropic", True, f"clave válida · {s.llm.model} disponible")
+            except Exception as exc:
+                check("API de Anthropic", False, _short(exc))
     check("Perfiles de salida", bool(s.list_profiles()), ", ".join(s.list_profiles()))
-    typer.echo(f"  · base de datos: {s.database_url().split('@')[-1]}")
-    typer.echo(f"  · auth: {s.auth.mode} · almacenamiento: {s.storage.backend} · dispatcher: {s.worker.dispatcher}")
+
+    typer.echo("\nServicios")
+    _check_database(s, check)
+    _check_storage(s, check)
+    _check_auth(s, check)
+    sentry_detail = "región UE" if ".de.sentry.io" in s.sentry_dsn else "sin DSN: errores solo en logs"
+    check("Sentry", bool(s.sentry_dsn), sentry_detail)
     typer.echo(f"\n  datos: {s.data_dir}\n  salida: {s.output_dir}")
+
+
+def _short(exc: Exception, limit: int = 160) -> str:
+    text = " ".join(str(exc).split())
+    return text[:limit] + ("…" if len(text) > limit else "")
+
+
+def _check_database(s, check) -> None:
+    from sqlalchemy import text
+
+    from smartcuts.saas.db import make_engine
+
+    url = s.database_url()
+    where = url.split("@")[-1] if "@" in url else url
+    if "PEGA_AQUI" in url:
+        check("Base de datos", False, "falta la cadena de conexión en .env (SMARTCUTS_DATABASE__URL)")
+        return
+    try:
+        with make_engine(url).connect() as conn:
+            conn.execute(text("select 1"))
+        check("Base de datos", True, where)
+    except Exception as exc:
+        check("Base de datos", False, f"{where}: {_short(exc)}")
+
+
+def _check_storage(s, check) -> None:
+    import tempfile
+    import uuid
+
+    from smartcuts.bootstrap import build_storage
+
+    label = f"Almacenamiento ({s.storage.backend})"
+    if s.storage.backend == "r2" and "PEGA_AQUI" in s.storage.r2_access_key_id + s.storage.r2_secret_access_key:
+        check(label, False, "faltan las claves de R2 en .env")
+        return
+    try:
+        storage = build_storage(s)
+        key = f"healthcheck/{uuid.uuid4().hex}.txt"
+        with tempfile.TemporaryDirectory() as tmp:
+            probe = Path(tmp) / "probe.txt"
+            probe.write_text("ok", encoding="utf-8")
+            storage.put_file(key, probe, "text/plain")
+        ok = storage.size(key) == 2
+        storage.delete_prefix(key)
+        where = f"bucket {s.storage.r2_bucket} ({s.storage.r2_jurisdiction}) · " if s.storage.backend == "r2" else ""
+        check(label, ok, f"{where}subir/leer/borrar OK" if ok else "no se pudo leer lo subido")
+    except Exception as exc:
+        check(label, False, _short(exc))
+
+
+def _check_auth(s, check) -> None:
+    if s.auth.mode == "dev":
+        check("Login", True, "modo dev (email sin contraseña, solo local)")
+        return
+    import httpx
+
+    url = f"{s.auth.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+    try:
+        keys = httpx.get(url, timeout=15).raise_for_status().json().get("keys", [])
+        ok = bool(keys) or bool(s.auth.supabase_jwt_secret)
+        check("Login (Supabase Auth)", ok, f"{len(keys)} clave(s) de firma públicas" if ok else "sin claves JWKS")
+    except Exception as exc:
+        check("Login (Supabase Auth)", False, _short(exc))
 
 
 # --------------------------------------------------------------------------- SaaS
@@ -208,6 +284,9 @@ def worker() -> None:
     s = get_settings()
     if s.env == "dev":
         upgrade_database(s)
+    from smartcuts.infra.observability import init_sentry
+
+    init_sentry(s, "worker")
     stop = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     JobRunner(s, session_factory(s), build_storage(s)).run_forever(stop)

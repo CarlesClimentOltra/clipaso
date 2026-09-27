@@ -15,6 +15,7 @@ import time
 from datetime import timedelta
 from pathlib import Path, PurePath
 
+import sentry_sdk
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -163,6 +164,12 @@ class JobRunner:
                 detail += f"\n{exc.detail}"
             log.error("job.failed", code=code, stage=state["stage"], error=detail[:2000],
                       exc_info=not isinstance(exc, SmartCutsError))
+            if code in ("processing_failed", "internal_error"):  # fallos nuestros, no del vídeo del usuario
+                with sentry_sdk.new_scope() as scope:
+                    scope.set_tag("job_stage", state["stage"])
+                    scope.set_tag("error_code", code)
+                    scope.set_context("job", {"job_id": job_id})
+                    sentry_sdk.capture_exception(exc)
             with session_scope(self.sessions) as s:
                 job = s.get(Job, job_id)
                 if job is not None:
