@@ -1,0 +1,48 @@
+# API de SmartCuts en Fly.io (Frankfurt). Desplegar: flyctl deploy --ha=false
+# Los secretos (BD, R2, Sentry, Modal) se cargan con deploy/fly_secrets.py.
+
+app = "smartcuts-api"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  # Migraciones de la base de datos antes de publicar la nueva versión (si fallan, no se publica).
+  release_command = "smartcuts db-upgrade"
+
+[env]
+  SMARTCUTS_ENV = "prod"
+  SMARTCUTS_LOG_JSON = "true"
+  SMARTCUTS_AUTH__MODE = "supabase"
+  SMARTCUTS_STORAGE__BACKEND = "r2"
+  SMARTCUTS_STORAGE__R2_JURISDICTION = "eu"
+  SMARTCUTS_WORKER__DISPATCHER = "modal"
+  # Orígenes de la web autorizados (CORS). Se añadirá el dominio de Vercel al publicar la web.
+  SMARTCUTS_API__WEB_ORIGINS = '["http://localhost:3000"]'
+  # Fly hace de proxy: así los logs registran la IP real del cliente.
+  FORWARDED_ALLOW_IPS = "*"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Sin tráfico la máquina se suspende (no cuesta CPU) y despierta en <1 s con la primera petición.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 40
+    hard_limit = 80
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

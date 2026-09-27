@@ -79,6 +79,21 @@ hora se ejecuta la limpieza (caducidad, subidas abandonadas).
 inspecciona HTTPS). Para que la API envíe los vídeos a Modal: `SMARTCUTS_WORKER__DISPATCHER=modal` en su
 entorno; con eso `dev.cmd` ya no abre el worker local.
 
+## API en Fly.io
+
+La API corre en Fly.io (Frankfurt) con el `Dockerfile` de la raíz: https://smartcuts-api.fly.dev.
+Sin tráfico la máquina se suspende y despierta en menos de un segundo. Las migraciones se aplican
+solas en cada despliegue (`release_command`), antes de publicar la nueva versión.
+
+```powershell
+.venv\Scripts\python deployly_secrets.py                     # copia BD, R2, Sentry y token de Modal a Fly
+flyctl deploy --ha=false --depot=false                          # publica (repetir tras cada cambio de la API)
+flyctl logs                                                     # logs en vivo
+```
+
+`--depot=false` usa el constructor propio de Fly (el de depot falla con antivirus que inspeccionan HTTPS).
+Los orígenes CORS de la web están en `fly.toml` (`SMARTCUTS_API__WEB_ORIGINS`).
+
 ## Planes y consumo
 
 Se mide en **minutos de vídeo** (redondeados a la décima). Al encolar un vídeo se reservan sus
