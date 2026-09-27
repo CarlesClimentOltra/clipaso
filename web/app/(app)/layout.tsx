@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import { AppHeader } from "@/components/app-header";
+import { SiteFooter } from "@/components/site-footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
 
@@ -28,6 +29,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <>
       <AppHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <SiteFooter />
     </>
   );
 }

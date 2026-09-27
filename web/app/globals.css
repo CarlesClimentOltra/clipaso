@@ -128,3 +128,17 @@
     @apply font-sans;
   }
 }
+/* Páginas legales: tipografía de documento largo. */
+@layer components {
+  .legal h1 { @apply mb-1 text-3xl font-semibold tracking-tight; }
+  .legal h2 { @apply mt-10 mb-3 text-xl font-semibold tracking-tight; }
+  .legal h3 { @apply mt-6 mb-2 font-semibold; }
+  .legal p, .legal li { @apply leading-7 text-foreground/90; }
+  .legal p { @apply my-3; }
+  .legal ul { @apply my-3 list-disc space-y-1 pl-6; }
+  .legal a { @apply font-medium underline underline-offset-4; }
+  .legal table { @apply my-4 w-full border-collapse text-sm; }
+  .legal th, .legal td { @apply border px-3 py-2 text-left align-top; }
+  .legal th { @apply bg-muted/50 font-semibold; }
+  .legal .updated { @apply text-sm text-muted-foreground; }
+}

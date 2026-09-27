@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useRef, useState, type DragEvent } from "react";
@@ -282,7 +283,12 @@ export function UploadForm({ me }: { me: Me }) {
         </Button>
       )}
       <p className="text-xs text-muted-foreground">
-        Al subir un vídeo confirmas que tienes los derechos necesarios sobre su contenido.
+        Al subir un vídeo confirmas que tienes los derechos necesarios sobre su contenido y el permiso de las personas
+        que aparecen en él (ver{" "}
+        <Link href="/legal/terminos" className="underline underline-offset-4" target="_blank">
+          Términos
+        </Link>
+        ). El vídeo original se borra al terminar de procesarlo.
       </p>
     </div>
   );

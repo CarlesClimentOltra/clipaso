@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { Brand } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,71 +51,87 @@ export default function LoginPage() {
   const title = mode === "login" ? "Entra en tu cuenta" : "Crea tu cuenta gratis";
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 bg-muted/30 p-4">
-      <Brand />
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>
-            {mode === "signup" ? "30 minutos de vídeo al mes gratis. Sin tarjeta." : "Bienvenido de nuevo."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            {devMode && (
-              <Alert>
-                <AlertDescription>Modo desarrollo: basta con un email, sin contraseña.</AlertDescription>
-              </Alert>
-            )}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            {!devMode && (
+    <div className="flex flex-1 flex-col bg-muted/30">
+      <main className="flex flex-1 flex-col items-center justify-center gap-6 p-4">
+        <Brand />
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>
+              {mode === "signup" ? "30 minutos de vídeo al mes gratis. Sin tarjeta." : "Bienvenido de nuevo."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={onSubmit} className="flex flex-col gap-4">
+              {devMode && (
+                <Alert>
+                  <AlertDescription>Modo desarrollo: basta con un email, sin contraseña.</AlertDescription>
+                </Alert>
+              )}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="password"
-                  type="password"
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  id="email"
+                  type="email"
+                  autoComplete="email"
                   required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
+              {!devMode && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              )}
+              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              {notice && <p className="text-sm text-primary" role="status">{notice}</p>}
+              {mode === "signup" && !devMode && (
+                <p className="text-xs text-muted-foreground">
+                  Al crear tu cuenta aceptas los{" "}
+                  <Link href="/legal/terminos" className="underline underline-offset-4" target="_blank">
+                    Términos del servicio
+                  </Link>{" "}
+                  y confirmas que has leído la{" "}
+                  <Link href="/legal/privacidad" className="underline underline-offset-4" target="_blank">
+                    Política de privacidad
+                  </Link>
+                  .
+                </p>
+              )}
+              <Button type="submit" className="h-9" disabled={submitting}>
+                {submitting ? "Un momento…" : mode === "login" ? "Entrar" : "Crear cuenta"}
+              </Button>
+            </form>
+            {!devMode && (
+              <p className="mt-4 text-center text-sm text-muted-foreground">
+                {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
+                <button
+                  type="button"
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                  onClick={() => {
+                    setMode(mode === "login" ? "signup" : "login");
+                    setError(null);
+                    setNotice(null);
+                  }}
+                >
+                  {mode === "login" ? "Regístrate" : "Inicia sesión"}
+                </button>
+              </p>
             )}
-            {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-            {notice && <p className="text-sm text-primary" role="status">{notice}</p>}
-            <Button type="submit" className="h-9" disabled={submitting}>
-              {submitting ? "Un momento…" : mode === "login" ? "Entrar" : "Crear cuenta"}
-            </Button>
-          </form>
-          {!devMode && (
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
-              <button
-                type="button"
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-                onClick={() => {
-                  setMode(mode === "login" ? "signup" : "login");
-                  setError(null);
-                  setNotice(null);
-                }}
-              >
-                {mode === "login" ? "Regístrate" : "Inicia sesión"}
-              </button>
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </main>
+          </CardContent>
+        </Card>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

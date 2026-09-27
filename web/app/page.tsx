@@ -3,6 +3,7 @@ import { CaptionsIcon, CropIcon, SparklesIcon, UploadCloudIcon } from "lucide-re
 
 import { Brand } from "@/components/brand";
 import { Pricing } from "@/components/pricing";
+import { SiteFooter } from "@/components/site-footer";
 import { buttonVariants } from "@/components/ui/button";
 
 const STEPS = [
@@ -70,12 +71,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground">
-          <span>© {new Date().getFullYear()} SmartCuts</span>
-          <span>Datos alojados en la Unión Europea</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
