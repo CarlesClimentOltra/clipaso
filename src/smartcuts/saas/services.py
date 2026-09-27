@@ -252,8 +252,10 @@ def _reject(storage: Storage, upload: Upload) -> None:
 
 
 def create_job(
-    session: Session, user: User, *, upload_id: str, max_clips: int, language: str, now: datetime
+    session: Session, user: User, *, upload_id: str, max_clips: int, language: str, now: datetime,
+    options: dict | None = None,
 ) -> Job:
+    """`options`: formato, duración, tema, estilo de subtítulos, marca y si conservar el original."""
     # Bloquea la fila del usuario (Postgres) para que dos peticiones simultáneas no se salten la cuota.
     session.execute(select(User.id).where(User.id == user.id).with_for_update())
     plan: Plan = user.plan
@@ -285,7 +287,7 @@ def create_job(
         stage="queued",
         video_minutes=minutes,
         max_clips=max_clips,
-        options={"language": language},
+        options={**(options or {}), "language": language},
         created_at=now,
         expires_at=now + timedelta(days=plan.retention_days),
     )

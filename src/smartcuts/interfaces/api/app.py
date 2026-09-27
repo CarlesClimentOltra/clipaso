@@ -18,7 +18,7 @@ from smartcuts.infra.config import Settings, get_settings
 from smartcuts.infra.logging import configure_logging, get_logger
 from smartcuts.infra.observability import init_sentry
 from smartcuts.infra.tls import use_system_trust_store
-from smartcuts.interfaces.api.routers import account, dev_storage, jobs, uploads
+from smartcuts.interfaces.api.routers import account, clips, dev_storage, jobs, uploads
 from smartcuts.interfaces.api.schemas import ErrorResponse
 from smartcuts.saas.db import session_factory, session_scope
 from smartcuts.saas.dispatch import get_dispatcher
@@ -74,7 +74,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
         CORSMiddleware,
         allow_origins=settings.api.web_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
         expose_headers=["ETag"],  # el navegador lo necesita para completar la subida por partes
     )
@@ -98,6 +98,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     app.include_router(account.router)
     app.include_router(uploads.router)
     app.include_router(jobs.router)
+    app.include_router(clips.router)
     if settings.storage.backend == "local":
         app.include_router(dev_storage.router)
     return app

@@ -8,7 +8,7 @@ requiere tocar el core.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
@@ -192,6 +192,10 @@ class Storage(Protocol):
         ...
 
     def download_to(self, key: str, dest: Path) -> Path: ...
+
+    def iter_bytes(self, key: str, chunk_size: int = 1024 * 1024) -> Iterator[bytes]:
+        """Lee un objeto por trozos (descargas en streaming sin cargarlo en memoria)."""
+        ...
 
     def size(self, key: str) -> int | None:
         """Tamaño en bytes, o None si no existe."""

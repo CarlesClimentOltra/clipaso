@@ -1,27 +1,46 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Response
+import zipfile
+from collections.abc import Callable, Iterator
+
+from fastapi import APIRouter, Query, Response
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
 
 from smartcuts.application.pipeline import slugify
 from smartcuts.domain.ports import Storage
 from smartcuts.interfaces.api.deps import DispatcherDep, SessionDep, SettingsDep, StorageDep, UserDep
-from smartcuts.interfaces.api.schemas import ClipOut, JobCreateIn, JobOut, JobSummary
-from smartcuts.saas import services
+from smartcuts.interfaces.api.schemas import (
+    ArchiveOut,
+    ClipOut,
+    JobCreateIn,
+    JobOptions,
+    JobOut,
+    JobSummary,
+    MoreClipsIn,
+    TaskOut,
+)
+from smartcuts.saas import editing, services
 from smartcuts.saas.db import utcnow
 from smartcuts.saas.dispatch import dispatch_job
-from smartcuts.saas.errors import user_message
-from smartcuts.saas.models import Clip, Job
+from smartcuts.saas.errors import AppError, NotFound, user_message
+from smartcuts.saas.models import Clip, Job, TaskKind, User
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
-def _clip_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> ClipOut:
-    filename = f"{slugify(job.title)}-{clip.rank:02d}-{slugify(clip.title)}.mp4"
+def clip_filename(job: Job, clip: Clip, ext: str) -> str:
+    return f"{slugify(job.title)}-{clip.rank:02d}-{slugify(clip.title)}.{ext}"
+
+
+def clip_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> ClipOut:
     return ClipOut(
-        id=clip.id, rank=clip.rank, title=clip.title, reason=clip.reason, start=clip.start, end=clip.end,
-        duration=round(clip.end - clip.start, 2), score=clip.score,
+        id=clip.id, rank=clip.rank, title=clip.title, reason=clip.reason, description=clip.description or "",
+        hashtags=list(clip.hashtags or []), rating=clip.rating, start=clip.start, end=clip.end,
+        duration=round(clip.end - clip.start, 2), score=clip.score, status=clip.status,
+        render_error=clip.render_error, version=clip.version,
         video_url=storage.signed_url(clip.video_key, expires=ttl),
-        download_url=storage.signed_url(clip.video_key, expires=ttl, download_name=filename),
+        download_url=storage.signed_url(clip.video_key, expires=ttl, download_name=clip_filename(job, clip, "mp4")),
         thumbnail_url=storage.signed_url(clip.thumb_key, expires=ttl) if clip.thumb_key else None,
     )
 
@@ -36,12 +55,19 @@ def _summary_fields(job: Job, storage: Storage, ttl: int) -> dict:
     )
 
 
-def job_out(job: Job, storage: Storage, ttl: int) -> JobOut:
+def job_out(session: Session, job: Job, user: User, storage: Storage, ttl: int) -> JobOut:
+    options = {k: v for k, v in (job.options or {}).items() if k in JobOptions.model_fields}
+    can_edit = editing.source_available(session, job)
+    task = editing.latest_task(session, job, TaskKind.MORE_CLIPS)
     return JobOut(
         **_summary_fields(job, storage, ttl),
         error_code=job.error_code,
         error_message=user_message(job.error_code),
-        clips=[_clip_out(c, job, storage, ttl) for c in job.clips],
+        options=JobOptions.model_validate(options),
+        can_edit=can_edit,
+        more_clips_available=editing.more_clips_available(job, user) if can_edit else 0,
+        more_clips_task=TaskOut(status=task.status, error_message=user_message(task.error_code)) if task else None,
+        clips=[clip_out(c, job, storage, ttl) for c in job.clips],
     )
 
 
@@ -51,13 +77,17 @@ def create_job(
     settings: SettingsDep, dispatcher: DispatcherDep,
 ) -> JobOut:
     now = utcnow()
+    options = body.model_dump(include=set(JobOptions.model_fields))
+    if options["caption_style"] is None:  # el estilo por defecto del usuario
+        options["caption_style"] = editing.get_preferences(user)[0].model_dump()
     job = services.create_job(
-        session, user, upload_id=body.upload_id, max_clips=body.max_clips, language=body.language, now=now
+        session, user, upload_id=body.upload_id, max_clips=body.max_clips, language=body.language, now=now,
+        options=options,
     )
     session.commit()  # el job debe existir antes de que un worker lo busque
     if dispatch_job(dispatcher, job, now):
         session.commit()
-    return job_out(job, storage, settings.api.signed_url_ttl_seconds)
+    return job_out(session, job, user, storage, settings.api.signed_url_ttl_seconds)
 
 
 @router.get("", response_model=list[JobSummary])
@@ -68,10 +98,106 @@ def list_jobs(user: UserDep, session: SessionDep, storage: StorageDep, settings:
 
 @router.get("/{job_id}", response_model=JobOut)
 def get_job(job_id: str, user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep) -> JobOut:
-    return job_out(services.get_job(session, user, job_id), storage, settings.api.signed_url_ttl_seconds)
+    job = services.get_job(session, user, job_id)
+    return job_out(session, job, user, storage, settings.api.signed_url_ttl_seconds)
 
 
 @router.delete("/{job_id}", status_code=204)
 def delete_job(job_id: str, user: UserDep, session: SessionDep, storage: StorageDep) -> Response:
     services.delete_job(session, storage, user, job_id, utcnow())
     return Response(status_code=204)
+
+
+@router.post("/{job_id}/more", response_model=JobOut)
+def more_clips(
+    job_id: str, body: MoreClipsIn, user: UserDep, session: SessionDep, storage: StorageDep,
+    settings: SettingsDep, dispatcher: DispatcherDep,
+) -> JobOut:
+    """Busca más clips en el mismo vídeo (sin volver a subirlo ni gastar minutos)."""
+    now = utcnow()
+    job = services.get_job(session, user, job_id)
+    task = editing.request_more_clips(session, user, job, count=body.count, topic=body.topic, now=now)
+    session.commit()
+    if dispatch_job(dispatcher, task, now):
+        session.commit()
+    return job_out(session, job, user, storage, settings.api.signed_url_ttl_seconds)
+
+
+# --------------------------------------------------------------------------- descargar todo
+
+
+@router.post("/{job_id}/archive", response_model=ArchiveOut)
+def archive_link(job_id: str, user: UserDep, session: SessionDep, settings: SettingsDep) -> ArchiveOut:
+    """Enlace temporal para descargar el ZIP (el navegador no puede enviar la cabecera de sesión en una descarga)."""
+    job = services.get_job(session, user, job_id)
+    if not job.clips:
+        raise NotFound()
+    token = editing.archive_token(settings.api.secret_key, job.id, user.id)
+    return ArchiveOut(url=f"{settings.api.public_url.rstrip('/')}/jobs/{job.id}/archive?token={token}")
+
+
+class _Sink:
+    """Destino no «seekable» para zipfile: acumula lo escrito y lo entrega por trozos."""
+
+    def __init__(self) -> None:
+        self.chunks: list[bytes] = []
+        self.pos = 0
+
+    def write(self, data) -> int:
+        self.chunks.append(bytes(data))
+        self.pos += len(data)
+        return len(data)
+
+    def tell(self) -> int:
+        return self.pos
+
+    def flush(self) -> None:
+        pass
+
+    def drain(self) -> Iterator[bytes]:
+        chunks, self.chunks = self.chunks, []
+        yield from chunks
+
+
+def _zip_stream(entries: list[tuple[str, Callable[[], Iterator[bytes]]]]) -> Iterator[bytes]:
+    sink = _Sink()
+    with zipfile.ZipFile(sink, "w", compression=zipfile.ZIP_STORED) as zf:  # los MP4 ya van comprimidos
+        for name, produce in entries:
+            with zf.open(name, "w", force_zip64=True) as dst:
+                for chunk in produce():
+                    dst.write(chunk)
+                    yield from sink.drain()
+            yield from sink.drain()
+    yield from sink.drain()
+
+
+def _texts(job: Job) -> str:
+    blocks = []
+    for clip in job.clips:
+        tags = " ".join(f"#{t}" for t in clip.hashtags or [])
+        blocks.append(f"Clip {clip.rank:02d} — {clip.title}\n\n{clip.description}\n{tags}".strip())
+    return ("\n\n" + "-" * 40 + "\n\n").join(blocks) + "\n"
+
+
+@router.get("/{job_id}/archive", response_class=StreamingResponse, include_in_schema=False)
+def archive(
+    job_id: str, session: SessionDep, storage: StorageDep, settings: SettingsDep, token: str = Query(...),
+) -> StreamingResponse:
+    job = session.get(Job, job_id)
+    if job is None or not editing.verify_archive_token(settings.api.secret_key, job.id, job.user_id, token):
+        raise AppError("not_found", 404,
+                       message="El enlace de descarga ha caducado. Vuelve a pulsar «Descargar todos».")
+    entries: list[tuple[str, Callable[[], Iterator[bytes]]]] = []
+    for clip in job.clips:
+        entries.append((clip_filename(job, clip, "mp4"), lambda key=clip.video_key: storage.iter_bytes(key)))
+        try:
+            srt = editing.captions(storage, job, clip, "srt").encode("utf-8")
+            entries.append((clip_filename(job, clip, "srt"), lambda data=srt: iter([data])))
+        except AppError:
+            pass  # proyectos antiguos sin transcripción guardada: solo los vídeos
+    entries.append(("textos-para-publicar.txt", lambda: iter([_texts(job).encode("utf-8")])))
+    filename = f"{slugify(job.title)}-clips.zip"
+    return StreamingResponse(
+        _zip_stream(entries), media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

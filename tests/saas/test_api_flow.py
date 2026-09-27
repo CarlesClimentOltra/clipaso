@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import shutil
-import subprocess
 from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -13,7 +12,6 @@ from sqlalchemy import select
 from smartcuts.domain.errors import SelectionError
 from smartcuts.domain.models import ExportedClip, Sentence, SignalSet, Transcript, Word
 from smartcuts.infra.config import Settings
-from smartcuts.interfaces.api.app import create_app
 from smartcuts.saas import worker as worker_mod
 from smartcuts.saas.db import session_scope, utcnow
 from smartcuts.saas.dispatch import redispatch_queued
@@ -23,30 +21,6 @@ from smartcuts.saas.worker import JobRunner
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="necesita ffmpeg")
 
 AUTH = {"Authorization": "Bearer dev:ana@example.com"}
-
-
-@pytest.fixture(scope="session")
-def sample_video(tmp_path_factory) -> Path:
-    """Vídeo real de 3 s (para que ffprobe lea su duración)."""
-    path = tmp_path_factory.mktemp("media") / "charla.mp4"
-    subprocess.run(
-        ["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=25:duration=3",
-         "-f", "lavfi", "-i", "sine=frequency=440:duration=3", "-shortest", "-c:v", "libx264", "-c:a", "aac",
-         str(path)],
-        check=True,
-    )
-    return path
-
-
-@pytest.fixture
-def settings(tmp_path) -> Settings:
-    return Settings(data_dir=tmp_path / "data", output_dir=tmp_path / "out", _env_file=None)
-
-
-@pytest.fixture
-def client(settings):
-    with TestClient(create_app(settings)) as c:
-        yield c
 
 
 def put_parts(client: TestClient, upload_id: str, data: bytes, part_size: int, numbers: list[int]) -> dict[int, str]:
@@ -294,12 +268,12 @@ def test_abort_upload_removes_parts(client, sample_video, small_parts):
     assert r.status_code == 409
 
 
-def test_original_is_purged_after_success_and_clips_expire(client, sample_video, monkeypatch):
+def test_original_is_purged_after_success_if_not_kept(client, sample_video, monkeypatch):
     from smartcuts.saas.maintenance import run_cleanup
     from smartcuts.saas.models import Upload, UploadStatus
 
     upload_id = upload_video(client, sample_video)
-    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    job_id = client.post("/jobs", json={"upload_id": upload_id, "keep_source": False}, headers=AUTH).json()["id"]
     run_worker(client, monkeypatch, FakePipeline())
     app = client.app
     storage = app.state.storage
@@ -317,6 +291,29 @@ def test_original_is_purged_after_success_and_clips_expire(client, sample_video,
     job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
     assert job["status"] == "expired" and job["clips"] == []
     assert storage.size(video_key) is None
+
+
+def test_kept_original_and_analysis_are_deleted_when_project_expires(client, sample_video, monkeypatch):
+    from smartcuts.saas.artifacts import transcript_key
+    from smartcuts.saas.maintenance import run_cleanup
+    from smartcuts.saas.models import Upload, UploadStatus
+
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    run_worker(client, monkeypatch, FakePipeline())
+    app, storage = client.app, client.app.state.storage
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["can_edit"] is True and job["options"]["keep_source"] is True
+
+    with session_scope(app.state.sessions) as s:
+        upload = s.get(Upload, upload_id)
+        assert upload.status == UploadStatus.READY and storage.size(upload.storage_key)  # se conserva
+        assert storage.size(transcript_key(upload.user_id, job_id))
+        s.get(Job, job_id).expires_at = utcnow() - timedelta(minutes=1)
+
+    run_cleanup(app.state.settings, app.state.sessions, storage)
+    assert _stored_files(client) == []
+    assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["can_edit"] is False
 
 
 def test_cleanup_purges_abandoned_uploads(client, sample_video):

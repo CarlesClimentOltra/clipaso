@@ -17,6 +17,13 @@ USER_MESSAGES: dict[str, str] = {
     "video_too_long": "El vídeo es más largo de lo que permite tu plan.",
     "too_many_jobs": "Ya tienes el máximo de vídeos procesándose a la vez. Espera a que termine alguno.",
     "too_many_clips": "Tu plan no permite tantos clips por vídeo.",
+    # edición y tareas
+    "source_unavailable": "El vídeo original de este proyecto ya no está guardado, así que no se puede editar "
+                          "ni pedir más clips. Vuelve a subirlo si lo necesitas.",
+    "clip_busy": "Este clip se está generando. Espera a que termine.",
+    "more_clips_busy": "Ya estamos buscando más clips de este vídeo.",
+    "too_many_tasks": "Tienes varios clips generándose. Espera a que termine alguno.",
+    "no_more_clips": "No hemos encontrado más momentos que merezcan un clip.",
     # cuenta
     "account_busy": "Tienes vídeos procesándose. Espera a que terminen para eliminar tu cuenta.",
     # subidas

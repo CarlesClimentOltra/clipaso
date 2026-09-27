@@ -12,6 +12,7 @@ import hmac
 import shutil
 import time
 import uuid
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlencode
@@ -65,6 +66,11 @@ class LocalStorage:
     def read_bytes(self, key: str) -> bytes | None:
         p = self._path(key)
         return p.read_bytes() if p.is_file() else None
+
+    def iter_bytes(self, key: str, chunk_size: int = 1024 * 1024) -> Iterator[bytes]:
+        with self._path(key).open("rb") as f:
+            while chunk := f.read(chunk_size):
+                yield chunk
 
     def download_to(self, key: str, dest: Path) -> Path:
         dest.parent.mkdir(parents=True, exist_ok=True)

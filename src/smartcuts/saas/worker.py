@@ -33,6 +33,7 @@ from smartcuts.saas.models import Clip, Job, JobStatus, Upload, User
 from smartcuts.saas.notifications import Notifier, build_notifier, clips_ready, deliver, processing_failed
 from smartcuts.saas.rendering import project_branding, project_profile
 from smartcuts.saas.services import clips_prefix, purge_upload, refund_job
+from smartcuts.saas.tasks import TaskRunner
 
 log = get_logger(__name__)
 
@@ -58,6 +59,14 @@ class JobRunner:
         self.storage = storage
         self.notifier = notifier or build_notifier(settings.notifications)
         self._transcriber: Transcriber | None = None
+        self._tasks: TaskRunner | None = None
+
+    @property
+    def tasks(self) -> TaskRunner:
+        """Re-renders y «más clips» (comparten conexión, almacenamiento y modelo de Whisper)."""
+        if self._tasks is None:
+            self._tasks = TaskRunner(self.settings, self.sessions, self.storage, transcriber=self.transcriber)
+        return self._tasks
 
     @property
     def transcriber(self) -> Transcriber:
@@ -247,6 +256,7 @@ class JobRunner:
         while not stop.is_set():
             if time.monotonic() - last_recovery > 60:
                 self.recover_stale()
+                self.tasks.recover_stale()
                 last_recovery = time.monotonic()
             if time.monotonic() - last_cleanup > self.settings.worker.cleanup_every_seconds:
                 try:
@@ -254,6 +264,9 @@ class JobRunner:
                 except Exception as exc:  # la limpieza nunca debe tumbar el worker
                     log.error("cleanup.failed", error=str(exc))
                 last_cleanup = time.monotonic()
+            if task_id := self.tasks.claim_next():  # las tareas son cortas y el usuario las espera
+                self.tasks.run(task_id)
+                continue
             job_id = self.claim_next()
             if job_id is None:
                 stop.wait(self.settings.worker.poll_seconds)

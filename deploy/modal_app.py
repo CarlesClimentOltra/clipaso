@@ -73,6 +73,7 @@ image = (
     # El código va al final: cambiarlo no reconstruye las capas pesadas de arriba.
     .add_local_dir(ROOT / "src", "/app/src", ignore=["**/__pycache__"])
     .add_local_dir(ROOT / "configs", "/app/configs")
+    .add_local_dir(ROOT / "assets", "/app/assets")
 )
 
 app = modal.App(APP_NAME, image=image)
@@ -111,6 +112,11 @@ class Worker:
     def process(self, job_id: str) -> bool:
         return self.runner.process(job_id)
 
+    @modal.method()
+    def run_task(self, task_id: str) -> bool:
+        """Re-render de un clip editado o más clips del mismo vídeo."""
+        return self.runner.tasks.process(task_id)
+
 
 @app.function(region=REGION, secrets=[secret], schedule=modal.Period(minutes=5), timeout=300)
 def sweep() -> None:
@@ -118,7 +124,9 @@ def sweep() -> None:
     from smartcuts.saas.worker import JobRunner
 
     settings, sessions, storage = _context("sweep")
-    JobRunner(settings, sessions, storage).recover_stale()
+    runner = JobRunner(settings, sessions, storage)
+    runner.recover_stale()
+    runner.tasks.recover_stale()
     redispatch_queued(settings, sessions, get_dispatcher(settings))
 
 

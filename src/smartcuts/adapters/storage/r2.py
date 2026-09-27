@@ -7,6 +7,7 @@ el endpoint de la UE (el bucket debe crearse con jurisdicción EU).
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -62,6 +63,13 @@ class R2Storage:
             if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
                 return None
             raise
+
+    def iter_bytes(self, key: str, chunk_size: int = 1024 * 1024) -> Iterator[bytes]:
+        body = self.s3.get_object(Bucket=self.bucket, Key=key)["Body"]
+        try:
+            yield from body.iter_chunks(chunk_size)
+        finally:
+            body.close()
 
     def download_to(self, key: str, dest: Path) -> Path:
         dest.parent.mkdir(parents=True, exist_ok=True)
