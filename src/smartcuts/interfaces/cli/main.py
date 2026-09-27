@@ -305,6 +305,23 @@ def openapi(out: Annotated[Path, typer.Option(help="Fichero de salida.")] = Path
     typer.secho(f"✓ {out}", fg=typer.colors.GREEN)
 
 
+@app.command()
+def cleanup() -> None:
+    """Borra clips caducados, subidas abandonadas y carpetas temporales (el worker lo hace cada hora)."""
+    _setup()
+    from smartcuts.bootstrap import build_storage
+    from smartcuts.saas.db import session_factory
+    from smartcuts.saas.maintenance import run_cleanup
+
+    s = get_settings()
+    report = run_cleanup(s, session_factory(s), build_storage(s))
+    typer.secho(
+        f"✓ proyectos caducados: {report.expired_jobs} · subidas borradas: {report.purged_uploads} · "
+        f"carpetas temporales: {report.workspaces}",
+        fg=typer.colors.GREEN,
+    )
+
+
 @app.command("db-upgrade")
 def db_upgrade() -> None:
     """Aplica las migraciones pendientes de la base de datos."""

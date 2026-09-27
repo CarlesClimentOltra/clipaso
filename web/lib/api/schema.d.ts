@@ -75,6 +75,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/uploads/{upload_id}/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Parts */
+        get: operations["list_parts_uploads__upload_id__parts_get"];
+        put?: never;
+        /** Part Urls */
+        post: operations["part_urls_uploads__upload_id__parts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{upload_id}/complete": {
         parameters: {
             query?: never;
@@ -87,6 +105,23 @@ export interface paths {
         /** Complete Upload */
         post: operations["complete_upload_uploads__upload_id__complete_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Abort Upload */
+        delete: operations["abort_upload_uploads__upload_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -157,6 +192,13 @@ export interface components {
             /** Thumbnail Url */
             thumbnail_url: string | null;
         };
+        /** CompletedPart */
+        CompletedPart: {
+            /** Part Number */
+            part_number: number;
+            /** Etag */
+            etag: string;
+        };
         /** ErrorBody */
         ErrorBody: {
             /** Code */
@@ -198,7 +240,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "queued" | "running" | "done" | "failed";
+            status: "queued" | "running" | "done" | "failed" | "expired";
             /** Stage */
             stage: string | null;
             /** Progress */
@@ -235,7 +277,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "queued" | "running" | "done" | "failed";
+            status: "queued" | "running" | "done" | "failed" | "expired";
             /** Stage */
             stage: string | null;
             /** Progress */
@@ -265,6 +307,23 @@ export interface components {
             plan: components["schemas"]["PlanOut"];
             usage: components["schemas"]["UsageOut"];
         };
+        /** PartUrl */
+        PartUrl: {
+            /** Part Number */
+            part_number: number;
+            /** Url */
+            url: string;
+        };
+        /** PartUrlsIn */
+        PartUrlsIn: {
+            /** Part Numbers */
+            part_numbers: number[];
+        };
+        /** PartUrlsOut */
+        PartUrlsOut: {
+            /** Urls */
+            urls: components["schemas"]["PartUrl"][];
+        };
         /** PlanOut */
         PlanOut: {
             /** Code */
@@ -286,6 +345,11 @@ export interface components {
             /** Retention Days */
             retention_days: number;
         };
+        /** UploadCompleteIn */
+        UploadCompleteIn: {
+            /** Parts */
+            parts: components["schemas"]["CompletedPart"][];
+        };
         /** UploadCreateIn */
         UploadCreateIn: {
             /** Filename */
@@ -302,7 +366,10 @@ export interface components {
         UploadCreateOut: {
             /** Upload Id */
             upload_id: string;
-            target: components["schemas"]["UploadTarget"];
+            /** Part Size */
+            part_size: number;
+            /** Part Count */
+            part_count: number;
         };
         /** UploadOut */
         UploadOut: {
@@ -319,16 +386,19 @@ export interface components {
             /** Billable Minutes */
             billable_minutes: number | null;
         };
-        /** UploadTarget */
-        UploadTarget: {
-            /** Url */
-            url: string;
-            /** Method */
-            method: string;
-            /** Headers */
-            headers: {
-                [key: string]: string;
-            };
+        /** UploadedPartOut */
+        UploadedPartOut: {
+            /** Part Number */
+            part_number: number;
+            /** Etag */
+            etag: string;
+            /** Size */
+            size: number;
+        };
+        /** UploadedPartsOut */
+        UploadedPartsOut: {
+            /** Parts */
+            parts: components["schemas"]["UploadedPartOut"][];
         };
         /** UsageOut */
         UsageOut: {
@@ -566,7 +636,7 @@ export interface operations {
             };
         };
     };
-    complete_upload_uploads__upload_id__complete_post: {
+    list_parts_uploads__upload_id__parts_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -583,8 +653,188 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["UploadedPartsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    part_urls_uploads__upload_id__parts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartUrlsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartUrlsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_upload_uploads__upload_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadCompleteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["UploadOut"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abort_upload_uploads__upload_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {

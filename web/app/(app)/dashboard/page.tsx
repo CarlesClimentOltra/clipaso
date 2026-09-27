@@ -17,6 +17,7 @@ const STATUS: Record<JobSummary["status"], { label: string; variant: "default" |
   running: { label: "Procesando", variant: "secondary" },
   done: { label: "Listo", variant: "default" },
   failed: { label: "Error", variant: "destructive" },
+  expired: { label: "Caducado", variant: "outline" },
 };
 
 const dateFmt = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -46,7 +47,11 @@ function ProjectCard({ job }: { job: JobSummary }) {
             <Progress value={Math.round(job.progress * 100)} aria-label={`Progreso de ${job.title}`} />
           ) : (
             <p className="text-xs text-muted-foreground">
-              {job.status === "done" ? `${job.clip_count} ${job.clip_count === 1 ? "clip" : "clips"}` : "No se pudo procesar"} · {formatMinutes(job.video_minutes)} ·{" "}
+              {job.status === "done"
+                ? `${job.clip_count} ${job.clip_count === 1 ? "clip" : "clips"}`
+                : job.status === "expired"
+                  ? "Clips caducados"
+                  : "No se pudo procesar"} · {formatMinutes(job.video_minutes)} ·{" "}
               {dateFmt.format(new Date(job.created_at))}
             </p>
           )}

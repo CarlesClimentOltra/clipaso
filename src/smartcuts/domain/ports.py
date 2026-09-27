@@ -159,18 +159,21 @@ class Exporter(Protocol):
     def export(self, request: ExportRequest) -> Path: ...
 
 
-@dataclass
-class PresignedUpload:
-    """Destino al que el navegador sube un fichero directamente (sin pasar por la API)."""
-
-    url: str
-    method: str = "PUT"
-    headers: dict[str, str] = field(default_factory=dict)
+@dataclass(frozen=True)
+class UploadedPart:
+    part_number: int
+    etag: str
+    size: int = 0
 
 
 @runtime_checkable
 class Storage(Protocol):
-    """Almacenamiento de ficheros por clave (`uploads/<user>/<id>.mp4`, `clips/...`)."""
+    """Almacenamiento de ficheros por clave (`uploads/<user>/<id>.mp4`, `clips/...`).
+
+    Las subidas del navegador usan el protocolo multiparte de S3: el fichero se trocea,
+    cada trozo va directo al almacenamiento con su URL firmada y, si algo falla, solo
+    se repiten los trozos que faltan (subida reanudable).
+    """
 
     name: str
 
@@ -186,10 +189,21 @@ class Storage(Protocol):
 
     def signed_url(self, key: str, *, expires: int = 3600, download_name: str | None = None) -> str: ...
 
-    def presign_upload(
-        self, key: str, content_type: str, *, max_bytes: int, expires: int = 3600
-    ) -> PresignedUpload: ...
-
     def local_path(self, key: str) -> Path | None:
         """Ruta en disco si el backend es local (evita copias); None en backends remotos."""
         ...
+
+    # --- subida multiparte -----------------------------------------------------------
+
+    def create_multipart(self, key: str, content_type: str) -> str:
+        """Inicia una subida por partes y devuelve su identificador."""
+        ...
+
+    def presign_part(self, key: str, upload_id: str, part_number: int, *, max_bytes: int, expires: int = 3600) -> str:
+        ...
+
+    def list_parts(self, key: str, upload_id: str) -> list[UploadedPart]: ...
+
+    def complete_multipart(self, key: str, upload_id: str, parts: list[UploadedPart]) -> None: ...
+
+    def abort_multipart(self, key: str, upload_id: str) -> None: ...

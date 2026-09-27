@@ -2,6 +2,7 @@
 
 import { DownloadIcon } from "lucide-react";
 
+import { ClipPlayer } from "@/components/clip-player";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Clip } from "@/lib/api/client";
@@ -15,20 +16,7 @@ export function formatTimestamp(seconds: number): string {
 export function ClipCard({ clip }: { clip: Clip }) {
   return (
     <Card className="overflow-hidden pt-0">
-      <div className="relative aspect-[9/16] bg-black">
-        <video
-          src={clip.video_url}
-          poster={clip.thumbnail_url ?? undefined}
-          controls
-          playsInline
-          preload="none"
-          className="size-full object-contain"
-          aria-label={`Vista previa: ${clip.title}`}
-        />
-        <span className="pointer-events-none absolute top-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
-          #{clip.rank}
-        </span>
-      </div>
+      <ClipPlayer src={clip.video_url} poster={clip.thumbnail_url ?? undefined} title={clip.title} rank={clip.rank} />
       <CardHeader>
         <CardTitle className="line-clamp-2 leading-snug">{clip.title}</CardTitle>
         {clip.reason && <CardDescription className="line-clamp-3">{clip.reason}</CardDescription>}

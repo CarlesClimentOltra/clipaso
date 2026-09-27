@@ -14,7 +14,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
 from smartcuts.domain.errors import SmartCutsError
-from smartcuts.domain.ports import PresignedUpload, Storage
+from smartcuts.domain.ports import Storage, UploadedPart
 from smartcuts.infra import ffmpeg
 from smartcuts.infra.logging import get_logger
 from smartcuts.saas.db import utcnow
@@ -103,9 +103,41 @@ def running_jobs(session: Session, user: User) -> int:
 # --------------------------------------------------------------------------- subidas
 
 
+MIN_PART_SIZE = 16 * 1024 * 1024  # R2/S3 exigen ≥5 MiB por parte (salvo la última)
+MAX_PARTS = 9000  # el límite del protocolo es 10 000; dejamos margen
+MAX_PARTS_PER_REQUEST = 100
+
+
+def choose_part_size(size_bytes: int) -> int:
+    """Partes de 16 MiB, o más grandes si el fichero necesitaría demasiadas."""
+    needed = math.ceil(size_bytes / MAX_PARTS)
+    if needed <= MIN_PART_SIZE:
+        return MIN_PART_SIZE
+    mib = 1024 * 1024
+    return math.ceil(needed / mib) * mib
+
+
+def part_count(upload: Upload) -> int:
+    return max(1, math.ceil(upload.size_bytes / (upload.part_size or MIN_PART_SIZE)))
+
+
+def _owned_upload(session: Session, user: User, upload_id: str) -> Upload:
+    upload = session.get(Upload, upload_id)
+    if upload is None or upload.user_id != user.id:
+        raise NotFound()
+    return upload
+
+
+def _pending_upload(session: Session, user: User, upload_id: str) -> Upload:
+    upload = _owned_upload(session, user, upload_id)
+    if upload.status != UploadStatus.PENDING or not upload.multipart_id:
+        raise AppError("upload_incomplete", 409, message="Esta subida ya no está activa. Vuelve a elegir el vídeo.")
+    return upload
+
+
 def create_upload(
     session: Session, storage: Storage, user: User, *, filename: str, size_bytes: int, content_type: str
-) -> tuple[Upload, PresignedUpload]:
+) -> Upload:
     ext = PurePath(filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise AppError("unsupported_format")
@@ -114,27 +146,65 @@ def create_upload(
         raise AppError("upload_too_large", 413)
 
     upload = Upload(user_id=user.id, filename=filename[:255], size_bytes=size_bytes,
-                    content_type=ALLOWED_EXTENSIONS[ext], storage_key="")
+                    content_type=ALLOWED_EXTENSIONS[ext], storage_key="", part_size=choose_part_size(size_bytes))
     session.add(upload)
     session.flush()
     upload.storage_key = f"uploads/{user_folder(user.id)}/{upload.id}{ext}"
-    presigned = storage.presign_upload(upload.storage_key, upload.content_type, max_bytes=max_bytes)
-    return upload, presigned
+    upload.multipart_id = storage.create_multipart(upload.storage_key, upload.content_type)
+    return upload
 
 
-def complete_upload(session: Session, storage: Storage, user: User, upload_id: str, *, signed_ttl: int) -> Upload:
-    upload = session.get(Upload, upload_id)
-    if upload is None or upload.user_id != user.id:
-        raise NotFound()
+def presign_parts(
+    session: Session, storage: Storage, user: User, upload_id: str, part_numbers: list[int], *, ttl: int
+) -> dict[int, str]:
+    upload = _pending_upload(session, user, upload_id)
+    total = part_count(upload)
+    if not part_numbers or len(part_numbers) > MAX_PARTS_PER_REQUEST or any(n < 1 or n > total for n in part_numbers):
+        raise AppError("validation_error")
+    return {
+        n: storage.presign_part(upload.storage_key, upload.multipart_id, n, max_bytes=upload.part_size, expires=ttl)
+        for n in sorted(set(part_numbers))
+    }
+
+
+def uploaded_parts(session: Session, storage: Storage, user: User, upload_id: str) -> list[UploadedPart]:
+    """Partes ya subidas: permite reanudar una subida interrumpida sin repetirlas."""
+    upload = _pending_upload(session, user, upload_id)
+    return storage.list_parts(upload.storage_key, upload.multipart_id)
+
+
+def abort_upload(session: Session, storage: Storage, user: User, upload_id: str) -> None:
+    upload = _owned_upload(session, user, upload_id)
+    if upload.status == UploadStatus.PENDING:
+        if upload.multipart_id:
+            storage.abort_multipart(upload.storage_key, upload.multipart_id)
+        _reject(storage, upload)
+
+
+def complete_upload(
+    session: Session, storage: Storage, user: User, upload_id: str, parts: list[UploadedPart], *, signed_ttl: int
+) -> Upload:
+    upload = _owned_upload(session, user, upload_id)
     if upload.status == UploadStatus.READY:
         return upload
+    upload = _pending_upload(session, user, upload_id)
+
+    expected = part_count(upload)
+    numbers = sorted(p.part_number for p in parts)
+    if numbers != list(range(1, expected + 1)):
+        raise AppError("upload_incomplete", message="Faltan partes del vídeo por subir. Vuelve a intentarlo.")
+    try:
+        storage.complete_multipart(upload.storage_key, upload.multipart_id, parts)
+    except Exception as exc:  # partes corruptas, caducadas o inexistentes
+        raise AppError("upload_incomplete", detail=str(exc)) from exc
+    upload.multipart_id = None
 
     size = storage.size(upload.storage_key)
     if size is None:
         raise AppError("upload_incomplete")
-    if size > user.plan.max_upload_mb * 1024 * 1024:
+    if size != upload.size_bytes or size > user.plan.max_upload_mb * 1024 * 1024:
         _reject(storage, upload)
-        raise AppError("upload_too_large", 413)
+        raise AppError("upload_too_large" if size > upload.size_bytes else "upload_incomplete", 413)
 
     target = storage.local_path(upload.storage_key) or storage.signed_url(upload.storage_key, expires=signed_ttl)
     try:
@@ -153,11 +223,19 @@ def complete_upload(session: Session, storage: Storage, user: User, upload_id: s
                     f"{user.plan.max_video_minutes} min por vídeo.",
         )
 
-    upload.size_bytes = size
     upload.duration_seconds = duration
     upload.width, upload.height = width, height
     upload.status = UploadStatus.READY
     return upload
+
+
+def purge_upload(storage: Storage, upload: Upload) -> None:
+    """Borra el vídeo original (tras procesarlo o al caducar). El registro se conserva."""
+    if upload.multipart_id:
+        storage.abort_multipart(upload.storage_key, upload.multipart_id)
+        upload.multipart_id = None
+    storage.delete_prefix(upload.storage_key)
+    upload.status = UploadStatus.PURGED
 
 
 def _reject(storage: Storage, upload: Upload) -> None:

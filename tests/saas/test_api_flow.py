@@ -48,14 +48,29 @@ def client(settings):
         yield c
 
 
+def put_parts(client: TestClient, upload_id: str, data: bytes, part_size: int, numbers: list[int]) -> dict[int, str]:
+    """Sube las partes indicadas como lo haría el navegador; devuelve {número: ETag}."""
+    urls = client.post(f"/uploads/{upload_id}/parts", json={"part_numbers": numbers}, headers=AUTH)
+    assert urls.status_code == 200, urls.text
+    etags = {}
+    for item in urls.json()["urls"]:
+        n = item["part_number"]
+        chunk = data[(n - 1) * part_size : n * part_size]
+        u = urlsplit(item["url"])
+        r = client.put(f"{u.path}?{u.query}", content=chunk)
+        assert r.status_code == 200, r.text
+        etags[n] = r.headers["etag"]
+    return etags
+
+
 def upload_video(client: TestClient, video: Path) -> str:
-    r = client.post("/uploads", json={"filename": video.name, "size_bytes": video.stat().st_size}, headers=AUTH)
+    data = video.read_bytes()
+    r = client.post("/uploads", json={"filename": video.name, "size_bytes": len(data)}, headers=AUTH)
     assert r.status_code == 201, r.text
-    target = r.json()["target"]
-    url = urlsplit(target["url"])
-    put = client.put(f"{url.path}?{url.query}", content=video.read_bytes(), headers=target["headers"])
-    assert put.status_code == 200, put.text
-    r = client.post(f"/uploads/{r.json()['upload_id']}/complete", headers=AUTH)
+    upload_id, part_size, count = r.json()["upload_id"], r.json()["part_size"], r.json()["part_count"]
+    etags = put_parts(client, upload_id, data, part_size, list(range(1, count + 1)))
+    parts = [{"part_number": n, "etag": e} for n, e in etags.items()]
+    r = client.post(f"/uploads/{upload_id}/complete", json={"parts": parts}, headers=AUTH)
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "ready" and r.json()["billable_minutes"] == 0.1
     return r.json()["id"]
@@ -190,9 +205,99 @@ def test_stale_job_is_requeued_then_failed(client, sample_video):
 
 def test_tampered_storage_signature_rejected(client, sample_video):
     r = client.post("/uploads", json={"filename": "a.mp4", "size_bytes": 100}, headers=AUTH)
-    url = urlsplit(r.json()["target"]["url"])
+    urls = client.post(f"/uploads/{r.json()['upload_id']}/parts", json={"part_numbers": [1]}, headers=AUTH)
+    url = urlsplit(urls.json()["urls"][0]["url"])
     put = client.put(f"{url.path}?{url.query.replace('max=', 'max=9')}", content=b"x")
     assert put.status_code == 403
+
+
+@pytest.fixture
+def small_parts(monkeypatch):
+    """Partes de 16 KB para que el vídeo de prueba se suba en varias partes."""
+    from smartcuts.saas import services
+
+    monkeypatch.setattr(services, "MIN_PART_SIZE", 16 * 1024)
+
+
+def test_multipart_upload_resumes_after_interruption(client, sample_video, small_parts):
+    data = sample_video.read_bytes()
+    r = client.post("/uploads", json={"filename": "charla.mp4", "size_bytes": len(data)}, headers=AUTH)
+    upload_id, part_size, count = r.json()["upload_id"], r.json()["part_size"], r.json()["part_count"]
+    assert count >= 2
+
+    # Se sube solo la primera parte y "se corta la conexión".
+    first = put_parts(client, upload_id, data, part_size, [1])
+    listed = client.get(f"/uploads/{upload_id}/parts", headers=AUTH).json()["parts"]
+    assert [p["part_number"] for p in listed] == [1] and listed[0]["etag"] == first[1]
+
+    # Al reanudar solo se suben las que faltan.
+    rest = put_parts(client, upload_id, data, part_size, list(range(2, count + 1)))
+    parts = [{"part_number": n, "etag": e} for n, e in {**first, **rest}.items()]
+    r = client.post(f"/uploads/{upload_id}/complete", json={"parts": parts}, headers=AUTH)
+    assert r.status_code == 200 and r.json()["status"] == "ready"
+
+
+def test_complete_rejects_missing_or_corrupt_parts(client, sample_video, small_parts):
+    data = sample_video.read_bytes()
+    r = client.post("/uploads", json={"filename": "charla.mp4", "size_bytes": len(data)}, headers=AUTH)
+    upload_id, part_size, count = r.json()["upload_id"], r.json()["part_size"], r.json()["part_count"]
+    etags = put_parts(client, upload_id, data, part_size, list(range(1, count + 1)))
+
+    missing = [{"part_number": 1, "etag": etags[1]}]
+    r = client.post(f"/uploads/{upload_id}/complete", json={"parts": missing}, headers=AUTH)
+    assert r.json()["error"]["code"] == "upload_incomplete"
+
+    corrupt = [{"part_number": n, "etag": '"deadbeef"'} for n in etags]
+    r = client.post(f"/uploads/{upload_id}/complete", json={"parts": corrupt}, headers=AUTH)
+    assert r.json()["error"]["code"] == "upload_incomplete"
+
+
+def test_abort_upload_removes_parts(client, sample_video, small_parts):
+    data = sample_video.read_bytes()
+    r = client.post("/uploads", json={"filename": "charla.mp4", "size_bytes": len(data)}, headers=AUTH)
+    upload_id, part_size = r.json()["upload_id"], r.json()["part_size"]
+    put_parts(client, upload_id, data, part_size, [1])
+    assert client.delete(f"/uploads/{upload_id}", headers=AUTH).status_code == 204
+    r = client.get(f"/uploads/{upload_id}/parts", headers=AUTH)
+    assert r.status_code == 409
+
+
+def test_original_is_purged_after_success_and_clips_expire(client, sample_video, monkeypatch):
+    from smartcuts.saas.maintenance import run_cleanup
+    from smartcuts.saas.models import Upload, UploadStatus
+
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    run_worker(client, monkeypatch, FakePipeline())
+    app = client.app
+    storage = app.state.storage
+
+    with session_scope(app.state.sessions) as s:
+        upload = s.get(Upload, upload_id)
+        assert upload.status == UploadStatus.PURGED and storage.size(upload.storage_key) is None
+        job = s.get(Job, job_id)
+        video_key = job.clips[0].video_key
+        assert storage.size(video_key)  # el clip sigue disponible
+        job.expires_at = utcnow() - timedelta(minutes=1)
+
+    report = run_cleanup(app.state.settings, app.state.sessions, storage)
+    assert report.expired_jobs == 1
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["status"] == "expired" and job["clips"] == []
+    assert storage.size(video_key) is None
+
+
+def test_cleanup_purges_abandoned_uploads(client, sample_video):
+    from smartcuts.saas.maintenance import run_cleanup
+    from smartcuts.saas.models import Upload, UploadStatus
+
+    upload_id = upload_video(client, sample_video)  # lista pero nunca procesada
+    app = client.app
+    with session_scope(app.state.sessions) as s:
+        s.get(Upload, upload_id).created_at = utcnow() - timedelta(days=2)
+    assert run_cleanup(app.state.settings, app.state.sessions, app.state.storage).purged_uploads == 1
+    with session_scope(app.state.sessions) as s:
+        assert s.get(Upload, upload_id).status == UploadStatus.PURGED
 
 
 def test_production_settings_are_validated():
@@ -220,3 +325,13 @@ def test_unexpected_errors_keep_cors_headers(client, monkeypatch):
     r = client.get("/jobs", headers={**AUTH, "Origin": "http://localhost:3000"})
     assert r.status_code == 500 and r.json()["error"]["code"] == "internal_error"
     assert r.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
+def test_part_size_stays_within_protocol_limits():
+    from smartcuts.saas.services import MAX_PARTS, MIN_PART_SIZE, choose_part_size
+
+    gib = 1024**3
+    assert choose_part_size(50 * 1024 * 1024) == MIN_PART_SIZE
+    for size in (2 * gib, 20 * gib, 200 * gib):
+        part = choose_part_size(size)
+        assert part >= MIN_PART_SIZE and -(-size // part) <= MAX_PARTS

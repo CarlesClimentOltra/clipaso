@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ApiError, type Me } from "@/lib/api/client";
-import { useCreateProject } from "@/lib/api/hooks";
+import { useApi, useCreateProject } from "@/lib/api/hooks";
+import { discardUpload, type UploadProgress } from "@/lib/api/multipart-upload";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = [".mp4", ".mov", ".mkv", ".webm", ".m4v"];
@@ -32,9 +33,23 @@ const PHASE_LABEL: Record<Phase, string> = {
   starting: "Iniciando el procesamiento…",
 };
 
+const LARGE_FILE = 1024 ** 3; // a partir de 1 GB avisamos de que la subida puede tardar
+
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
   return `${Math.max(1, Math.round(bytes / 1024 ** 2))} MB`;
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return "menos de 1 min";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+}
+
+function formatSpeed(bytesPerSecond: number): string {
+  const mbps = (bytesPerSecond * 8) / 1e6;
+  return `${mbps >= 10 ? Math.round(mbps) : mbps.toFixed(1)} Mbit/s`;
 }
 
 export function UploadForm({ me }: { me: Me }) {
@@ -47,8 +62,10 @@ export function UploadForm({ me }: { me: Me }) {
   const [maxClips, setMaxClips] = useState(Math.min(3, me.plan.max_clips_per_job));
   const [language, setLanguage] = useState("es");
   const [phase, setPhase] = useState<Phase>("idle");
-  const [uploadPct, setUploadPct] = useState(0);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
+  const cancelledRef = useRef(false);
   const create = useCreateProject();
+  const api = useApi();
 
   const busy = phase !== "idle";
   const outOfMinutes = me.usage.remaining_minutes <= 0;
@@ -78,13 +95,14 @@ export function UploadForm({ me }: { me: Me }) {
   async function submit() {
     if (!file) return;
     abortRef.current = new AbortController();
-    setUploadPct(0);
+    cancelledRef.current = false;
+    setProgress(null);
     try {
       const job = await create.mutateAsync({
         file,
         maxClips,
         language,
-        onUploadProgress: setUploadPct,
+        onUploadProgress: setProgress,
         onPhase: setPhase,
         signal: abortRef.current.signal,
       });
@@ -92,9 +110,24 @@ export function UploadForm({ me }: { me: Me }) {
       router.push(`/projects/${job.id}`);
     } catch (err) {
       setPhase("idle");
-      if (err instanceof ApiError && err.code === "aborted") return;
-      toast.error(err instanceof ApiError ? err.message : "Algo salió mal. Inténtalo de nuevo.");
+      if (cancelledRef.current) return;
+      const interrupted = err instanceof ApiError && ["network_error", "part_failed"].includes(err.code);
+      toast.error(
+        interrupted
+          ? "La subida se interrumpió. Pulsa «Crear clips» de nuevo y continuará donde se quedó."
+          : err instanceof ApiError
+            ? err.message
+            : "Algo salió mal. Inténtalo de nuevo.",
+      );
     }
+  }
+
+  async function cancel() {
+    cancelledRef.current = true;
+    abortRef.current?.abort();
+    if (file) await discardUpload(api, file);
+    setPhase("idle");
+    setProgress(null);
   }
 
   return (
@@ -205,15 +238,40 @@ export function UploadForm({ me }: { me: Me }) {
         </div>
       </div>
 
+      {file && !busy && file.size >= LARGE_FILE && (
+        <Alert>
+          <AlertTitle>Archivo grande ({formatBytes(file.size)})</AlertTitle>
+          <AlertDescription>
+            La subida puede tardar varios minutos según tu conexión. Si se corta, podrás continuar donde se quedó.
+            Consejo: exportar el vídeo en 1080p lo hace mucho más rápido sin perder calidad en los clips.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {busy ? (
         <div className="flex flex-col gap-2" aria-live="polite">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between gap-3 text-sm">
             <span>{PHASE_LABEL[phase]}</span>
-            {phase === "uploading" && <span className="tabular-nums text-muted-foreground">{Math.round(uploadPct * 100)}%</span>}
+            {phase === "uploading" && progress && (
+              <span className="tabular-nums text-muted-foreground">
+                {Math.floor((progress.sentBytes / progress.totalBytes) * 100)}%
+              </span>
+            )}
           </div>
-          <Progress value={phase === "uploading" ? uploadPct * 100 : 100} aria-label="Progreso de la subida" />
+          <Progress
+            value={phase === "uploading" && progress ? (progress.sentBytes / progress.totalBytes) * 100 : 100}
+            aria-label="Progreso de la subida"
+          />
+          {phase === "uploading" && progress && (
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {progress.resumed && "Continuando una subida anterior · "}
+              {formatBytes(progress.sentBytes)} de {formatBytes(progress.totalBytes)}
+              {progress.bytesPerSecond ? ` · ${formatSpeed(progress.bytesPerSecond)}` : ""}
+              {progress.secondsLeft != null ? ` · quedan ${formatDuration(progress.secondsLeft)}` : " · calculando tiempo…"}
+            </p>
+          )}
           {phase === "uploading" && (
-            <Button variant="ghost" size="sm" className="self-start" onClick={() => abortRef.current?.abort()}>
+            <Button variant="ghost" size="sm" className="self-start" onClick={cancel}>
               Cancelar subida
             </Button>
           )}

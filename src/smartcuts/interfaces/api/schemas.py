@@ -49,15 +49,42 @@ class UploadCreateIn(BaseModel):
     content_type: str = ""
 
 
-class UploadTarget(BaseModel):
-    url: str
-    method: str
-    headers: dict[str, str]
-
-
 class UploadCreateOut(BaseModel):
     upload_id: str
-    target: UploadTarget
+    part_size: int
+    part_count: int
+
+
+class PartUrlsIn(BaseModel):
+    part_numbers: list[int] = Field(min_length=1, max_length=100)
+
+
+class PartUrl(BaseModel):
+    part_number: int
+    url: str
+
+
+class PartUrlsOut(BaseModel):
+    urls: list[PartUrl]
+
+
+class UploadedPartOut(BaseModel):
+    part_number: int
+    etag: str
+    size: int
+
+
+class UploadedPartsOut(BaseModel):
+    parts: list[UploadedPartOut]
+
+
+class CompletedPart(BaseModel):
+    part_number: int = Field(ge=1)
+    etag: str = Field(min_length=1, max_length=128)
+
+
+class UploadCompleteIn(BaseModel):
+    parts: list[CompletedPart] = Field(min_length=1, max_length=10000)
 
 
 class UploadOut(BaseModel):
@@ -89,7 +116,7 @@ class ClipOut(BaseModel):
     thumbnail_url: str | None
 
 
-JobStatusT = Literal["queued", "running", "done", "failed"]
+JobStatusT = Literal["queued", "running", "done", "failed", "expired"]
 
 
 class JobSummary(BaseModel):

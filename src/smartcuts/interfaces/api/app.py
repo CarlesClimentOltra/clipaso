@@ -76,6 +76,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
+        expose_headers=["ETag"],  # el navegador lo necesita para completar la subida por partes
     )
 
     @app.exception_handler(AppError)

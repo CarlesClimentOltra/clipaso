@@ -236,6 +236,158 @@
         }
       }
     },
+    "/uploads/{upload_id}/parts": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Part Urls",
+        "operationId": "part_urls_uploads__upload_id__parts_post",
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartUrlsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartUrlsOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "List Parts",
+        "operationId": "list_parts_uploads__upload_id__parts_get",
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadedPartsOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/uploads/{upload_id}/complete": {
       "post": {
         "tags": [
@@ -254,6 +406,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadCompleteIn"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -264,6 +426,71 @@
                 }
               }
             }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{upload_id}": {
+      "delete": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Abort Upload",
+        "operationId": "abort_upload_uploads__upload_id__delete",
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Upload Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "400": {
             "content": {
@@ -640,6 +867,27 @@
         ],
         "title": "ClipOut"
       },
+      "CompletedPart": {
+        "properties": {
+          "part_number": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Part Number"
+          },
+          "etag": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Etag"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_number",
+          "etag"
+        ],
+        "title": "CompletedPart"
+      },
       "ErrorBody": {
         "properties": {
           "code": {
@@ -725,7 +973,8 @@
               "queued",
               "running",
               "done",
-              "failed"
+              "failed",
+              "expired"
             ],
             "title": "Status"
           },
@@ -857,7 +1106,8 @@
               "queued",
               "running",
               "done",
-              "failed"
+              "failed",
+              "expired"
             ],
             "title": "Status"
           },
@@ -967,6 +1217,58 @@
         ],
         "title": "MeOut"
       },
+      "PartUrl": {
+        "properties": {
+          "part_number": {
+            "type": "integer",
+            "title": "Part Number"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_number",
+          "url"
+        ],
+        "title": "PartUrl"
+      },
+      "PartUrlsIn": {
+        "properties": {
+          "part_numbers": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Part Numbers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "part_numbers"
+        ],
+        "title": "PartUrlsIn"
+      },
+      "PartUrlsOut": {
+        "properties": {
+          "urls": {
+            "items": {
+              "$ref": "#/components/schemas/PartUrl"
+            },
+            "type": "array",
+            "title": "Urls"
+          }
+        },
+        "type": "object",
+        "required": [
+          "urls"
+        ],
+        "title": "PartUrlsOut"
+      },
       "PlanOut": {
         "properties": {
           "code": {
@@ -1020,6 +1322,24 @@
         ],
         "title": "PlanOut"
       },
+      "UploadCompleteIn": {
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/CompletedPart"
+            },
+            "type": "array",
+            "maxItems": 10000,
+            "minItems": 1,
+            "title": "Parts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "parts"
+        ],
+        "title": "UploadCompleteIn"
+      },
       "UploadCreateIn": {
         "properties": {
           "filename": {
@@ -1052,14 +1372,20 @@
             "type": "string",
             "title": "Upload Id"
           },
-          "target": {
-            "$ref": "#/components/schemas/UploadTarget"
+          "part_size": {
+            "type": "integer",
+            "title": "Part Size"
+          },
+          "part_count": {
+            "type": "integer",
+            "title": "Part Count"
           }
         },
         "type": "object",
         "required": [
           "upload_id",
-          "target"
+          "part_size",
+          "part_count"
         ],
         "title": "UploadCreateOut"
       },
@@ -1115,31 +1441,44 @@
         ],
         "title": "UploadOut"
       },
-      "UploadTarget": {
+      "UploadedPartOut": {
         "properties": {
-          "url": {
-            "type": "string",
-            "title": "Url"
+          "part_number": {
+            "type": "integer",
+            "title": "Part Number"
           },
-          "method": {
+          "etag": {
             "type": "string",
-            "title": "Method"
+            "title": "Etag"
           },
-          "headers": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Headers"
+          "size": {
+            "type": "integer",
+            "title": "Size"
           }
         },
         "type": "object",
         "required": [
-          "url",
-          "method",
-          "headers"
+          "part_number",
+          "etag",
+          "size"
         ],
-        "title": "UploadTarget"
+        "title": "UploadedPartOut"
+      },
+      "UploadedPartsOut": {
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/UploadedPartOut"
+            },
+            "type": "array",
+            "title": "Parts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "parts"
+        ],
+        "title": "UploadedPartsOut"
       },
       "UsageOut": {
         "properties": {

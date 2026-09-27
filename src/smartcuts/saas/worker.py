@@ -27,8 +27,9 @@ from smartcuts.infra import registry
 from smartcuts.infra.config import Settings
 from smartcuts.infra.logging import bind_job, clear_job, get_logger
 from smartcuts.saas.db import session_scope, utcnow
+from smartcuts.saas.maintenance import run_cleanup
 from smartcuts.saas.models import Clip, Job, JobStatus, Upload
-from smartcuts.saas.services import clips_prefix, refund_job
+from smartcuts.saas.services import clips_prefix, purge_upload, refund_job
 
 log = get_logger(__name__)
 
@@ -155,6 +156,9 @@ class JobRunner:
                 job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0
                 job.finished_at = utcnow()
                 job.llm_cost_usd = round(result.cost_usd, 5)
+                # El original ya no hace falta: solo se conservan los clips (almacenamiento y RGPD).
+                if job.upload_id and (upload := s.get(Upload, job.upload_id)):
+                    purge_upload(self.storage, upload)
             log.info("job.done", clips=len(clips), cost_usd=round(result.cost_usd, 4))
 
         except Exception as exc:
@@ -203,11 +207,17 @@ class JobRunner:
     def run_forever(self, stop: threading.Event | None = None) -> None:
         stop = stop or threading.Event()
         log.info("worker.started", poll_seconds=self.settings.worker.poll_seconds)
-        last_recovery = 0.0
+        last_recovery = last_cleanup = 0.0
         while not stop.is_set():
             if time.monotonic() - last_recovery > 60:
                 self.recover_stale()
                 last_recovery = time.monotonic()
+            if time.monotonic() - last_cleanup > self.settings.worker.cleanup_every_seconds:
+                try:
+                    run_cleanup(self.settings, self.sessions, self.storage)
+                except Exception as exc:  # la limpieza nunca debe tumbar el worker
+                    log.error("cleanup.failed", error=str(exc))
+                last_cleanup = time.monotonic()
             job_id = self.claim_next()
             if job_id is None:
                 stop.wait(self.settings.worker.poll_seconds)

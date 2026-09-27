@@ -12,7 +12,7 @@ from typing import Any
 from urllib.parse import quote
 
 from smartcuts.domain.errors import ConfigurationError
-from smartcuts.domain.ports import PresignedUpload
+from smartcuts.domain.ports import UploadedPart
 from smartcuts.infra.registry import register
 
 
@@ -81,14 +81,42 @@ class R2Storage:
             params["ResponseContentDisposition"] = f"attachment; filename*=UTF-8''{quote(download_name)}"
         return self.s3.generate_presigned_url("get_object", Params=params, ExpiresIn=expires)
 
-    def presign_upload(self, key: str, content_type: str, *, max_bytes: int, expires: int = 3600) -> PresignedUpload:
-        # El tamaño se vuelve a comprobar al confirmar la subida (R2 no admite políticas POST).
-        url = self.s3.generate_presigned_url(
-            "put_object",
-            Params={"Bucket": self.bucket, "Key": key, "ContentType": content_type},
-            ExpiresIn=expires,
-        )
-        return PresignedUpload(url=url, method="PUT", headers={"Content-Type": content_type})
-
     def local_path(self, key: str) -> Path | None:
         return None
+
+    # --- subida multiparte (el navegador sube cada parte directamente a R2) ---------------
+
+    def create_multipart(self, key: str, content_type: str) -> str:
+        return self.s3.create_multipart_upload(Bucket=self.bucket, Key=key, ContentType=content_type)["UploadId"]
+
+    def presign_part(self, key: str, upload_id: str, part_number: int, *, max_bytes: int, expires: int = 3600) -> str:
+        # R2 no admite límite de tamaño en URLs firmadas: el total se verifica al completar.
+        return self.s3.generate_presigned_url(
+            "upload_part",
+            Params={"Bucket": self.bucket, "Key": key, "UploadId": upload_id, "PartNumber": part_number},
+            ExpiresIn=expires,
+        )
+
+    def list_parts(self, key: str, upload_id: str) -> list[UploadedPart]:
+        parts: list[UploadedPart] = []
+        paginator = self.s3.get_paginator("list_parts")
+        for page in paginator.paginate(Bucket=self.bucket, Key=key, UploadId=upload_id):
+            parts += [UploadedPart(p["PartNumber"], p["ETag"], int(p["Size"])) for p in page.get("Parts", [])]
+        return parts
+
+    def complete_multipart(self, key: str, upload_id: str, parts: list[UploadedPart]) -> None:
+        self.s3.complete_multipart_upload(
+            Bucket=self.bucket,
+            Key=key,
+            UploadId=upload_id,
+            MultipartUpload={"Parts": [{"PartNumber": p.part_number, "ETag": p.etag} for p in parts]},
+        )
+
+    def abort_multipart(self, key: str, upload_id: str) -> None:
+        from botocore.exceptions import ClientError
+
+        try:
+            self.s3.abort_multipart_upload(Bucket=self.bucket, Key=key, UploadId=upload_id)
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") not in ("NoSuchUpload", "404"):
+                raise

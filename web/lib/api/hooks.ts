@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { ApiError, createApi, unwrap, type Api, type Job } from "@/lib/api/client";
+import { uploadFile, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useAuth } from "@/lib/auth";
 
 const ACTIVE = new Set(["queued", "running"]);
@@ -69,69 +70,34 @@ export function useDeleteJob() {
   });
 }
 
-/** Sube un fichero directamente al almacenamiento con progreso (fetch no informa del progreso de subida). */
-function putWithProgress(
-  url: string,
-  method: string,
-  headers: Record<string, string>,
-  file: File,
-  onProgress: (fraction: number) => void,
-  signal?: AbortSignal,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open(method, url);
-    Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
-    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
-    xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve()
-        : reject(new ApiError("upload_failed", "La subida del vídeo falló. Vuelve a intentarlo.", xhr.status));
-    xhr.onerror = () => reject(new ApiError("network_error", "Se perdió la conexión durante la subida.", 0));
-    xhr.onabort = () => reject(new ApiError("aborted", "Subida cancelada.", 0));
-    signal?.addEventListener("abort", () => xhr.abort());
-    xhr.send(file);
-  });
-}
-
 export type CreateProjectInput = {
   file: File;
   maxClips: number;
   language: string;
-  onUploadProgress: (fraction: number) => void;
+  onUploadProgress: (progress: UploadProgress) => void;
   onPhase: (phase: "uploading" | "checking" | "starting") => void;
   signal?: AbortSignal;
 };
 
-/** Flujo completo: pedir URL de subida → subir → validar vídeo → crear job. */
+/** Flujo completo: subir por partes (reanudable) → validar vídeo → crear job. */
 export function useCreateProject() {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateProjectInput): Promise<Job> => {
       input.onPhase("uploading");
-      const created = await unwrap(
-        api.POST("/uploads", {
-          body: { filename: input.file.name, size_bytes: input.file.size, content_type: input.file.type },
-        }),
-      );
-      await putWithProgress(
-        created.target.url,
-        created.target.method,
-        created.target.headers,
+      const uploadId = await uploadFile(
+        api,
         input.file,
-        input.onUploadProgress,
+        (p) => {
+          input.onUploadProgress(p);
+          if (p.sentBytes >= p.totalBytes) input.onPhase("checking");
+        },
         input.signal,
-      );
-      input.onPhase("checking");
-      await unwrap(
-        api.POST("/uploads/{upload_id}/complete", { params: { path: { upload_id: created.upload_id } } }),
       );
       input.onPhase("starting");
       return unwrap(
-        api.POST("/jobs", {
-          body: { upload_id: created.upload_id, max_clips: input.maxClips, language: input.language },
-        }),
+        api.POST("/jobs", { body: { upload_id: uploadId, max_clips: input.maxClips, language: input.language } }),
       );
     },
     onSuccess: () => {

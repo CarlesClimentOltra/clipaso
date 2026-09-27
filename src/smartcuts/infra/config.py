@@ -116,6 +116,9 @@ class WorkerSettings(BaseModel):
     # Un job 'running' sin latido en este tiempo se considera huérfano (worker caído).
     stale_after_seconds: int = 900
     max_attempts: int = 2
+    # Margen antes de borrar subidas sin usar, originales de proyectos fallidos y carpetas de trabajo.
+    temp_retention_hours: int = 24
+    cleanup_every_seconds: int = 3600
 
 
 class Settings(BaseSettings):

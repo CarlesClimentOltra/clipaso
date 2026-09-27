@@ -124,6 +124,21 @@ export default function ProjectPage() {
         </Alert>
       )}
 
+      {job.status === "expired" && (
+        <Alert>
+          <AlertTitle>Los clips de este proyecto han caducado</AlertTitle>
+          <AlertDescription className="flex flex-col items-start gap-3">
+            <span>
+              Tu plan conserva los clips durante un tiempo limitado y se han borrado automáticamente
+              {job.expires_at ? ` el ${dateFmt.format(new Date(job.expires_at))}` : ""}. Si los necesitas, vuelve a subir el vídeo.
+            </span>
+            <Link href="/new" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <RotateCcwIcon /> Crear un proyecto nuevo
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {job.status === "done" && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
           <h2 id="clips-title" className="text-lg font-semibold">

@@ -33,12 +33,14 @@ class JobStatus(StrEnum):
     RUNNING = "running"
     DONE = "done"
     FAILED = "failed"
+    EXPIRED = "expired"  # superó la retención del plan: clips borrados, queda el registro
 
 
 class UploadStatus(StrEnum):
     PENDING = "pending"
     READY = "ready"
     REJECTED = "rejected"
+    PURGED = "purged"  # original borrado tras procesarlo (solo se conservan los clips)
 
 
 class Plan(Base):
@@ -80,6 +82,8 @@ class Upload(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     storage_key: Mapped[str] = mapped_column(String(512))
+    multipart_id: Mapped[str | None] = mapped_column(String(1024))  # subida por partes en curso
+    part_size: Mapped[int | None] = mapped_column(BigInteger)
     filename: Mapped[str] = mapped_column(String(255))
     content_type: Mapped[str] = mapped_column(String(128))
     size_bytes: Mapped[int] = mapped_column(BigInteger)
