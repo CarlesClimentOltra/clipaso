@@ -1,7 +1,7 @@
 // Datos que aparecen en las páginas legales. Cambiar aquí si cambia el titular, el dominio o un proveedor.
 
 export const legal = {
-  updatedAt: "28 de septiembre de 2026",
+  updatedAt: "27 de septiembre de 2026",
   owner: {
     name: "Carles Climent Oltra",
     taxId: "20496132G", // NIF
@@ -53,6 +53,12 @@ export const legal = {
       role: "Envío de emails (confirmación de cuenta y avisos de tus vídeos)",
       location: "UE",
       company: "Sendinblue SAS (Francia)",
+    },
+    {
+      name: "Cloudflare Turnstile",
+      role: "Comprobación anti-bots en los formularios de acceso (sin cookies de seguimiento)",
+      location: "Red global de Cloudflare",
+      company: "Cloudflare, Inc. (EE. UU.)",
     },
     {
       name: "Sentry",

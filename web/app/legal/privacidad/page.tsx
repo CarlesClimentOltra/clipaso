@@ -31,7 +31,9 @@ export default function PrivacyPage() {
       <h2>2. Qué datos tratamos</h2>
       <ul>
         <li>
-          <strong>Datos de tu cuenta:</strong> email y contraseña. La contraseña se guarda cifrada y nunca la vemos.
+          <strong>Datos de tu cuenta:</strong> email y contraseña. La contraseña se guarda cifrada y nunca la vemos. Si
+          eliges «Continuar con Google», Google nos facilita tu email y tu nombre, y no creamos contraseña salvo que la
+          añadas tú; Google trata tus datos según su propia política de privacidad.
         </li>
         <li>
           <strong>Los vídeos que subes</strong> y lo que generamos a partir de ellos: el audio, su transcripción, los

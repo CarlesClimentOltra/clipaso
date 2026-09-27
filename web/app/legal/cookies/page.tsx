@@ -60,6 +60,11 @@ export default function CookiesPage() {
         </table>
       </div>
       <p>
+        En los formularios de acceso usamos Cloudflare Turnstile para comprobar que no eres un bot. Según Cloudflare,
+        Turnstile no usa cookies de seguimiento ni datos para publicidad; solo analiza señales técnicas del navegador
+        para esa comprobación.
+      </p>
+      <p>
         Puedes borrar estos datos en cualquier momento desde la configuración de tu navegador (borrando los datos del
         sitio). Si lo haces, se cerrará tu sesión.
       </p>

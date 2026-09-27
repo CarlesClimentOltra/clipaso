@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
+import { AccountSecurity } from "@/components/account-security";
 import { UsageMeter } from "@/components/usage-meter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api/client";
 import { useDeleteAccount, useMe } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
+import { config } from "@/lib/config";
 
 export default function AccountPage() {
   const { session, signOut } = useAuth();
@@ -71,6 +73,8 @@ export default function AccountPage() {
           )}
         </CardContent>
       </Card>
+
+      {config.authMode === "supabase" && <AccountSecurity />}
 
       <Card className="border-destructive/40">
         <CardHeader>
