@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -32,14 +31,15 @@ def video_codec_args(profile: OutputProfile) -> list[str]:
 
 
 def _fonts_dir_for(work: Path) -> str:
-    """Ruta a las fuentes relativa a `work` (evita escapar letras de unidad en el filtergraph)."""
-    try:
-        return Path(os.path.relpath(FONTS_DIR, work)).as_posix()
-    except ValueError:  # otra unidad en Windows: se copian junto al trabajo
-        local = work / "fonts"
-        if not local.exists():
-            shutil.copytree(FONTS_DIR, local)
-        return "fonts"
+    """Copia las fuentes junto al trabajo y devuelve su ruta relativa.
+
+    Una ruta relativa hacia assets/ evitaría la copia, pero en Windows puede superar el límite de
+    260 caracteres y libass cae entonces en Arial sin avisar; con «fonts» nunca pasa.
+    """
+    local = work / "fonts"
+    if not local.exists():
+        shutil.copytree(FONTS_DIR, local, ignore=shutil.ignore_patterns("*.txt"))
+    return "fonts"
 
 
 def _logo_size(path: Path, width: int) -> tuple[int, int]:

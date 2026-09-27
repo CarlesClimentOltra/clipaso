@@ -208,6 +208,297 @@
         }
       }
     },
+    "/options": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Clip Options",
+        "description": "Formatos, duraciones y estilos de subtítulos disponibles (los pinta la web).",
+        "operationId": "clip_options_options_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptionsOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/preferences": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Get Preferences",
+        "operationId": "get_preferences_me_preferences_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Put Preferences",
+        "description": "Estilo de subtítulos por defecto y marca personal para los próximos vídeos.",
+        "operationId": "put_preferences_me_preferences_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/logo": {
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Put Logo",
+        "description": "Sube el logo (PNG o JPG, máx. 1 MB) como cuerpo de la petición.",
+        "operationId": "put_logo_me_logo_put",
+        "requestBody": {
+          "content": {
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Remove Logo",
+        "operationId": "remove_logo_me_logo_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/uploads": {
       "post": {
         "tags": [
@@ -836,10 +1127,715 @@
           }
         }
       }
+    },
+    "/jobs/{job_id}/more": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "More Clips",
+        "description": "Busca más clips en el mismo vídeo (sin volver a subirlo ni gastar minutos).",
+        "operationId": "more_clips_jobs__job_id__more_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoreClipsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{job_id}/archive": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Archive Link",
+        "description": "Enlace temporal para descargar el ZIP (el navegador no puede enviar la cabecera de sesión en una descarga).",
+        "operationId": "archive_link_jobs__job_id__archive_post",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArchiveOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clips/{clip_id}": {
+      "patch": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Update Clip",
+        "description": "Edita el título y los textos para publicar (no hace falta volver a renderizar).",
+        "operationId": "update_clip_clips__clip_id__patch",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClipUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clips/{clip_id}/rating": {
+      "put": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Rate Clip",
+        "operationId": "rate_clip_clips__clip_id__rating_put",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clips/{clip_id}/captions": {
+      "get": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Clip Captions",
+        "description": "Subtítulos del clip (con las correcciones del usuario) para editarlos en CapCut, Premiere…",
+        "operationId": "clip_captions_clips__clip_id__captions_get",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "srt",
+                "vtt"
+              ],
+              "type": "string",
+              "default": "srt",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clips/{clip_id}/editor": {
+      "get": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Clip Editor",
+        "description": "Todo lo que necesita el editor: tramo del original con contexto, palabras y estilo.",
+        "operationId": "clip_editor_clips__clip_id__editor_get",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditorOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clips/{clip_id}/render": {
+      "post": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Render Clip",
+        "description": "Guarda las ediciones (recorte, palabras, estilo) y vuelve a generar el clip.",
+        "operationId": "render_clip_clips__clip_id__render_post",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ArchiveOut": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ArchiveOut"
+      },
+      "BrandingPrefs": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "handle": {
+            "type": "string",
+            "maxLength": 30,
+            "title": "Handle",
+            "default": ""
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "top-left",
+              "top-right",
+              "bottom-left",
+              "bottom-right"
+            ],
+            "title": "Position",
+            "default": "top-right"
+          },
+          "has_logo": {
+            "type": "boolean",
+            "title": "Has Logo",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "BrandingPrefs",
+        "description": "Marca personal del usuario (el logo se sube aparte; aquí solo si hay uno)."
+      },
+      "CaptionPreset": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "style": {
+            "$ref": "#/components/schemas/CaptionStyle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "style"
+        ],
+        "title": "CaptionPreset"
+      },
+      "CaptionStyle": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "font": {
+            "type": "string",
+            "enum": [
+              "Archivo Black",
+              "Anton",
+              "Bebas Neue",
+              "Poppins",
+              "Luckiest Guy"
+            ],
+            "title": "Font",
+            "default": "Archivo Black"
+          },
+          "text_color": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Text Color",
+            "default": "FFFFFF"
+          },
+          "highlight_color": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Highlight Color",
+            "default": "00E5FF"
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "s",
+              "m",
+              "l"
+            ],
+            "title": "Size",
+            "default": "m"
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "bottom",
+              "middle",
+              "top"
+            ],
+            "title": "Position",
+            "default": "bottom"
+          },
+          "uppercase": {
+            "type": "boolean",
+            "title": "Uppercase",
+            "default": true
+          },
+          "box": {
+            "type": "boolean",
+            "title": "Box",
+            "default": false
+          },
+          "box_color": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Box Color",
+            "default": "000000"
+          }
+        },
+        "type": "object",
+        "title": "CaptionStyle",
+        "description": "Estilo de subtítulos tal como lo elige el usuario."
+      },
       "ClipOut": {
         "properties": {
           "id": {
@@ -858,6 +1854,28 @@
             "type": "string",
             "title": "Reason"
           },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "hashtags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Hashtags"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
           "start": {
             "type": "number",
             "title": "Start"
@@ -873,6 +1891,30 @@
           "score": {
             "type": "number",
             "title": "Score"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "rendering",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "render_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Render Error"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
           },
           "video_url": {
             "type": "string",
@@ -900,15 +1942,66 @@
           "rank",
           "title",
           "reason",
+          "description",
+          "hashtags",
+          "rating",
           "start",
           "end",
           "duration",
           "score",
+          "status",
+          "render_error",
+          "version",
           "video_url",
           "download_url",
           "thumbnail_url"
         ],
         "title": "ClipOut"
+      },
+      "ClipUpdateIn": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "hashtags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 15
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hashtags"
+          }
+        },
+        "type": "object",
+        "title": "ClipUpdateIn"
       },
       "CompletedPart": {
         "properties": {
@@ -930,6 +2023,111 @@
           "etag"
         ],
         "title": "CompletedPart"
+      },
+      "EditorOut": {
+        "properties": {
+          "clip": {
+            "$ref": "#/components/schemas/ClipOut"
+          },
+          "project_title": {
+            "type": "string",
+            "title": "Project Title"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "vertical",
+              "square",
+              "horizontal"
+            ],
+            "title": "Format"
+          },
+          "source_duration": {
+            "type": "number",
+            "title": "Source Duration"
+          },
+          "window_start": {
+            "type": "number",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "number",
+            "title": "Window End"
+          },
+          "preview_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Url",
+            "description": "Vídeo ligero del original para previsualizar el corte."
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/EditorWordOut"
+            },
+            "type": "array",
+            "title": "Words"
+          },
+          "caption_style": {
+            "$ref": "#/components/schemas/CaptionStyle"
+          },
+          "can_render": {
+            "type": "boolean",
+            "title": "Can Render"
+          }
+        },
+        "type": "object",
+        "required": [
+          "clip",
+          "project_title",
+          "format",
+          "source_duration",
+          "window_start",
+          "window_end",
+          "preview_url",
+          "words",
+          "caption_style",
+          "can_render"
+        ],
+        "title": "EditorOut"
+      },
+      "EditorWordOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "start": {
+            "type": "number",
+            "title": "Start"
+          },
+          "end": {
+            "type": "number",
+            "title": "End"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "original": {
+            "type": "string",
+            "title": "Original"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "start",
+          "end",
+          "text",
+          "original"
+        ],
+        "title": "EditorWordOut"
       },
       "ErrorBody": {
         "properties": {
@@ -976,6 +2174,57 @@
       },
       "JobCreateIn": {
         "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "vertical",
+              "square",
+              "horizontal"
+            ],
+            "title": "Format",
+            "default": "vertical"
+          },
+          "duration": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "short",
+              "medium",
+              "long"
+            ],
+            "title": "Duration",
+            "default": "auto"
+          },
+          "topic": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Topic",
+            "description": "Tema opcional: «momentos donde hablo de dinero».",
+            "default": ""
+          },
+          "keep_source": {
+            "type": "boolean",
+            "title": "Keep Source",
+            "description": "Conservar el original para editar clips y pedir más.",
+            "default": true
+          },
+          "branding": {
+            "type": "boolean",
+            "title": "Branding",
+            "description": "Añadir la marca personal del usuario (si la tiene).",
+            "default": true
+          },
+          "caption_style": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaptionStyle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Si falta, el estilo por defecto del usuario."
+          },
           "upload_id": {
             "type": "string",
             "title": "Upload Id"
@@ -999,6 +2248,64 @@
           "upload_id"
         ],
         "title": "JobCreateIn"
+      },
+      "JobOptions": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "vertical",
+              "square",
+              "horizontal"
+            ],
+            "title": "Format",
+            "default": "vertical"
+          },
+          "duration": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "short",
+              "medium",
+              "long"
+            ],
+            "title": "Duration",
+            "default": "auto"
+          },
+          "topic": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Topic",
+            "description": "Tema opcional: «momentos donde hablo de dinero».",
+            "default": ""
+          },
+          "keep_source": {
+            "type": "boolean",
+            "title": "Keep Source",
+            "description": "Conservar el original para editar clips y pedir más.",
+            "default": true
+          },
+          "branding": {
+            "type": "boolean",
+            "title": "Branding",
+            "description": "Añadir la marca personal del usuario (si la tiene).",
+            "default": true
+          },
+          "caption_style": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaptionStyle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Si falta, el estilo por defecto del usuario."
+          }
+        },
+        "type": "object",
+        "title": "JobOptions",
+        "description": "Cómo quiere el usuario sus clips."
       },
       "JobOut": {
         "properties": {
@@ -1106,6 +2413,28 @@
             ],
             "title": "Error Message"
           },
+          "options": {
+            "$ref": "#/components/schemas/JobOptions"
+          },
+          "can_edit": {
+            "type": "boolean",
+            "title": "Can Edit",
+            "description": "Se conserva el original: se puede editar y pedir más clips."
+          },
+          "more_clips_available": {
+            "type": "integer",
+            "title": "More Clips Available"
+          },
+          "more_clips_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "clips": {
             "items": {
               "$ref": "#/components/schemas/ClipOut"
@@ -1129,6 +2458,10 @@
           "expires_at",
           "error_code",
           "error_message",
+          "options",
+          "can_edit",
+          "more_clips_available",
+          "more_clips_task",
           "clips"
         ],
         "title": "JobOut"
@@ -1260,6 +2593,88 @@
         ],
         "title": "MeOut"
       },
+      "MoreClipsIn": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "maximum": 15.0,
+            "minimum": 1.0,
+            "title": "Count",
+            "default": 3
+          },
+          "topic": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Topic",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "MoreClipsIn"
+      },
+      "OptionItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "hint": {
+            "type": "string",
+            "title": "Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "hint"
+        ],
+        "title": "OptionItem"
+      },
+      "OptionsOut": {
+        "properties": {
+          "formats": {
+            "items": {
+              "$ref": "#/components/schemas/OptionItem"
+            },
+            "type": "array",
+            "title": "Formats"
+          },
+          "durations": {
+            "items": {
+              "$ref": "#/components/schemas/OptionItem"
+            },
+            "type": "array",
+            "title": "Durations"
+          },
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/CaptionPreset"
+            },
+            "type": "array",
+            "title": "Presets"
+          },
+          "fonts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fonts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "formats",
+          "durations",
+          "presets",
+          "fonts"
+        ],
+        "title": "OptionsOut"
+      },
       "PartUrl": {
         "properties": {
           "part_number": {
@@ -1364,6 +2779,137 @@
           "retention_days"
         ],
         "title": "PlanOut"
+      },
+      "PreferencesIn": {
+        "properties": {
+          "caption_style": {
+            "$ref": "#/components/schemas/CaptionStyle"
+          },
+          "branding": {
+            "$ref": "#/components/schemas/BrandingPrefs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "caption_style",
+          "branding"
+        ],
+        "title": "PreferencesIn"
+      },
+      "PreferencesOut": {
+        "properties": {
+          "caption_style": {
+            "$ref": "#/components/schemas/CaptionStyle"
+          },
+          "branding": {
+            "$ref": "#/components/schemas/BrandingPrefs"
+          },
+          "logo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logo Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "caption_style",
+          "branding",
+          "logo_url"
+        ],
+        "title": "PreferencesOut"
+      },
+      "RatingIn": {
+        "properties": {
+          "value": {
+            "type": "integer",
+            "enum": [
+              -1,
+              0,
+              1
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "RatingIn"
+      },
+      "RenderIn": {
+        "properties": {
+          "start": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Start"
+          },
+          "end": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "End"
+          },
+          "word_edits": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 5000,
+            "title": "Word Edits"
+          },
+          "caption_style": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaptionStyle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "RenderIn"
+      },
+      "TaskOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "error_message"
+        ],
+        "title": "TaskOut"
       },
       "UploadCompleteIn": {
         "properties": {

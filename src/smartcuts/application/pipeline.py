@@ -234,7 +234,7 @@ class Pipeline:
                         ExportRequest(
                             source=source, clip=clip, rank=rank, profile=profile, reframe=plan,
                             transcript=transcript, output_path=out_dir / f"{name}.mp4",
-                            work_dir=ws.subdir(f"render/{profile.name}/{name}"), branding=opts.branding,
+                            work_dir=ws.subdir(f"render/{profile.name}/{rank:02d}"), branding=opts.branding,
                         )
                     )
                 except SmartCutsError as exc:

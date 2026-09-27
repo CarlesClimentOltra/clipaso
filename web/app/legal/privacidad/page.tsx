@@ -36,12 +36,18 @@ export default function PrivacyPage() {
           añadas tú; Google trata tus datos según su propia política de privacidad.
         </li>
         <li>
-          <strong>Los vídeos que subes</strong> y lo que generamos a partir de ellos: el audio, su transcripción, los
-          clips, las miniaturas, los títulos y las descripciones de cada clip. Si en tus vídeos aparecen o hablan otras
-          personas, también tratamos su imagen y su voz por cuenta tuya (ver apartado 8).
+          <strong>Los vídeos que subes</strong> y lo que generamos a partir de ellos: el audio, su transcripción, una
+          versión ligera del vídeo para el editor, los clips, las miniaturas, los títulos, descripciones y hashtags, y
+          las correcciones que hagas. Si en tus vídeos aparecen o hablan otras personas, también tratamos su imagen y
+          su voz por cuenta tuya (ver apartado 8).
         </li>
         <li>
-          <strong>Datos de uso:</strong> minutos consumidos, plan contratado, fechas de los proyectos y su estado.
+          <strong>Tu marca personal y preferencias</strong>, si las configuras: el logo que subas, tu @usuario y el
+          estilo de subtítulos que elijas.
+        </li>
+        <li>
+          <strong>Datos de uso:</strong> minutos consumidos, plan contratado, fechas de los proyectos y su estado, y
+          las valoraciones (👍/👎) que des a tus clips, que usamos para mejorar la selección.
         </li>
         <li>
           <strong>Datos técnicos:</strong> dirección IP, tipo de navegador y registros de errores, necesarios para que
@@ -142,11 +148,17 @@ export default function PrivacyPage() {
       <h2>7. Cuánto tiempo conservamos los datos</h2>
       <ul>
         <li>
-          <strong>Vídeo original:</strong> se borra en cuanto termina el procesamiento. Si una subida no llega a
-          procesarse, se borra en un máximo de 24 horas.
+          <strong>Vídeo original:</strong> tú decides al subirlo. Si eliges guardarlo (para editar los clips y pedir
+          más), se conserva mientras el proyecto esté disponible y se borra al caducar o si borras el proyecto. Si no,
+          se borra en cuanto terminan tus clips. Una subida que no llega a procesarse se borra en un máximo de 24 horas.
         </li>
         <li>
-          <strong>Audio y transcripción:</strong> son archivos temporales que se eliminan al terminar cada vídeo.
+          <strong>Transcripción y vista previa del editor:</strong> se guardan junto al proyecto (para corregir y
+          descargar los subtítulos y pedir más clips) y se borran con él. El audio extraído es temporal y se elimina al
+          terminar cada vídeo.
+        </li>
+        <li>
+          <strong>Logo y preferencias:</strong> hasta que los cambies o elimines tu cuenta.
         </li>
         <li>
           <strong>Clips y miniaturas:</strong> durante el tiempo que indica tu plan (7 días en el plan Gratis, 30 en

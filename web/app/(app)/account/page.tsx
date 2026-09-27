@@ -7,6 +7,7 @@ import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AccountSecurity } from "@/components/account-security";
+import { BrandSettings } from "@/components/brand-settings";
 import { UsageMeter } from "@/components/usage-meter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex max-w-3xl flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Mi cuenta</h1>
 
       <Card>
@@ -73,6 +74,8 @@ export default function AccountPage() {
           )}
         </CardContent>
       </Card>
+
+      <BrandSettings />
 
       {config.authMode === "supabase" && <AccountSecurity />}
 

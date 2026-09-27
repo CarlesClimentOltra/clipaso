@@ -1,7 +1,7 @@
 // Datos que aparecen en las páginas legales. Cambiar aquí si cambia el titular, el dominio o un proveedor.
 
 export const legal = {
-  updatedAt: "27 de septiembre de 2026",
+  updatedAt: "28 de septiembre de 2026",
   owner: {
     name: "Carles Climent Oltra",
     taxId: "20496132G", // NIF

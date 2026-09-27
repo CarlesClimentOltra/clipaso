@@ -59,3 +59,12 @@ export async function unwrap<T>(
   }
   return data as T;
 }
+
+export type JobOptions = Schemas["JobOptions"];
+export type CaptionStyle = Schemas["CaptionStyle"];
+export type CaptionPreset = Schemas["CaptionPreset"];
+export type BrandingPrefs = Schemas["BrandingPrefs"];
+export type Preferences = Schemas["PreferencesOut"];
+export type ClipOptions = Schemas["OptionsOut"];
+export type Editor = Schemas["EditorOut"];
+export type EditorWord = Schemas["EditorWordOut"];

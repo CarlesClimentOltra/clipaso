@@ -6,12 +6,13 @@ import { FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
+import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { ApiError, type Me } from "@/lib/api/client";
-import { useApi, useCreateProject } from "@/lib/api/hooks";
+import { useApi, useClipOptions, useCreateProject, usePreferences } from "@/lib/api/hooks";
 import { discardUpload, type UploadProgress } from "@/lib/api/multipart-upload";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,17 @@ export function UploadForm({ me }: { me: Me }) {
   const [maxClips, setMaxClips] = useState(Math.min(3, me.plan.max_clips_per_job));
   const [language, setLanguage] = useState("es");
   const [phase, setPhase] = useState<Phase>("idle");
+  const [optionsDraft, setOptionsDraft] = useState<Omit<ProjectOptionsValue, "caption_style"> & {
+    caption_style: ProjectOptionsValue["caption_style"] | null;
+  }>({ format: "vertical", duration: "auto", topic: "", keep_source: true, branding: true, caption_style: null });
+  const { data: prefs } = usePreferences();
+  const { data: catalog } = useClipOptions();
+  // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo).
+  const defaultStyle = prefs?.caption_style ?? catalog?.presets[0]?.style ?? null;
+  const options: ProjectOptionsValue | null =
+    optionsDraft.caption_style ?? defaultStyle
+      ? { ...optionsDraft, caption_style: (optionsDraft.caption_style ?? defaultStyle)! }
+      : null;
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const cancelledRef = useRef(false);
   const create = useCreateProject();
@@ -103,6 +115,7 @@ export function UploadForm({ me }: { me: Me }) {
         file,
         maxClips,
         language,
+        options: options ?? { ...optionsDraft, caption_style: null },
         onUploadProgress: setProgress,
         onPhase: setPhase,
         signal: abortRef.current.signal,
@@ -239,6 +252,8 @@ export function UploadForm({ me }: { me: Me }) {
         </div>
       </div>
 
+      {options && <ProjectOptions me={me} value={options} onChange={setOptionsDraft} disabled={busy} />}
+
       {file && !busy && file.size >= LARGE_FILE && (
         <Alert>
           <AlertTitle>Archivo grande ({formatBytes(file.size)})</AlertTitle>
@@ -288,7 +303,10 @@ export function UploadForm({ me }: { me: Me }) {
         <Link href="/legal/terminos" className="underline underline-offset-4" target="_blank">
           Términos
         </Link>
-        ). El vídeo original se borra al terminar de procesarlo.
+        ).{" "}
+        {optionsDraft.keep_source
+          ? `El vídeo original se guarda ${me.plan.retention_days} días para que puedas editar los clips y después se borra.`
+          : "El vídeo original se borra al terminar de procesarlo."}
       </p>
     </div>
   );

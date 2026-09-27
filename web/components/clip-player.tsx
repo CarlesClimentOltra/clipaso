@@ -6,7 +6,21 @@ import { useRef, useState } from "react";
 // Reproductor de clip: todo el vídeo es clicable. En escritorio, un <video controls> sin cargar
 // solo reacciona al pequeño botón de la barra; aquí un clic en cualquier parte lo reproduce.
 // Los controles nativos (pausa, volumen, pantalla completa) aparecen tras el primer clic.
-export function ClipPlayer({ src, poster, title, rank }: { src: string; poster?: string; title: string; rank: number }) {
+export const CLIP_ASPECT = { vertical: "9 / 16", square: "1 / 1", horizontal: "16 / 9" } as const;
+
+export function ClipPlayer({
+  src,
+  poster,
+  title,
+  rank,
+  aspect = CLIP_ASPECT.vertical,
+}: {
+  src: string;
+  poster?: string;
+  title: string;
+  rank: number;
+  aspect?: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [started, setStarted] = useState(false);
 
@@ -20,7 +34,7 @@ export function ClipPlayer({ src, poster, title, rank }: { src: string; poster?:
   }
 
   return (
-    <div className="relative aspect-[9/16] bg-black">
+    <div className="relative bg-black" style={{ aspectRatio: aspect }}>
       <video
         ref={videoRef}
         src={src}

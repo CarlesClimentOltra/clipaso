@@ -11,7 +11,7 @@ const STEPS = [
   { key: "prepare", label: "Preparando el vídeo", stages: ["queued", "starting", "ingest", "audio"] },
   { key: "transcribe", label: "Transcribiendo el audio", stages: ["transcribe"] },
   { key: "analyze", label: "Buscando los mejores momentos", stages: ["signals", "select"] },
-  { key: "render", label: "Generando tus clips", stages: ["export"] },
+  { key: "render", label: "Generando tus clips", stages: ["export", "preview"] },
 ] as const;
 
 function stepIndex(stage: string | null | undefined): number {

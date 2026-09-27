@@ -62,6 +62,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clip Options
+         * @description Formatos, duraciones y estilos de subtítulos disponibles (los pinta la web).
+         */
+        get: operations["clip_options_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Preferences */
+        get: operations["get_preferences_me_preferences_get"];
+        /**
+         * Put Preferences
+         * @description Estilo de subtítulos por defecto y marca personal para los próximos vídeos.
+         */
+        put: operations["put_preferences_me_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Logo
+         * @description Sube el logo (PNG o JPG, máx. 1 MB) como cuerpo de la petición.
+         */
+        put: operations["put_logo_me_logo_put"];
+        post?: never;
+        /** Remove Logo */
+        delete: operations["remove_logo_me_logo_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads": {
         parameters: {
             query?: never;
@@ -167,10 +229,241 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs/{job_id}/more": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * More Clips
+         * @description Busca más clips en el mismo vídeo (sin volver a subirlo ni gastar minutos).
+         */
+        post: operations["more_clips_jobs__job_id__more_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{job_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive Link
+         * @description Enlace temporal para descargar el ZIP (el navegador no puede enviar la cabecera de sesión en una descarga).
+         */
+        post: operations["archive_link_jobs__job_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clips/{clip_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Clip
+         * @description Edita el título y los textos para publicar (no hace falta volver a renderizar).
+         */
+        patch: operations["update_clip_clips__clip_id__patch"];
+        trace?: never;
+    };
+    "/clips/{clip_id}/rating": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rate Clip */
+        put: operations["rate_clip_clips__clip_id__rating_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clips/{clip_id}/captions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clip Captions
+         * @description Subtítulos del clip (con las correcciones del usuario) para editarlos en CapCut, Premiere…
+         */
+        get: operations["clip_captions_clips__clip_id__captions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clips/{clip_id}/editor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clip Editor
+         * @description Todo lo que necesita el editor: tramo del original con contexto, palabras y estilo.
+         */
+        get: operations["clip_editor_clips__clip_id__editor_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clips/{clip_id}/render": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Render Clip
+         * @description Guarda las ediciones (recorte, palabras, estilo) y vuelve a generar el clip.
+         */
+        post: operations["render_clip_clips__clip_id__render_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ArchiveOut */
+        ArchiveOut: {
+            /** Url */
+            url: string;
+        };
+        /**
+         * BrandingPrefs
+         * @description Marca personal del usuario (el logo se sube aparte; aquí solo si hay uno).
+         */
+        BrandingPrefs: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Handle
+             * @default
+             */
+            handle: string;
+            /**
+             * Position
+             * @default top-right
+             * @enum {string}
+             */
+            position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+            /**
+             * Has Logo
+             * @default false
+             */
+            has_logo: boolean;
+        };
+        /** CaptionPreset */
+        CaptionPreset: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            style: components["schemas"]["CaptionStyle"];
+        };
+        /**
+         * CaptionStyle
+         * @description Estilo de subtítulos tal como lo elige el usuario.
+         */
+        CaptionStyle: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Font
+             * @default Archivo Black
+             * @enum {string}
+             */
+            font: "Archivo Black" | "Anton" | "Bebas Neue" | "Poppins" | "Luckiest Guy";
+            /**
+             * Text Color
+             * @default FFFFFF
+             */
+            text_color: string;
+            /**
+             * Highlight Color
+             * @default 00E5FF
+             */
+            highlight_color: string;
+            /**
+             * Size
+             * @default m
+             * @enum {string}
+             */
+            size: "s" | "m" | "l";
+            /**
+             * Position
+             * @default bottom
+             * @enum {string}
+             */
+            position: "bottom" | "middle" | "top";
+            /**
+             * Uppercase
+             * @default true
+             */
+            uppercase: boolean;
+            /**
+             * Box
+             * @default false
+             */
+            box: boolean;
+            /**
+             * Box Color
+             * @default 000000
+             */
+            box_color: string;
+        };
         /** ClipOut */
         ClipOut: {
             /** Id */
@@ -181,6 +474,12 @@ export interface components {
             title: string;
             /** Reason */
             reason: string;
+            /** Description */
+            description: string;
+            /** Hashtags */
+            hashtags: string[];
+            /** Rating */
+            rating: number | null;
             /** Start */
             start: number;
             /** End */
@@ -189,6 +488,15 @@ export interface components {
             duration: number;
             /** Score */
             score: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "rendering" | "failed";
+            /** Render Error */
+            render_error: string | null;
+            /** Version */
+            version: number;
             /** Video Url */
             video_url: string;
             /** Download Url */
@@ -196,12 +504,61 @@ export interface components {
             /** Thumbnail Url */
             thumbnail_url: string | null;
         };
+        /** ClipUpdateIn */
+        ClipUpdateIn: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Hashtags */
+            hashtags?: string[] | null;
+        };
         /** CompletedPart */
         CompletedPart: {
             /** Part Number */
             part_number: number;
             /** Etag */
             etag: string;
+        };
+        /** EditorOut */
+        EditorOut: {
+            clip: components["schemas"]["ClipOut"];
+            /** Project Title */
+            project_title: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "vertical" | "square" | "horizontal";
+            /** Source Duration */
+            source_duration: number;
+            /** Window Start */
+            window_start: number;
+            /** Window End */
+            window_end: number;
+            /**
+             * Preview Url
+             * @description Vídeo ligero del original para previsualizar el corte.
+             */
+            preview_url: string | null;
+            /** Words */
+            words: components["schemas"]["EditorWordOut"][];
+            caption_style: components["schemas"]["CaptionStyle"];
+            /** Can Render */
+            can_render: boolean;
+        };
+        /** EditorWordOut */
+        EditorWordOut: {
+            /** Key */
+            key: string;
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+            /** Text */
+            text: string;
+            /** Original */
+            original: string;
         };
         /** ErrorBody */
         ErrorBody: {
@@ -221,6 +578,38 @@ export interface components {
         };
         /** JobCreateIn */
         JobCreateIn: {
+            /**
+             * Format
+             * @default vertical
+             * @enum {string}
+             */
+            format: "vertical" | "square" | "horizontal";
+            /**
+             * Duration
+             * @default auto
+             * @enum {string}
+             */
+            duration: "auto" | "short" | "medium" | "long";
+            /**
+             * Topic
+             * @description Tema opcional: «momentos donde hablo de dinero».
+             * @default
+             */
+            topic: string;
+            /**
+             * Keep Source
+             * @description Conservar el original para editar clips y pedir más.
+             * @default true
+             */
+            keep_source: boolean;
+            /**
+             * Branding
+             * @description Añadir la marca personal del usuario (si la tiene).
+             * @default true
+             */
+            branding: boolean;
+            /** @description Si falta, el estilo por defecto del usuario. */
+            caption_style?: components["schemas"]["CaptionStyle"] | null;
             /** Upload Id */
             upload_id: string;
             /**
@@ -233,6 +622,44 @@ export interface components {
              * @default es
              */
             language: string;
+        };
+        /**
+         * JobOptions
+         * @description Cómo quiere el usuario sus clips.
+         */
+        JobOptions: {
+            /**
+             * Format
+             * @default vertical
+             * @enum {string}
+             */
+            format: "vertical" | "square" | "horizontal";
+            /**
+             * Duration
+             * @default auto
+             * @enum {string}
+             */
+            duration: "auto" | "short" | "medium" | "long";
+            /**
+             * Topic
+             * @description Tema opcional: «momentos donde hablo de dinero».
+             * @default
+             */
+            topic: string;
+            /**
+             * Keep Source
+             * @description Conservar el original para editar clips y pedir más.
+             * @default true
+             */
+            keep_source: boolean;
+            /**
+             * Branding
+             * @description Añadir la marca personal del usuario (si la tiene).
+             * @default true
+             */
+            branding: boolean;
+            /** @description Si falta, el estilo por defecto del usuario. */
+            caption_style?: components["schemas"]["CaptionStyle"] | null;
         };
         /** JobOut */
         JobOut: {
@@ -268,6 +695,15 @@ export interface components {
             error_code: string | null;
             /** Error Message */
             error_message: string | null;
+            options: components["schemas"]["JobOptions"];
+            /**
+             * Can Edit
+             * @description Se conserva el original: se puede editar y pedir más clips.
+             */
+            can_edit: boolean;
+            /** More Clips Available */
+            more_clips_available: number;
+            more_clips_task: components["schemas"]["TaskOut"] | null;
             /** Clips */
             clips: components["schemas"]["ClipOut"][];
         };
@@ -311,6 +747,39 @@ export interface components {
             plan: components["schemas"]["PlanOut"];
             usage: components["schemas"]["UsageOut"];
         };
+        /** MoreClipsIn */
+        MoreClipsIn: {
+            /**
+             * Count
+             * @default 3
+             */
+            count: number;
+            /**
+             * Topic
+             * @default
+             */
+            topic: string;
+        };
+        /** OptionItem */
+        OptionItem: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Hint */
+            hint: string;
+        };
+        /** OptionsOut */
+        OptionsOut: {
+            /** Formats */
+            formats: components["schemas"]["OptionItem"][];
+            /** Durations */
+            durations: components["schemas"]["OptionItem"][];
+            /** Presets */
+            presets: components["schemas"]["CaptionPreset"][];
+            /** Fonts */
+            fonts: string[];
+        };
         /** PartUrl */
         PartUrl: {
             /** Part Number */
@@ -348,6 +817,48 @@ export interface components {
             max_upload_mb: number;
             /** Retention Days */
             retention_days: number;
+        };
+        /** PreferencesIn */
+        PreferencesIn: {
+            caption_style: components["schemas"]["CaptionStyle"];
+            branding: components["schemas"]["BrandingPrefs"];
+        };
+        /** PreferencesOut */
+        PreferencesOut: {
+            caption_style: components["schemas"]["CaptionStyle"];
+            branding: components["schemas"]["BrandingPrefs"];
+            /** Logo Url */
+            logo_url: string | null;
+        };
+        /** RatingIn */
+        RatingIn: {
+            /**
+             * Value
+             * @enum {integer}
+             */
+            value: -1 | 0 | 1;
+        };
+        /** RenderIn */
+        RenderIn: {
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+            /** Word Edits */
+            word_edits?: {
+                [key: string]: string;
+            };
+            caption_style?: components["schemas"]["CaptionStyle"] | null;
+        };
+        /** TaskOut */
+        TaskOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed";
+            /** Error Message */
+            error_message: string | null;
         };
         /** UploadCompleteIn */
         UploadCompleteIn: {
@@ -595,6 +1106,259 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    clip_options_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptionsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_preferences_me_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    put_preferences_me_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreferencesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_logo_me_logo_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "image/png": string;
+                "image/jpeg": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    remove_logo_me_logo_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesOut"];
+                };
             };
             /** @description Bad Request */
             400: {
@@ -1105,6 +1869,430 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    more_clips_jobs__job_id__more_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoreClipsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_link_jobs__job_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchiveOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_clip_clips__clip_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClipUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rate_clip_clips__clip_id__rating_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clip_captions_clips__clip_id__captions_get: {
+        parameters: {
+            query?: {
+                format?: "srt" | "vtt";
+            };
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clip_editor_clips__clip_id__editor_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditorOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_clip_clips__clip_id__render_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipOut"];
+                };
             };
             /** @description Bad Request */
             400: {
