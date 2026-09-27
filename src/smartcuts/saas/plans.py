@@ -1,0 +1,42 @@
+"""Catálogo de planes.
+
+Los precios son provisionales: todavía no se cobra. Cuando se integre Stripe
+se rellenará `stripe_price_id` y el webhook actualizará `users.plan_code`.
+"""
+
+from __future__ import annotations
+
+from sqlalchemy.orm import Session
+
+from smartcuts.saas.models import Plan
+
+PLANS: list[dict] = [
+    {
+        "code": "free", "name": "Gratis", "price_eur_cents": 0, "sort_order": 0,
+        "monthly_minutes": 30, "max_video_minutes": 20, "max_clips_per_job": 3,
+        "max_concurrent_jobs": 1, "max_upload_mb": 1024, "retention_days": 7,
+    },
+    {
+        "code": "creator", "name": "Creator", "price_eur_cents": 1900, "sort_order": 1,
+        "monthly_minutes": 300, "max_video_minutes": 90, "max_clips_per_job": 8,
+        "max_concurrent_jobs": 2, "max_upload_mb": 4096, "retention_days": 30,
+    },
+    {
+        "code": "pro", "name": "Pro", "price_eur_cents": 4900, "sort_order": 2,
+        "monthly_minutes": 1200, "max_video_minutes": 180, "max_clips_per_job": 15,
+        "max_concurrent_jobs": 3, "max_upload_mb": 8192, "retention_days": 60,
+    },
+]
+
+DEFAULT_PLAN = "free"
+
+
+def sync_plans(session: Session) -> None:
+    """Crea o actualiza los planes del catálogo (idempotente; se ejecuta al arrancar)."""
+    for data in PLANS:
+        plan = session.get(Plan, data["code"])
+        if plan is None:
+            session.add(Plan(**data))
+        else:
+            for key, value in data.items():
+                setattr(plan, key, value)

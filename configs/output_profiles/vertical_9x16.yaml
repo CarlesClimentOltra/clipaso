@@ -1,0 +1,18 @@
+# Reels / TikTok / Shorts
+width: 1080
+height: 1920
+fps: 30
+min_duration: 20
+max_duration: 60
+target_duration: 40
+reframe: auto          # auto | face | blur_pad | center
+subtitles:
+  enabled: true
+  font: Arial Black
+  font_size_ratio: 0.045
+  highlight_color: "00E5FF"   # RRGGBB de la palabra activa
+  max_words: 3
+  uppercase: true
+encoding:
+  codec: auto          # auto (NVENC si hay GPU) | h264_nvenc | libx264
+  crf: 20

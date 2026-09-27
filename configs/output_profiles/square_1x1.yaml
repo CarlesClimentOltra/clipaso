@@ -1,0 +1,14 @@
+# Feed de Instagram / LinkedIn
+width: 1080
+height: 1080
+fps: 30
+min_duration: 15
+max_duration: 60
+target_duration: 35
+reframe: auto
+subtitles:
+  enabled: true
+  font: Arial Black
+  font_size_ratio: 0.05
+  margin_v_ratio: 0.12
+  max_words: 3
