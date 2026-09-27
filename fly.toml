@@ -18,8 +18,8 @@ primary_region = "fra"
   SMARTCUTS_STORAGE__BACKEND = "r2"
   SMARTCUTS_STORAGE__R2_JURISDICTION = "eu"
   SMARTCUTS_WORKER__DISPATCHER = "modal"
-  # Orígenes de la web autorizados (CORS). Se añadirá el dominio de Vercel al publicar la web.
-  SMARTCUTS_API__WEB_ORIGINS = '["http://localhost:3000"]'
+  # Orígenes de la web autorizados (CORS): la web en Vercel y la local para pruebas.
+  SMARTCUTS_API__WEB_ORIGINS = '["https://smartcuts-kohl.vercel.app", "http://localhost:3000"]'
   # Fly hace de proxy: así los logs registran la IP real del cliente.
   FORWARDED_ALLOW_IPS = "*"
 
