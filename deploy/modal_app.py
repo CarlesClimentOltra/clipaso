@@ -150,6 +150,26 @@ def smoke() -> dict:
     report["font"] = subprocess.run(["fc-match", "Arial Black"], capture_output=True, text=True).stdout.strip()
     report["yunet"] = Path("/app/data/models/face_detection_yunet_2023mar.onnx").exists()
 
+    # Las fuentes de los subtítulos (assets/fonts) deben resolverse sin caer en otra por defecto.
+    from smartcuts.adapters.exporters.ffmpeg_exporter import _fonts_dir_for
+    from smartcuts.adapters.exporters.subtitles import build_ass
+    from smartcuts.domain.models import SubtitleStyle, Word
+
+    fonts_ok = {}
+    for font in ("Archivo Black", "Anton", "Bebas Neue", "Poppins ExtraBold", "Luckiest Guy"):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            (work / "subs.ass").write_text(build_ass([Word(text=" hola", start=0, end=1)], SubtitleStyle(font=font),
+                                                     360, 640), encoding="utf-8")
+            log = subprocess.run(
+                ["ffmpeg", "-v", "verbose", "-f", "lavfi", "-i", "color=s=360x640:d=1",
+                 "-vf", f"subtitles=subs.ass:fontsdir='{_fonts_dir_for(work)}'", "-frames:v", "1", "-f", "null", "-"],
+                cwd=work, capture_output=True, text=True,
+            ).stderr
+            chosen = next((ln.split("->")[-1].strip() for ln in log.splitlines() if "fontselect" in ln), "?")
+            fonts_ok[font] = chosen
+    report["subtitle_fonts"] = fonts_ok
+
     from smartcuts.adapters.transcription.faster_whisper import FasterWhisperTranscriber
 
     with tempfile.TemporaryDirectory() as tmp:
