@@ -125,6 +125,15 @@ class WorkerSettings(BaseModel):
     cleanup_every_seconds: int = 3600
 
 
+class NotificationSettings(BaseModel):
+    # none: no se envían emails (desarrollo). brevo: API transaccional de Brevo (UE).
+    provider: Literal["none", "brevo"] = "none"
+    brevo_api_key: str = ""
+    sender_email: str = ""  # debe estar verificado como remitente en Brevo
+    sender_name: str = "SmartCuts"
+    web_url: str = "http://localhost:3000"  # para los enlaces de los emails
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="SMARTCUTS_",
@@ -157,6 +166,7 @@ class Settings(BaseSettings):
     storage: StorageSettings = Field(default_factory=StorageSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
     worker: WorkerSettings = Field(default_factory=WorkerSettings)
+    notifications: NotificationSettings = Field(default_factory=NotificationSettings)
 
     @model_validator(mode="after")
     def _production_safety(self) -> Settings:

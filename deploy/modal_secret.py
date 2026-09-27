@@ -20,6 +20,7 @@ from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
 NAME = "smartcuts-worker"
+WEB_URL = "https://smartcuts-kohl.vercel.app"  # enlaces de los emails al usuario
 COPY = [
     "SMARTCUTS_DATABASE__URL",
     "SMARTCUTS_AUTH__SUPABASE_URL",
@@ -33,6 +34,8 @@ COPY = [
     "SMARTCUTS_LLM__EFFORT",
     "SMARTCUTS_BUDGET__MAX_USD_PER_JOB",
     "ANTHROPIC_API_KEY",
+    "SMARTCUTS_NOTIFICATIONS__BREVO_API_KEY",
+    "SMARTCUTS_NOTIFICATIONS__SENDER_EMAIL",
 ]
 REQUIRED = ["SMARTCUTS_DATABASE__URL", "SMARTCUTS_STORAGE__R2_ACCESS_KEY_ID", "ANTHROPIC_API_KEY"]
 
@@ -51,7 +54,12 @@ def main() -> int:
         "SMARTCUTS_LLM__PROVIDER": "anthropic",
         # El worker no firma URLs propias (usa R2), pero la configuración de prod exige una clave.
         "SMARTCUTS_API__SECRET_KEY": secrets.token_urlsafe(48),
+        "SMARTCUTS_NOTIFICATIONS__WEB_URL": WEB_URL,
     }
+    if env.get("SMARTCUTS_NOTIFICATIONS__BREVO_API_KEY") and env.get("SMARTCUTS_NOTIFICATIONS__SENDER_EMAIL"):
+        values["SMARTCUTS_NOTIFICATIONS__PROVIDER"] = "brevo"
+    else:
+        print("Aviso: sin SMARTCUTS_NOTIFICATIONS__BREVO_API_KEY/SENDER_EMAIL en .env no se enviarán emails.")
     cli = [sys.executable, str(ROOT / "deploy" / "modal_cli.py")]
     fd, path = tempfile.mkstemp(suffix=".json")
     try:

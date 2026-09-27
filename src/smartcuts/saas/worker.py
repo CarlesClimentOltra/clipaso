@@ -28,7 +28,8 @@ from smartcuts.infra.config import Settings
 from smartcuts.infra.logging import bind_job, clear_job, get_logger
 from smartcuts.saas.db import session_scope, utcnow
 from smartcuts.saas.maintenance import run_cleanup
-from smartcuts.saas.models import Clip, Job, JobStatus, Upload
+from smartcuts.saas.models import Clip, Job, JobStatus, Upload, User
+from smartcuts.saas.notifications import Notifier, build_notifier, clips_ready, deliver, processing_failed
 from smartcuts.saas.services import clips_prefix, purge_upload, refund_job
 
 log = get_logger(__name__)
@@ -47,10 +48,13 @@ def classify_error(exc: BaseException, stage: str | None) -> str:
 
 
 class JobRunner:
-    def __init__(self, settings: Settings, sessions: sessionmaker[Session], storage: Storage) -> None:
+    def __init__(
+        self, settings: Settings, sessions: sessionmaker[Session], storage: Storage, notifier: Notifier | None = None
+    ) -> None:
         self.settings = settings
         self.sessions = sessions
         self.storage = storage
+        self.notifier = notifier or build_notifier(settings.notifications)
         self._transcriber: Transcriber | None = None
 
     @property
@@ -168,7 +172,11 @@ class JobRunner:
                 # El original ya no hace falta: solo se conservan los clips (almacenamiento y RGPD).
                 if job.upload_id and (upload := s.get(Upload, job.upload_id)):
                     purge_upload(self.storage, upload)
+                user = s.get(User, user_id)
+                email = clips_ready(user.email, title, len(clips), user.plan.retention_days,
+                                    f"{self.settings.notifications.web_url}/projects/{job_id}")
             log.info("job.done", clips=len(clips), cost_usd=round(result.cost_usd, 4))
+            deliver(self.notifier, email)
 
         except Exception as exc:
             code = classify_error(exc, state["stage"])
@@ -197,6 +205,9 @@ class JobRunner:
         job.finished_at = now
         refund_job(s, job, now, note=f"fallo: {code}")
         self.storage.delete_prefix(clips_prefix(job.user_id, job.id))
+        if user := s.get(User, job.user_id):
+            deliver(self.notifier, processing_failed(user.email, job.title, code,
+                                                     f"{self.settings.notifications.web_url}/new"))
 
     def _write_progress(self, job_id: str, stage: str, overall: float, state: dict, force: bool = False) -> None:
         now = time.monotonic()

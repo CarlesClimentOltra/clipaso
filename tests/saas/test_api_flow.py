@@ -401,3 +401,50 @@ def test_requeued_stale_job_is_redispatched_immediately(client, sample_video):
     runner.recover_stale()
     assert redispatch_queued(settings, sessions, remote) == 1
     assert remote.sent == [job_id, job_id]
+
+
+class RecordingNotifier:
+    def __init__(self, fail: bool = False):
+        self.sent = []
+        self.fail = fail
+
+    def send(self, email):
+        if self.fail:
+            raise ConnectionError("brevo caído")
+        self.sent.append(email)
+
+
+def _runner_with(client, monkeypatch, pipeline, notifier) -> JobRunner:
+    monkeypatch.setattr(worker_mod, "build_pipeline", lambda *a, **k: pipeline)
+    app = client.app
+    return JobRunner(app.state.settings, app.state.sessions, app.state.storage, notifier=notifier)
+
+
+def test_email_when_clips_are_ready(client, sample_video, monkeypatch):
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    notifier = RecordingNotifier()
+    assert _runner_with(client, monkeypatch, FakePipeline(), notifier).process(job_id)
+
+    [email] = notifier.sent
+    assert email.to == "ana@example.com" and "listos" in email.subject
+    assert f"/projects/{job_id}" in email.html and "1 clip" in email.text and "7 días" in email.text
+
+
+def test_email_when_processing_fails(client, sample_video, monkeypatch):
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    notifier = RecordingNotifier()
+    runner = _runner_with(client, monkeypatch, FakePipeline(fail=SelectionError("La transcripción está vacía")),
+                          notifier)
+    runner.process(job_id)
+
+    [email] = notifier.sent
+    assert "No hemos podido" in email.subject and "voz" in email.text and "devuelto" in email.text
+
+
+def test_email_outage_does_not_break_the_job(client, sample_video, monkeypatch):
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    _runner_with(client, monkeypatch, FakePipeline(), RecordingNotifier(fail=True)).process(job_id)
+    assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["status"] == "done"
