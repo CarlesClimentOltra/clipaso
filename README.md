@@ -86,7 +86,7 @@ Sin tráfico la máquina se suspende y despierta en menos de un segundo. Las mig
 solas en cada despliegue (`release_command`), antes de publicar la nueva versión.
 
 ```powershell
-.venv\Scripts\python deployly_secrets.py                     # copia BD, R2, Sentry y token de Modal a Fly
+.venv\Scripts\python deploy\fly_secrets.py                     # copia BD, R2, Sentry y token de Modal a Fly
 flyctl deploy --ha=false --depot=false                          # publica (repetir tras cada cambio de la API)
 flyctl logs                                                     # logs en vivo
 ```
