@@ -22,6 +22,7 @@ FLYCTL = Path.home() / ".fly" / "bin" / ("flyctl.exe" if sys.platform == "win32"
 COPY = [
     "SMARTCUTS_DATABASE__URL",
     "SMARTCUTS_AUTH__SUPABASE_URL",
+    "SMARTCUTS_AUTH__SUPABASE_SERVICE_KEY",  # para eliminar cuentas
     "SMARTCUTS_STORAGE__R2_ACCOUNT_ID",
     "SMARTCUTS_STORAGE__R2_ACCESS_KEY_ID",
     "SMARTCUTS_STORAGE__R2_SECRET_ACCESS_KEY",
