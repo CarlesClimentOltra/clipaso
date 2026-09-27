@@ -57,6 +57,15 @@ class LocalStorage:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(path, dest)
 
+    def put_bytes(self, key: str, data: bytes, content_type: str) -> None:
+        dest = self._path(key)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+
+    def read_bytes(self, key: str) -> bytes | None:
+        p = self._path(key)
+        return p.read_bytes() if p.is_file() else None
+
     def download_to(self, key: str, dest: Path) -> Path:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(self._path(key), dest)

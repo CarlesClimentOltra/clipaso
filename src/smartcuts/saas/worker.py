@@ -26,10 +26,12 @@ from smartcuts.domain.ports import Storage, Transcriber
 from smartcuts.infra import registry
 from smartcuts.infra.config import Settings
 from smartcuts.infra.logging import bind_job, clear_job, get_logger
+from smartcuts.saas.artifacts import make_preview, preview_key, save_analysis
 from smartcuts.saas.db import session_scope, utcnow
 from smartcuts.saas.maintenance import run_cleanup
 from smartcuts.saas.models import Clip, Job, JobStatus, Upload, User
 from smartcuts.saas.notifications import Notifier, build_notifier, clips_ready, deliver, processing_failed
+from smartcuts.saas.rendering import project_branding, project_profile
 from smartcuts.saas.services import clips_prefix, purge_upload, refund_job
 
 log = get_logger(__name__)
@@ -125,9 +127,11 @@ class JobRunner:
                 upload = s.get(Upload, job.upload_id) if job.upload_id else None
                 if upload is None:
                     raise SourceUnavailableError("La subida asociada al job ya no existe")
-                user_id, max_clips, profile_name, title = job.user_id, job.max_clips, job.profile, job.title
-                language = (job.options or {}).get("language", self.settings.language)
+                user_id, max_clips, title = job.user_id, job.max_clips, job.title
+                options = dict(job.options or {})
+                language = options.get("language", self.settings.language)
                 upload_key, upload_ext = upload.storage_key, PurePath(upload.filename).suffix.lower() or ".mp4"
+                branding = project_branding(self.storage, s.get(User, user_id), options, tmp / "brand")
 
             self._write_progress(job_id, "ingest", 0.0, state, force=True)
             source = self.storage.local_path(upload_key)
@@ -136,10 +140,12 @@ class JobRunner:
 
             pipeline = build_pipeline(self.settings, transcriber=self.transcriber)
             opts = PipelineOptions(
-                profile=self.settings.load_profile(profile_name),
+                profile=project_profile(self.settings, options),
                 max_clips=max_clips,
                 language=None if language == "auto" else language,
                 title=title,
+                topic=options.get("topic") or "",
+                branding=branding,
             )
             result = pipeline.run(
                 str(source), opts, out_dir=tmp / "out",
@@ -160,8 +166,17 @@ class JobRunner:
                 clips.append(Clip(
                     job_id=job_id, rank=exp.rank, title=exp.title or f"Clip {exp.rank}", reason=exp.reason,
                     start=exp.start, end=exp.end, score=exp.score, video_key=video_key, thumb_key=thumb_key,
-                    size_bytes=exp.path.stat().st_size,
+                    size_bytes=exp.path.stat().st_size, description=exp.description, hashtags=exp.hashtags,
                 ))
+
+            # Análisis del vídeo: editor, subtítulos descargables y «más clips» sin volver a transcribir.
+            if result.transcript is not None and result.signals is not None:
+                save_analysis(self.storage, user_id, job_id, result.transcript, result.signals)
+            keep_source = bool(options.get("keep_source"))
+            if keep_source:
+                self._write_progress(job_id, "preview", 0.99, state, force=True)
+                if preview := make_preview(Path(source), tmp / "preview.mp4"):
+                    self.storage.put_file(preview_key(user_id, job_id), preview, "video/mp4")
 
             with session_scope(self.sessions) as s:
                 job = s.get(Job, job_id)
@@ -169,8 +184,9 @@ class JobRunner:
                 job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0
                 job.finished_at = utcnow()
                 job.llm_cost_usd = round(result.cost_usd, 5)
-                # El original ya no hace falta: solo se conservan los clips (almacenamiento y RGPD).
-                if job.upload_id and (upload := s.get(Upload, job.upload_id)):
+                # Si el usuario no quiere editar ni pedir más clips, el original se borra ya (almacenamiento
+                # y RGPD); si no, se conserva hasta que caduque el proyecto.
+                if not keep_source and job.upload_id and (upload := s.get(Upload, job.upload_id)):
                     purge_upload(self.storage, upload)
                 user = s.get(User, user_id)
                 email = clips_ready(user.email, title, len(clips), user.plan.retention_days,

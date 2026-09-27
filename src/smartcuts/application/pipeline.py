@@ -23,6 +23,8 @@ from smartcuts.application.progress import ProgressCallback, ProgressReporter
 from smartcuts.application.workspace import Workspace
 from smartcuts.domain.errors import RenderError, SmartCutsError, UnsupportedSourceError
 from smartcuts.domain.models import (
+    Branding,
+    ClipCandidate,
     ExportedClip,
     JobResult,
     OutputProfile,
@@ -55,6 +57,10 @@ class PipelineOptions:
     language: str | None
     force: set[str] = field(default_factory=set)  # etapas a recalcular aunque haya caché
     title: str | None = None  # título legible (p. ej. nombre original del fichero subido)
+    topic: str = ""  # tema que pide el usuario («momentos donde hablo de dinero»)
+    exclude: list[tuple[float, float]] = field(default_factory=list)  # fragmentos que ya son clips
+    branding: Branding | None = None
+    first_rank: int = 1  # al añadir clips a un proyecto, numeración a continuación de los existentes
 
 
 @dataclass
@@ -165,6 +171,7 @@ class Pipeline:
             "durations": [p.min_duration, p.target_duration, p.max_duration],
             "transcript_sentences": len(request.transcript.sentences),
             "signals": sorted(request.signals.signals),
+            "extra": request.extra,
         }
         if "selection" not in opts.force and (cached := ws.load("selection", Selection, params)):
             log.info("selection.cached", strategy=cached.strategy, clips=len(cached.clips))
@@ -203,7 +210,7 @@ class Pipeline:
         self,
         source: SourceVideo,
         transcript: Transcript,
-        selection: Selection,
+        ranked: list[tuple[int, ClipCandidate]],
         ws: Workspace,
         opts: PipelineOptions,
         out_dir: Path,
@@ -212,15 +219,14 @@ class Pipeline:
         profile = opts.profile
         reframer = self.c.reframer_factory(profile.reframe.value)
         exporter = self.c.exporter_factory(profile.exporter)
-        ranked = sorted(selection.clips, key=lambda c: c.score, reverse=True)
         exported: list[ExportedClip] = []
         failures: list[str] = []
         self._remove_previous_exports(out_dir)
 
         with stage("export"):
-            for rank, clip in enumerate(ranked, start=1):
+            for i, (rank, clip) in enumerate(ranked):
                 bind_job(clip=rank)
-                progress.report("export", (rank - 1) / max(len(ranked), 1))
+                progress.report("export", i / max(len(ranked), 1))
                 name = f"{rank:02d}_{slugify(clip.title)}"
                 try:
                     plan = reframer.plan(source, clip, profile)
@@ -228,7 +234,7 @@ class Pipeline:
                         ExportRequest(
                             source=source, clip=clip, rank=rank, profile=profile, reframe=plan,
                             transcript=transcript, output_path=out_dir / f"{name}.mp4",
-                            work_dir=ws.subdir(f"render/{profile.name}/{name}"),
+                            work_dir=ws.subdir(f"render/{profile.name}/{name}"), branding=opts.branding,
                         )
                     )
                 except SmartCutsError as exc:
@@ -239,6 +245,7 @@ class Pipeline:
                 exported.append(
                     ExportedClip(rank=rank, path=path, thumbnail=thumbnail, start=clip.start, end=clip.end,
                                  score=clip.score, title=clip.title, reason=clip.reason,
+                                 description=clip.description, hashtags=clip.hashtags,
                                  reframe_mode=plan.mode, profile=profile.name)
                 )
                 log.info("export.done", file=path.name, reframe=plan.mode, notes=plan.notes)
@@ -260,6 +267,16 @@ class Pipeline:
 
     # ------------------------------------------------------------------ run
 
+    def _open(self, uri: str, opts: PipelineOptions) -> tuple[SourceVideo, Workspace]:
+        adapter = self.resolve_source(uri)
+        source_id = adapter.source_id(uri)
+        ws = Workspace(self.jobs_dir / source_id)
+        bind_job(job=source_id)
+        source = self._ingest(uri, ws, adapter)
+        if opts.title:
+            source = source.model_copy(update={"title": opts.title})
+        return source, ws
+
     def run(
         self,
         uri: str,
@@ -267,30 +284,29 @@ class Pipeline:
         *,
         out_dir: Path | None = None,
         on_progress: ProgressCallback | None = None,
+        transcript: Transcript | None = None,
+        signals: SignalSet | None = None,
     ) -> JobResult:
         """Procesa `uri`. `out_dir` fija dónde se escriben los clips (por defecto
-        `output/<source_id>/<perfil>/`); `on_progress(stage, overall)` informa del avance."""
-        adapter = self.resolve_source(uri)
-        source_id = adapter.source_id(uri)
-        ws = Workspace(self.jobs_dir / source_id)
+        `output/<source_id>/<perfil>/`); `on_progress(stage, overall)` informa del avance.
+        Con `transcript` y `signals` ya calculados (pedir más clips) se salta el análisis."""
         progress = ProgressReporter(on_progress)
-        bind_job(job=source_id)
         try:
             progress.report("ingest")
-            source = self._ingest(uri, ws, adapter)
-            if opts.title:
-                source = source.model_copy(update={"title": opts.title})
-            progress.report("audio")
-            audio = self._audio(source, ws)
-            progress.report("transcribe")
-            transcript = self._transcribe(audio, ws, opts, progress)
-            progress.report("signals")
-            signals = self._signals(AnalysisContext(source, audio, transcript), ws, opts)
+            source, ws = self._open(uri, opts)
+            if transcript is None or signals is None:
+                progress.report("audio")
+                audio = self._audio(source, ws)
+                progress.report("transcribe")
+                transcript = self._transcribe(audio, ws, opts, progress)
+                progress.report("signals")
+                signals = self._signals(AnalysisContext(source, audio, transcript), ws, opts)
             progress.report("select")
             selection = self._select(
                 SelectionRequest(
                     source=source, transcript=transcript, signals=signals, profile=opts.profile,
                     max_clips=opts.max_clips, language=opts.language or transcript.language,
+                    extra={"topic": opts.topic, "exclude": [list(r) for r in opts.exclude]},
                 ),
                 ws,
                 opts,
@@ -298,10 +314,26 @@ class Pipeline:
             out_dir = out_dir or self.output_dir / source.source_id / opts.profile.name
             out_dir.mkdir(parents=True, exist_ok=True)
             progress.report("export")
-            exports = self._export(source, transcript, selection, ws, opts, out_dir, progress)
-            result = JobResult(source=source, selection=selection, exports=exports, cost_usd=self.c.cost.spent)
+            ranked = sorted(selection.clips, key=lambda c: c.score, reverse=True)
+            exports = self._export(
+                source, transcript, list(enumerate(ranked, start=opts.first_rank)), ws, opts, out_dir, progress
+            )
+            result = JobResult(source=source, selection=selection, exports=exports, cost_usd=self.c.cost.spent,
+                               transcript=transcript, signals=signals)
             (out_dir / "manifest.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
             progress.report("export", 1.0)
             return result
+        finally:
+            clear_job()
+
+    def render(
+        self, uri: str, opts: PipelineOptions, clip: ClipCandidate, rank: int, transcript: Transcript, out_dir: Path
+    ) -> ExportedClip:
+        """Vuelve a exportar un clip concreto (editor: nuevo recorte, textos corregidos, otro estilo)."""
+        try:
+            source, ws = self._open(uri, opts)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            exported = self._export(source, transcript, [(rank, clip)], ws, opts, out_dir, ProgressReporter(None))
+            return exported[0]
         finally:
             clear_job()

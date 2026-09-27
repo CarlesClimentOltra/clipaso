@@ -37,6 +37,11 @@ def clips_prefix(user_id: str, job_id: str) -> str:
     return f"clips/{user_folder(user_id)}/{job_id}/"
 
 
+def job_prefix(user_id: str, job_id: str) -> str:
+    """Archivos de trabajo del proyecto: transcripción, señales y vista previa (ver saas/artifacts.py)."""
+    return f"jobs/{user_folder(user_id)}/{job_id}/"
+
+
 def period_of(moment: datetime) -> str:
     return moment.strftime("%Y-%m")
 
@@ -322,6 +327,7 @@ def delete_job(session: Session, storage: Storage, user: User, job_id: str, now:
     if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
         raise AppError("validation_error", 409, message="No se puede borrar un vídeo mientras se procesa.")
     storage.delete_prefix(clips_prefix(user.id, job.id))
+    storage.delete_prefix(job_prefix(user.id, job.id))
     if job.upload_id:
         upload = session.get(Upload, job.upload_id)
         if upload is not None:
@@ -344,7 +350,7 @@ def delete_account(session: Session, storage: Storage, user: User) -> None:
     for upload in session.scalars(select(Upload).where(Upload.user_id == user.id, Upload.multipart_id.is_not(None))):
         storage.abort_multipart(upload.storage_key, upload.multipart_id)
     folder = user_folder(user.id)
-    removed = storage.delete_prefix(f"clips/{folder}/") + storage.delete_prefix(f"uploads/{folder}/")
+    removed = sum(storage.delete_prefix(f"{area}/{folder}/") for area in ("clips", "uploads", "jobs", "brand"))
     # Uploads, jobs, clips y consumo se borran en cascada (ON DELETE CASCADE).
     session.delete(user)
     session.flush()

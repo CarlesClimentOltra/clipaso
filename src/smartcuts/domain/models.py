@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -108,6 +109,8 @@ class ClipCandidate(BaseModel):
     title: str = ""
     reason: str = ""
     hook: str = ""
+    description: str = Field("", description="Texto para publicar junto al clip.")
+    hashtags: list[str] = Field(default_factory=list)
     scores: dict[str, float] = Field(default_factory=dict, description="Desglose por señal.")
 
     @property
@@ -142,10 +145,25 @@ class SubtitleStyle(BaseModel):
     highlight_color: str = "00E5FF"
     outline_color: str = "000000"
     outline_ratio: float = 0.004
-    margin_v_ratio: float = Field(0.28, description="Distancia desde abajo (evita la UI de la app).")
+    position: Literal["bottom", "middle", "top"] = "bottom"
+    margin_v_ratio: float = Field(0.28, description="Distancia al borde (abajo o arriba; evita la UI de la app).")
+    box: bool = Field(False, description="Texto sobre una caja de color en vez de con contorno.")
+    box_color: str = "000000"
     max_words: int = 3
     max_chunk_seconds: float = 1.6
     uppercase: bool = True
+
+
+class Branding(BaseModel):
+    """Marca personal que se añade a los clips."""
+
+    handle: str = Field("", description="Texto fijo, p. ej. @usuario.")
+    logo_path: Path | None = None
+    position: Literal["top-left", "top-right", "bottom-left", "bottom-right"] = "top-right"
+
+    @property
+    def active(self) -> bool:
+        return bool(self.handle.strip() or self.logo_path)
 
 
 class VideoEncoding(BaseModel):
@@ -185,6 +203,8 @@ class ExportedClip(BaseModel):
     score: float
     title: str
     reason: str = ""
+    description: str = ""
+    hashtags: list[str] = Field(default_factory=list)
     reframe_mode: str
     profile: str
 
@@ -194,3 +214,6 @@ class JobResult(BaseModel):
     selection: Selection
     exports: list[ExportedClip]
     cost_usd: float = 0.0
+    # Para guardarlos junto al proyecto (editor, más clips); no van al manifest.
+    transcript: Transcript | None = Field(None, exclude=True)
+    signals: SignalSet | None = Field(None, exclude=True)

@@ -54,6 +54,10 @@ def signal_score(
     return (acc / total_w if total_w else 0.0), parts
 
 
+def overlaps_any(start: float, end: float, ranges: list[tuple[float, float]], gap: float = 0.0) -> bool:
+    return any(start < b + gap and a < end + gap for a, b in ranges)
+
+
 def pick_non_overlapping(
     candidates: Iterable[ClipCandidate], limit: int, *, min_gap: float = 0.0
 ) -> list[ClipCandidate]:

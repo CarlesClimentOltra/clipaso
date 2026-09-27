@@ -25,7 +25,7 @@ from smartcuts.infra.config import Settings
 from smartcuts.infra.logging import get_logger
 from smartcuts.saas.db import session_scope, utcnow
 from smartcuts.saas.models import Job, JobStatus, Upload, UploadStatus
-from smartcuts.saas.services import clips_prefix, purge_upload
+from smartcuts.saas.services import clips_prefix, job_prefix, purge_upload
 
 log = get_logger(__name__)
 
@@ -43,6 +43,7 @@ def expire_jobs(session: Session, storage: Storage, now) -> int:
     ).all()
     for job in jobs:
         storage.delete_prefix(clips_prefix(job.user_id, job.id))
+        storage.delete_prefix(job_prefix(job.user_id, job.id))
         job.clips = []
         job.status = JobStatus.EXPIRED
         if job.upload_id and (upload := session.get(Upload, job.upload_id)) and upload.status != UploadStatus.PURGED:

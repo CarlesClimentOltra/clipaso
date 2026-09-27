@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from smartcuts.domain.errors import SelectionError
-from smartcuts.domain.models import ExportedClip
+from smartcuts.domain.models import ExportedClip, Sentence, SignalSet, Transcript, Word
 from smartcuts.infra.config import Settings
 from smartcuts.interfaces.api.app import create_app
 from smartcuts.saas import worker as worker_mod
@@ -77,24 +77,55 @@ def upload_video(client: TestClient, video: Path) -> str:
     return r.json()["id"]
 
 
+WORDS = [(" Hola", 0.2, 0.5), (" a", 0.5, 0.6), (" todos,", 0.6, 1.0), (" esto", 1.2, 1.5),
+         (" es", 1.5, 1.6), (" SmartCus.", 1.6, 2.4), (" Seguimos", 3.0, 3.6), (" luego.", 3.6, 4.2)]
+TRANSCRIPT = Transcript(language="es", duration=6.0, sentences=[
+    Sentence(index=0, start=0.2, end=2.4, text="Hola a todos, esto es SmartCus.",
+             words=[Word(text=w, start=a, end=b) for w, a, b in WORDS[:6]]),
+    Sentence(index=1, start=3.0, end=4.2, text="Seguimos luego.",
+             words=[Word(text=w, start=a, end=b) for w, a, b in WORDS[6:]]),
+])
+
+
+class FakeResult:
+    def __init__(self, exports, cost_usd=0.012):
+        self.exports, self.cost_usd = exports, cost_usd
+        self.transcript, self.signals = TRANSCRIPT, SignalSet()
+
+
 class FakePipeline:
-    """Sustituye al pipeline real: genera un "clip" copiando el vídeo de entrada."""
+    """Sustituye al pipeline real: genera "clips" copiando el vídeo de entrada."""
 
-    def __init__(self, fail: Exception | None = None):
+    def __init__(self, fail: Exception | None = None, clips: int = 1):
         self.fail = fail
+        self.clips = clips
+        self.calls: list[dict] = []
 
-    def run(self, uri, opts, *, out_dir, on_progress):
-        on_progress("transcribe", 0.3)
+    def _clip(self, uri, out_dir, rank, start, end, title, profile) -> ExportedClip:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        clip = out_dir / f"{rank:02d}.mp4"
+        shutil.copyfile(uri, clip)
+        thumb = out_dir / f"{rank:02d}.jpg"
+        thumb.write_bytes(b"jpg")
+        return ExportedClip(rank=rank, path=clip, thumbnail=thumb, start=start, end=end, score=0.9, title=title,
+                            reason="Tiene gancho", description="Mira esto hasta el final", hashtags=["ia", "clips"],
+                            reframe_mode="face", profile=profile.name)
+
+    def run(self, uri, opts, *, out_dir, on_progress=None, transcript=None, signals=None):
+        self.calls.append({"kind": "run", "opts": opts, "reused_analysis": transcript is not None})
+        if on_progress:
+            on_progress("transcribe", 0.3)
         if self.fail:
             raise self.fail
-        out_dir.mkdir(parents=True, exist_ok=True)
-        clip = out_dir / "01.mp4"
-        shutil.copyfile(uri, clip)
-        thumb = out_dir / "01.jpg"
-        thumb.write_bytes(b"jpg")
-        exp = ExportedClip(rank=1, path=clip, thumbnail=thumb, start=0, end=3, score=0.9, title="Gran momento",
-                           reason="Tiene gancho", reframe_mode="face", profile=opts.profile.name)
-        return type("R", (), {"exports": [exp], "cost_usd": 0.012})()
+        exports = [self._clip(uri, out_dir, opts.first_rank + i, 3.0 * i, 3.0 * i + 3, "Gran momento", opts.profile)
+                   for i in range(self.clips)]
+        return FakeResult(exports)
+
+    def render(self, uri, opts, clip, rank, transcript, out_dir):
+        self.calls.append({"kind": "render", "opts": opts, "clip": clip, "transcript": transcript})
+        if self.fail:
+            raise self.fail
+        return self._clip(uri, out_dir, rank, clip.start, clip.end, clip.title, opts.profile)
 
 
 def run_worker(client: TestClient, monkeypatch, pipeline: FakePipeline) -> None:

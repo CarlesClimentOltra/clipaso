@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from smartcuts.domain.clips import clip_bounds, pick_non_overlapping, sentence_windows, signal_score
+from smartcuts.domain.clips import clip_bounds, overlaps_any, pick_non_overlapping, sentence_windows, signal_score
 from smartcuts.domain.models import ClipCandidate, Selection
 from smartcuts.domain.ports import SelectionRequest
 from smartcuts.infra.registry import register
@@ -28,12 +28,15 @@ class HeuristicSelector:
     def select(self, request: SelectionRequest) -> Selection:
         sentences = request.transcript.sentences
         profile = request.profile
+        exclude = request.excluded_ranges()
         candidates: list[ClipCandidate] = []
 
         for first, last in sentence_windows(
             sentences, min_duration=profile.min_duration, max_duration=profile.max_duration
         ):
             start, end = clip_bounds(sentences, first, last, request.source.duration)
+            if overlaps_any(start, end, exclude, self.min_gap):
+                continue
             base, parts = signal_score(request.signals, self.weights, start, end)
             opening = sentences[first].text.strip()
             closing = sentences[last].text.strip()

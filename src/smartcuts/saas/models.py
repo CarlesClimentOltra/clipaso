@@ -1,4 +1,4 @@
-"""Modelo de datos del producto: usuarios, planes, subidas, jobs, clips y consumo."""
+"""Modelo de datos del producto: usuarios, planes, subidas, jobs, clips, tareas y consumo."""
 
 from __future__ import annotations
 
@@ -36,6 +36,24 @@ class JobStatus(StrEnum):
     EXPIRED = "expired"  # superó la retención del plan: clips borrados, queda el registro
 
 
+class ClipStatus(StrEnum):
+    READY = "ready"
+    RENDERING = "rendering"  # se está volviendo a exportar tras editarlo
+    FAILED = "failed"  # falló el último re-render; el vídeo anterior sigue disponible
+
+
+class TaskKind(StrEnum):
+    RENDER_CLIP = "render_clip"  # volver a exportar un clip editado
+    MORE_CLIPS = "more_clips"  # buscar y exportar más clips del mismo vídeo
+
+
+class TaskStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
+
+
 class UploadStatus(StrEnum):
     PENDING = "pending"
     READY = "ready"
@@ -71,6 +89,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(320), index=True)
     plan_code: Mapped[str] = mapped_column(ForeignKey("plans.code"), default="free")
     stripe_customer_id: Mapped[str | None] = mapped_column(String(128))
+    # Estilo de subtítulos por defecto y marca personal (ver saas/presets.py).
+    preferences: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
     plan: Mapped[Plan] = relationship(lazy="joined")
@@ -140,8 +160,44 @@ class Clip(Base):
     video_key: Mapped[str] = mapped_column(String(512))
     thumb_key: Mapped[str | None] = mapped_column(String(512))
     size_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Textos para publicar (los propone la IA; el usuario puede editarlos).
+    description: Mapped[str] = mapped_column(Text, default="")
+    hashtags: Mapped[list] = mapped_column(JSON, default=list)
+    rating: Mapped[int | None] = mapped_column(Integer)  # 1 👍, -1 👎
+    # Editor: palabras corregidas {milisegundo de inicio: texto} y estilo propio del clip.
+    word_edits: Mapped[dict] = mapped_column(JSON, default=dict)
+    caption_style: Mapped[dict | None] = mapped_column(JSON)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(16), default=ClipStatus.READY)
+    render_error: Mapped[str | None] = mapped_column(String(255))
 
     job: Mapped[Job] = relationship(back_populates="clips")
+
+
+class Task(Base):
+    """Trabajo secundario de un proyecto ya procesado (re-render de un clip, más clips).
+
+    Se reclama y reenvía igual que los jobs: la tabla hace de cola.
+    """
+
+    __tablename__ = "tasks"
+    __table_args__ = (Index("ix_tasks_status_created", "status", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
+    clip_id: Mapped[str | None] = mapped_column(ForeignKey("clips.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(16), default=TaskStatus.QUEUED)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    error_detail: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    dispatched_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
 
 
 class UsageEvent(Base):

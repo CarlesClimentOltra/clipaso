@@ -50,6 +50,19 @@ class R2Storage:
     def put_file(self, key: str, path: Path, content_type: str) -> None:
         self.s3.upload_file(str(path), self.bucket, key, ExtraArgs={"ContentType": content_type})
 
+    def put_bytes(self, key: str, data: bytes, content_type: str) -> None:
+        self.s3.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
+
+    def read_bytes(self, key: str) -> bytes | None:
+        from botocore.exceptions import ClientError
+
+        try:
+            return self.s3.get_object(Bucket=self.bucket, Key=key)["Body"].read()
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+                return None
+            raise
+
     def download_to(self, key: str, dest: Path) -> Path:
         dest.parent.mkdir(parents=True, exist_ok=True)
         self.s3.download_file(self.bucket, key, str(dest))

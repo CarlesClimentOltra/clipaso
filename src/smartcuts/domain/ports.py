@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from smartcuts.domain.models import (
+    Branding,
     ClipCandidate,
     OutputProfile,
     Selection,
@@ -74,7 +75,11 @@ class SelectionRequest:
     profile: OutputProfile
     max_clips: int
     language: str = "es"
+    # topic: tema pedido por el usuario; exclude: [(inicio, fin)] de clips ya existentes.
     extra: dict[str, Any] = field(default_factory=dict)
+
+    def excluded_ranges(self) -> list[tuple[float, float]]:
+        return [(float(a), float(b)) for a, b in self.extra.get("exclude", [])]
 
 
 @runtime_checkable
@@ -150,6 +155,7 @@ class ExportRequest:
     transcript: Transcript
     output_path: Path
     work_dir: Path
+    branding: Branding | None = None
 
 
 @runtime_checkable
@@ -178,6 +184,12 @@ class Storage(Protocol):
     name: str
 
     def put_file(self, key: str, path: Path, content_type: str) -> None: ...
+
+    def put_bytes(self, key: str, data: bytes, content_type: str) -> None: ...
+
+    def read_bytes(self, key: str) -> bytes | None:
+        """Contenido de un objeto pequeño (JSON, imágenes), o None si no existe."""
+        ...
 
     def download_to(self, key: str, dest: Path) -> Path: ...
 
