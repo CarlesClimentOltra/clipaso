@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { CaptionPreview } from "@/components/caption-preview";
 import type { CaptionStyle } from "@/lib/api/client";
+import { useI18n } from "@/lib/i18n";
 
 const STYLE: CaptionStyle = {
   enabled: true,
@@ -17,12 +18,6 @@ const STYLE: CaptionStyle = {
   box: false,
   box_color: "000000",
 };
-const LINES = [
-  ["Nadie", "te", "cuenta"],
-  ["esto", "sobre", "aprender"],
-  ["y", "lo", "cambia"],
-  ["todo", "para", "siempre"],
-];
 // Fragmentos elegidos por la IA dentro del vídeo largo (en % de su duración).
 const HIGHLIGHTS = [
   { left: 9, width: 7 },
@@ -64,6 +59,8 @@ function Donut({ value }: { value: number }) {
 
 export function HeroVisual() {
   const [tick, setTick] = useState(0);
+  const { t } = useI18n();
+  const h = t.landing.hero;
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -71,7 +68,7 @@ export function HeroVisual() {
     return () => clearInterval(id);
   }, []);
 
-  const line = LINES[Math.floor(tick / 3) % LINES.length];
+  const line = h.lines[Math.floor(tick / 3) % h.lines.length];
 
   return (
     <div className="relative mx-auto aspect-[1/1.02] w-full max-w-[560px]" aria-hidden="true">
@@ -82,7 +79,7 @@ export function HeroVisual() {
       <div className="absolute top-[16%] left-0 w-[58%] rounded-2xl border bg-card p-3 shadow-xl">
         <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
           <FilmIcon className="size-3.5" />
-          <span className="truncate">entrevista-completa.mp4</span>
+          <span className="truncate">{h.file}</span>
           <span className="ml-auto tabular-nums">48:12</span>
         </div>
         <div className="relative aspect-video overflow-hidden rounded-lg">
@@ -98,7 +95,7 @@ export function HeroVisual() {
           ))}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">4 momentos</span> con potencial viral
+          <span className="font-medium text-foreground">{h.moments}</span> {h.withPotential}
         </p>
       </div>
 
@@ -108,7 +105,7 @@ export function HeroVisual() {
           style={STYLE}
           words={line}
           activeIndex={tick % 3}
-          branding={{ handle: "@tucanal", position: "top-left", enabled: true }}
+          branding={{ handle: h.handle, position: "top-left", enabled: true }}
           background={<SpeakerScene />}
           className="rounded-[1.6rem]"
         />
@@ -117,7 +114,7 @@ export function HeroVisual() {
       {/* Tarjetas flotantes */}
       <div className="float-soft absolute top-[2%] left-[6%] flex items-center gap-2 rounded-full border bg-card/95 px-4 py-2.5 text-sm shadow-lg backdrop-blur">
         <SparklesIcon className="size-4 text-brand-ink" />
-        <span className="text-muted-foreground">Busca momentos sobre <span className="text-foreground">dinero</span></span>
+        <span className="text-muted-foreground">{h.ask} <span className="text-foreground">{h.askTopic}</span></span>
       </div>
 
       <div className="absolute bottom-[6%] left-[4%] flex items-center gap-3 rounded-2xl border bg-card p-3 pr-5 shadow-xl">
@@ -126,14 +123,14 @@ export function HeroVisual() {
           <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold">92</span>
         </div>
         <div className="text-sm">
-          <p className="font-medium">Potencial viral</p>
-          <p className="text-xs text-muted-foreground">Clip #1 · 38 s</p>
+          <p className="font-medium">{h.viral}</p>
+          <p className="text-xs text-muted-foreground">{h.viralClip}</p>
         </div>
       </div>
 
       <div className="float-soft absolute right-0 bottom-[2%] w-[46%] rounded-2xl border bg-card p-4 shadow-xl [animation-delay:-3s]">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Clips este mes</span>
+          <span>{h.monthClips}</span>
           <span className="flex items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 font-medium text-brand-ink">
             <TrendingUpIcon className="size-3" /> 32%
           </span>

@@ -17,6 +17,8 @@ import {
 } from "react";
 
 import { config } from "@/lib/config";
+import { dictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/store";
 
 // `hasPassword`: la cuenta puede entrar con email y contraseña (no solo con Google).
 type Session = { email: string; token: string; hasPassword: boolean };
@@ -138,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await getSupabase().auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${origin()}/dashboard`, captchaToken },
+        options: { emailRedirectTo: `${origin()}/dashboard`, captchaToken, data: { locale: getLocale() } },
       });
       if (error) throw new Error(translateAuthError(error.message));
       return { needsConfirmation: !data.session };
@@ -213,21 +215,16 @@ export function useAuth(): AuthContextValue {
 
 function translateAuthError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes("invalid login")) return "Email o contraseña incorrectos.";
-  if (m.includes("already registered") || m.includes("already been registered")) {
-    return "Ya existe una cuenta con ese email.";
-  }
-  if (m.includes("password should be") || m.includes("weak")) {
-    return "La contraseña es demasiado débil: usa al menos 8 caracteres combinando letras y números.";
-  }
-  if (m.includes("different from the old")) return "La nueva contraseña debe ser distinta de la actual.";
-  if (m.includes("email not confirmed")) return "Confirma tu email antes de entrar (revisa tu bandeja de entrada).";
-  if (m.includes("captcha")) return "No hemos podido verificar que no eres un robot. Vuelve a intentarlo.";
-  if (m.includes("rate limit") || m.includes("security purposes")) {
-    return "Has hecho demasiados intentos seguidos. Espera un minuto y vuelve a probar.";
-  }
-  if (m.includes("reauthenticat")) return "Por seguridad, cierra sesión y vuelve a entrar antes de hacer este cambio.";
-  if (m.includes("provider is not enabled")) return "El acceso con Google todavía no está disponible.";
-  if (m.includes("invalid") && m.includes("email")) return "Ese email no es válido.";
-  return "No se pudo completar la operación. Inténtalo de nuevo.";
+  const t = dictionary().auth;
+  if (m.includes("invalid login")) return t.invalidLogin;
+  if (m.includes("already registered") || m.includes("already been registered")) return t.alreadyRegistered;
+  if (m.includes("password should be") || m.includes("weak")) return t.weakPassword;
+  if (m.includes("different from the old")) return t.samePassword;
+  if (m.includes("email not confirmed")) return t.emailNotConfirmed;
+  if (m.includes("captcha")) return t.captcha;
+  if (m.includes("rate limit") || m.includes("security purposes")) return t.rateLimit;
+  if (m.includes("reauthenticat")) return t.reauth;
+  if (m.includes("provider is not enabled")) return t.googleDisabled;
+  if (m.includes("invalid") && m.includes("email")) return t.invalidEmail;
+  return t.generic;
 }

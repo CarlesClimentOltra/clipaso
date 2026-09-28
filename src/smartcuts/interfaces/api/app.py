@@ -22,7 +22,7 @@ from smartcuts.interfaces.api.routers import account, clips, dev_storage, jobs, 
 from smartcuts.interfaces.api.schemas import ErrorResponse
 from smartcuts.saas.db import session_factory, session_scope
 from smartcuts.saas.dispatch import get_dispatcher
-from smartcuts.saas.errors import AppError, user_message
+from smartcuts.saas.errors import AppError, normalize_lang, request_lang, user_message
 from smartcuts.saas.migrations import upgrade_database
 from smartcuts.saas.plans import sync_plans
 
@@ -61,6 +61,8 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     # CORS y el navegador solo muestra un error de CORS en vez del mensaje.
     @app.middleware("http")
     async def catch_unexpected(request: Request, call_next):
+        # Los mensajes para el usuario salen en su idioma (la web envía Accept-Language).
+        request_lang.set(normalize_lang(request.headers.get("accept-language")))
         try:
             return await call_next(request)
         except Exception as exc:
@@ -83,7 +85,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     async def app_error(_: Request, exc: AppError) -> JSONResponse:
         if exc.status >= 500 or exc.detail:
             log.warning("api.app_error", code=exc.code, detail=exc.detail)
-        return JSONResponse({"error": {"code": exc.code, "message": exc.message}}, status_code=exc.status)
+        return JSONResponse({"error": {"code": exc.code, "message": exc.message_for()}}, status_code=exc.status)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:

@@ -5,18 +5,20 @@ import { MinusIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { formatTime, type TimedWord } from "@/lib/captions";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export const MIN_CLIP = 3;
 export const MAX_CLIP = 180;
 
 function Nudge({ label, onMinus, onPlus }: { label: string; onMinus: () => void; onPlus: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-1">
-      <Button type="button" variant="outline" size="icon-sm" onClick={onMinus} aria-label={`${label}: medio segundo antes`}>
+      <Button type="button" variant="outline" size="icon-sm" onClick={onMinus} aria-label={t.editor.trim.earlier(label)}>
         <MinusIcon />
       </Button>
-      <Button type="button" variant="outline" size="icon-sm" onClick={onPlus} aria-label={`${label}: medio segundo después`}>
+      <Button type="button" variant="outline" size="icon-sm" onClick={onPlus} aria-label={t.editor.trim.later(label)}>
         <PlusIcon />
       </Button>
     </div>
@@ -41,6 +43,8 @@ export function TrimTimeline({
   onChange: (start: number, end: number) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
+  const tt = t.editor.trim;
   const set = (s: number, e: number) => {
     s = Math.max(min, Math.min(s, max - MIN_CLIP));
     e = Math.min(max, Math.max(e, s + MIN_CLIP));
@@ -59,13 +63,13 @@ export function TrimTimeline({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between text-sm">
         <span className="tabular-nums">
-          <span className="text-muted-foreground">Inicio</span> {formatTime(start, true)}
+          <span className="text-muted-foreground">{tt.start}</span> {formatTime(start, true)}
         </span>
         <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium tabular-nums">
           {duration.toFixed(1)} s
         </span>
         <span className="tabular-nums">
-          <span className="text-muted-foreground">Fin</span> {formatTime(end, true)}
+          <span className="text-muted-foreground">{tt.end}</span> {formatTime(end, true)}
         </span>
       </div>
       <Slider
@@ -75,24 +79,24 @@ export function TrimTimeline({
         minStepsBetweenValues={MIN_CLIP * 10}
         value={[start, end]}
         disabled={disabled}
-        aria-label="Recorte del clip"
+        aria-label={tt.label}
         onValueChange={(v: number | readonly number[]) => Array.isArray(v) && set(v[0], v[1])}
       />
       <div className="flex items-center justify-between">
-        <Nudge label="Inicio" onMinus={() => set(start - 0.5, end)} onPlus={() => set(start + 0.5, end)} />
+        <Nudge label={tt.start} onMinus={() => set(start - 0.5, end)} onPlus={() => set(start + 0.5, end)} />
         <span className="text-xs text-muted-foreground">
-          {formatTime(min)} – {formatTime(max)} del vídeo original
+          {formatTime(min)} – {formatTime(max)} {tt.ofOriginal}
         </span>
-        <Nudge label="Fin" onMinus={() => set(start, end - 0.5)} onPlus={() => set(start, end + 0.5)} />
+        <Nudge label={tt.end} onMinus={() => set(start, end - 0.5)} onPlus={() => set(start, end + 0.5)} />
       </div>
       {duration > 60 && (
         <p className="text-xs text-amber-600 dark:text-amber-400">
-          Más de 60 s: TikTok y Reels lo aceptan, pero los Shorts de YouTube se cortan al minuto.
+          {tt.longWarning}
         </p>
       )}
       <div className="flex flex-col gap-2">
         <p className="text-xs text-muted-foreground">
-          Toca una palabra para que el clip empiece o termine ahí. Las atenuadas quedan fuera.
+          {tt.wordsHint}
         </p>
         <div className="max-h-56 overflow-y-auto rounded-lg border p-3 text-sm leading-7">
           {words.map((w) => {

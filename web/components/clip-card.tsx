@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, type Clip, type Job } from "@/lib/api/client";
 import { useDownloadCaptions, useRateClip, useUpdateClip } from "@/lib/api/hooks";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export function formatTimestamp(seconds: number): string {
@@ -66,6 +67,7 @@ function hashtagLine(clip: Clip) {
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
   return (
     <Button
       type="button"
@@ -78,7 +80,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       }}
     >
       {copied ? <CheckIcon /> : <CopyIcon />}
-      {copied ? "Copiado" : label}
+      {copied ? t.common.copied : label}
     </Button>
   );
 }
@@ -90,6 +92,8 @@ function EditTextsDialog({ clip, jobId, open, onOpenChange }: {
   onOpenChange: (open: boolean) => void;
 }) {
   const update = useUpdateClip(jobId);
+  const { t } = useI18n();
+  const c = t.clip;
   const [title, setTitle] = useState(clip.title);
   const [description, setDescription] = useState(clip.description);
   const [hashtags, setHashtags] = useState(hashtagLine(clip));
@@ -102,10 +106,10 @@ function EditTextsDialog({ clip, jobId, open, onOpenChange }: {
         description,
         hashtags: hashtags.split(/[\s,]+/).filter(Boolean),
       });
-      toast.success("Textos guardados");
+      toast.success(c.saved);
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudieron guardar los textos.");
+      toast.error(err instanceof ApiError ? err.message : c.saveError);
     }
   }
 
@@ -113,29 +117,29 @@ function EditTextsDialog({ clip, jobId, open, onOpenChange }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Textos para publicar</DialogTitle>
-          <DialogDescription>Lo que pegarás al subir el clip a TikTok, Reels o Shorts.</DialogDescription>
+          <DialogTitle>{c.textsTitle}</DialogTitle>
+          <DialogDescription>{c.textsLead}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor={`title-${clip.id}`}>Título</Label>
+            <Label htmlFor={`title-${clip.id}`}>{c.title}</Label>
             <Input id={`title-${clip.id}`} maxLength={255} value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor={`desc-${clip.id}`}>Descripción</Label>
+            <Label htmlFor={`desc-${clip.id}`}>{c.description}</Label>
             <Textarea id={`desc-${clip.id}`} rows={3} maxLength={2000} value={description}
                       onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor={`tags-${clip.id}`}>Hashtags</Label>
+            <Label htmlFor={`tags-${clip.id}`}>{c.hashtags}</Label>
             <Input id={`tags-${clip.id}`} value={hashtags} placeholder="#viral #podcast"
                    onChange={(e) => setHashtags(e.target.value)} />
           </div>
         </div>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" />}>{t.common.cancel}</DialogClose>
           <Button onClick={save} disabled={update.isPending}>
-            {update.isPending ? "Guardando…" : "Guardar"}
+            {update.isPending ? t.common.saving : t.common.save}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -145,6 +149,8 @@ function EditTextsDialog({ clip, jobId, open, onOpenChange }: {
 
 export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
   const rate = useRateClip(job.id);
+  const { t } = useI18n();
+  const c = t.clip;
   const captions = useDownloadCaptions();
   const [editing, setEditing] = useState(false);
   const rendering = clip.status === "rendering";
@@ -159,7 +165,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
     try {
       await captions.mutateAsync({ clipId: clip.id, format, filename: `${base}.${format}` });
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudieron descargar los subtítulos.");
+      toast.error(err instanceof ApiError ? err.message : c.captionsError);
     }
   }
 
@@ -177,7 +183,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
         {rendering && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 text-sm text-white">
             <Loader2Icon className="size-6 animate-spin" />
-            Generando la nueva versión…
+            {c.rendering}
           </div>
         )}
       </div>
@@ -188,7 +194,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
       <CardContent className="flex flex-col gap-3 text-sm">
         {clip.status === "failed" && clip.render_error && (
           <Alert variant="destructive">
-            <AlertDescription>{clip.render_error} Se mantiene la versión anterior.</AlertDescription>
+            <AlertDescription>{clip.render_error} {c.keptPrevious}</AlertDescription>
           </Alert>
         )}
         {(clip.description || clip.hashtags.length > 0) && (
@@ -196,24 +202,24 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
             {clip.description && <p className="line-clamp-4 whitespace-pre-line">{clip.description}</p>}
             {clip.hashtags.length > 0 && <p className="text-brand-ink">{hashtagLine(clip)}</p>}
             <div className="-mx-2 -mb-1 flex flex-wrap gap-0.5">
-              <CopyButton text={clip.title} label="Título" />
-              {publishText && <CopyButton text={publishText} label="Descripción" />}
+              <CopyButton text={clip.title} label={c.titleCopy} />
+              {publishText && <CopyButton text={publishText} label={c.descriptionCopy} />}
               <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(true)}>
-                <PencilIcon /> Editar
+                <PencilIcon /> {t.common.edit}
               </Button>
             </div>
           </div>
         )}
         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>
-            {Math.round(clip.duration)} s · del {formatTimestamp(clip.start)} al {formatTimestamp(clip.end)}
+            {c.range(Math.round(clip.duration), formatTimestamp(clip.start), formatTimestamp(clip.end))}
           </span>
-          <span className="flex gap-0.5" aria-label="Valorar el clip">
-            <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === 1} aria-label="Me gusta"
+          <span className="flex gap-0.5" aria-label={c.rate}>
+            <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === 1} aria-label={c.like}
                     onClick={() => vote(1)} className={cn(clip.rating === 1 && "text-brand-ink")}>
               <ThumbsUpIcon className={cn(clip.rating === 1 && "fill-current")} />
             </Button>
-            <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === -1} aria-label="No me gusta"
+            <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === -1} aria-label={c.dislike}
                     onClick={() => vote(-1)} className={cn(clip.rating === -1 && "text-destructive")}>
               <ThumbsDownIcon className={cn(clip.rating === -1 && "fill-current")} />
             </Button>
@@ -228,17 +234,17 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
           </a>
           <DropdownMenu>
             <DropdownMenuTrigger
-              aria-label="Más descargas"
+              aria-label={c.moreDownloads}
               className={buttonVariants({ variant: "outline", size: "icon", className: "rounded-l-none border-l-0" })}
             >
               <ChevronDownIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => downloadCaptions("srt")}>
-                <CaptionsIcon /> Subtítulos SRT
+                <CaptionsIcon /> {c.srt}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => downloadCaptions("vtt")}>
-                <CaptionsIcon /> Subtítulos VTT
+                <CaptionsIcon /> {c.vtt}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -249,11 +255,11 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
             className={buttonVariants({ className: cn("flex-1", rendering && "pointer-events-none opacity-50") })}
             aria-disabled={rendering}
           >
-            <ScissorsIcon /> Editar clip
+            <ScissorsIcon /> {c.editClip}
           </Link>
         ) : (
           <Button variant="secondary" className="flex-1" onClick={() => setEditing(true)}>
-            <PencilIcon /> Textos
+            <PencilIcon /> {c.texts}
           </Button>
         )}
       </CardFooter>

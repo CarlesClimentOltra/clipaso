@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import {
   ArrowLeftIcon,
   CalendarClockIcon,
@@ -18,7 +19,6 @@ import { toast } from "sonner";
 import { ClipCard } from "@/components/clip-card";
 import { JobProgress } from "@/components/job-progress";
 import { MoreClipsDialog } from "@/components/more-clips-dialog";
-import { formatMinutes } from "@/components/usage-meter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -34,9 +34,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { useDeleteJob, useDownloadAll, useJob, useMe } from "@/lib/api/hooks";
+import { ONBOARDING_FLAGS } from "@/components/onboarding-checklist";
+import { setFlag } from "@/lib/flags";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const dateFmt = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long" });
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +47,14 @@ export default function ProjectPage() {
   const { data: me } = useMe();
   const remove = useDeleteJob();
   const downloadAll = useDownloadAll(id);
+  const { t, formatDate } = useI18n();
+  const p = t.project;
+  const longDate = (d: string) => formatDate(d, { day: "numeric", month: "long" });
+
+  // Ver los clips completa el último paso de «Primeros pasos».
+  useEffect(() => {
+    if (job?.status === "done" && job.clips.length > 0) setFlag(ONBOARDING_FLAGS.reviewed);
+  }, [job?.status, job?.clips.length]);
 
   if (isPending) {
     return (
@@ -58,10 +68,10 @@ export default function ProjectPage() {
     const notFound = error instanceof ApiError && error.status === 404;
     return (
       <Alert variant="destructive">
-        <AlertTitle>{notFound ? "Proyecto no encontrado" : "No se pudo cargar el proyecto"}</AlertTitle>
+        <AlertTitle>{notFound ? p.notFound : p.loadError}</AlertTitle>
         <AlertDescription>
-          {notFound ? "Puede que se haya borrado o que el enlace no sea correcto." : error?.message}{" "}
-          <Link href="/dashboard" className="underline">Volver a mis proyectos</Link>
+          {notFound ? p.notFoundText : error?.message}{" "}
+          <Link href="/dashboard" className="underline">{p.backLink}</Link>
         </AlertDescription>
       </Alert>
     );
@@ -75,17 +85,17 @@ export default function ProjectPage() {
     try {
       await downloadAll.mutateAsync();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudo preparar la descarga.");
+      toast.error(err instanceof ApiError ? err.message : p.downloadError);
     }
   }
 
   async function onDelete() {
     try {
       await remove.mutateAsync(job!.id);
-      toast.success("Proyecto borrado");
+      toast.success(p.deleted);
       router.replace("/dashboard");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudo borrar el proyecto.");
+      toast.error(err instanceof ApiError ? err.message : p.deleteError);
     }
   }
 
@@ -93,30 +103,28 @@ export default function ProjectPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4">
         <Link href="/dashboard" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 self-start rounded-full")}>
-          <ArrowLeftIcon /> Mis proyectos
+          <ArrowLeftIcon /> {p.back}
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-3">
-            <span className="text-sm font-medium text-brand-ink">Proyecto</span>
+            <span className="text-sm font-medium text-brand-ink">{p.eyebrow}</span>
             <h1 className="truncate text-3xl font-semibold tracking-tight">{job.title}</h1>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
-                <ClockIcon className="size-3.5 text-brand-ink" /> {formatMinutes(job.video_minutes)} de vídeo
+                <ClockIcon className="size-3.5 text-brand-ink" /> {p.ofVideo(t.common.minutes(job.video_minutes))}
               </span>
               <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
                 <SmartphoneIcon className="size-3.5 text-brand-ink" />
-                {{ vertical: "Vertical 9:16", square: "Cuadrado 1:1", horizontal: "Horizontal 16:9" }[job.options.format ?? "vertical"]}
+                {t.options.formats[job.options.format ?? "vertical"]?.[0]}
               </span>
               {job.status === "done" && (
                 <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
-                  <ScissorsIcon className="size-3.5 text-brand-ink" /> {job.clips.length}{" "}
-                  {job.clips.length === 1 ? "clip" : "clips"}
+                  <ScissorsIcon className="size-3.5 text-brand-ink" /> {t.common.clips(job.clips.length)}
                 </span>
               )}
               {job.status === "done" && job.expires_at && (
                 <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
-                  <CalendarClockIcon className="size-3.5 text-brand-ink" /> Disponible hasta el{" "}
-                  {dateFmt.format(new Date(job.expires_at))}
+                  <CalendarClockIcon className="size-3.5 text-brand-ink" /> {p.availableUntil(longDate(job.expires_at))}
                 </span>
               )}
             </div>
@@ -124,7 +132,7 @@ export default function ProjectPage() {
           <div className="flex flex-wrap gap-2">
             {job.status === "done" && job.clips.length > 0 && (
               <Button size="sm" className="h-9 rounded-full px-4" onClick={onDownloadAll} disabled={downloadAll.isPending}>
-                <FolderDownIcon /> Descargar todos
+                <FolderDownIcon /> {p.downloadAll}
               </Button>
             )}
             {job.status === "done" && job.can_edit && me && (
@@ -133,20 +141,19 @@ export default function ProjectPage() {
             {!active && (
               <Dialog>
                 <DialogTrigger render={<Button variant="outline" size="sm" className="h-9 rounded-full px-4" />}>
-                  <Trash2Icon /> Borrar
+                  <Trash2Icon /> {p.delete}
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>¿Borrar este proyecto?</DialogTitle>
+                    <DialogTitle>{p.deleteTitle}</DialogTitle>
                     <DialogDescription>
-                      Se eliminarán el vídeo original (si se guardó) y todos sus clips. Esta acción no se puede
-                      deshacer.
+                      {p.deleteText}
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
-                    <DialogClose render={<Button variant="outline" />}>Cancelar</DialogClose>
+                    <DialogClose render={<Button variant="outline" />}>{t.common.cancel}</DialogClose>
                     <Button variant="destructive" onClick={onDelete} disabled={remove.isPending}>
-                      Borrar definitivamente
+                      {p.deleteConfirm}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -165,11 +172,11 @@ export default function ProjectPage() {
 
       {job.status === "failed" && (
         <Alert variant="destructive">
-          <AlertTitle>No hemos podido procesar este vídeo</AlertTitle>
+          <AlertTitle>{p.failedTitle}</AlertTitle>
           <AlertDescription className="flex flex-col items-start gap-3">
             <span>{job.error_message}</span>
             <Link href="/new" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <RotateCcwIcon /> Probar con otro vídeo
+              <RotateCcwIcon /> {p.tryAnother}
             </Link>
           </AlertDescription>
         </Alert>
@@ -177,14 +184,11 @@ export default function ProjectPage() {
 
       {job.status === "expired" && (
         <Alert>
-          <AlertTitle>Los clips de este proyecto han caducado</AlertTitle>
+          <AlertTitle>{p.expiredTitle}</AlertTitle>
           <AlertDescription className="flex flex-col items-start gap-3">
-            <span>
-              Tu plan conserva los clips durante un tiempo limitado y se han borrado automáticamente
-              {job.expires_at ? ` el ${dateFmt.format(new Date(job.expires_at))}` : ""}. Si los necesitas, vuelve a subir el vídeo.
-            </span>
+            <span>{p.expiredText(job.expires_at ? longDate(job.expires_at) : null)}</span>
             <Link href="/new" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <RotateCcwIcon /> Crear un proyecto nuevo
+              <RotateCcwIcon /> {p.newProject}
             </Link>
           </AlertDescription>
         </Alert>
@@ -193,27 +197,26 @@ export default function ProjectPage() {
       {searchingMore && (
         <Alert>
           <Loader2Icon className="animate-spin" />
-          <AlertTitle>Buscando más clips en tu vídeo…</AlertTitle>
-          <AlertDescription>Aparecerán aquí en unos minutos. Puedes seguir usando la app mientras tanto.</AlertDescription>
+          <AlertTitle>{p.searchingTitle}</AlertTitle>
+          <AlertDescription>{p.searchingText}</AlertDescription>
         </Alert>
       )}
       {moreTask?.status === "failed" && moreTask.error_message && (
         <Alert>
-          <AlertTitle>No se añadieron clips nuevos</AlertTitle>
+          <AlertTitle>{p.noNewClips}</AlertTitle>
           <AlertDescription>{moreTask.error_message}</AlertDescription>
         </Alert>
       )}
       {job.status === "done" && !job.can_edit && (
         <p className="text-sm text-muted-foreground">
-          Este proyecto no guardó el vídeo original, así que los clips no se pueden editar ni ampliar. Puedes cambiar
-          los textos y descargar los subtítulos.
+          {p.notEditable}
         </p>
       )}
 
       {job.status === "done" && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
           <h2 id="clips-title" className="text-xl font-semibold tracking-tight">
-            {job.clips.length} {job.clips.length === 1 ? "clip" : "clips"}, del mejor al menos destacado
+            {p.clipsTitle(job.clips.length)}
           </h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {job.clips.map((clip) => (

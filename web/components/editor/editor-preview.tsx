@@ -7,6 +7,7 @@ import { CaptionPreview, type ClipFormat } from "@/components/caption-preview";
 import { Button } from "@/components/ui/button";
 import type { CaptionStyle } from "@/lib/api/client";
 import { captionAt, chunkWords, formatTime, type TimedWord } from "@/lib/captions";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Reproduce solo el tramo elegido del original (versión ligera) con los subtítulos encima,
@@ -28,6 +29,8 @@ export function EditorPreview({
   format: ClipFormat;
 }) {
   const video = useRef<HTMLVideoElement>(null);
+  const { t } = useI18n();
+  const tp = t.editor.preview;
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(start);
   const chunks = useMemo(() => chunkWords(words.filter((w) => w.start >= start - 0.01 && w.end <= end + 0.01)),
@@ -87,19 +90,19 @@ export function EditorPreview({
         }
       />
       <div className="flex items-center justify-center gap-2">
-        <Button type="button" size="icon" variant="outline" onClick={restart} aria-label="Volver al inicio del clip">
+        <Button type="button" size="icon" variant="outline" onClick={restart} aria-label={tp.restart}>
           <RotateCcwIcon />
         </Button>
         <Button type="button" onClick={toggle} className="min-w-28">
           {playing ? <PauseIcon /> : <PlayIcon />}
-          {playing ? "Pausa" : "Reproducir"}
+          {playing ? tp.pause : tp.play}
         </Button>
         <span className="min-w-24 text-center text-sm tabular-nums text-muted-foreground">
           {formatTime(Math.max(0, time - start))} / {formatTime(end - start)}
         </span>
       </div>
       <p className="text-center text-xs text-muted-foreground">
-        Vista aproximada: en el clip final el encuadre sigue la cara de quien habla.
+        {tp.approx}
       </p>
     </div>
   );

@@ -32,12 +32,12 @@ log = get_logger(__name__)
 
 
 class TaskError(Exception):
-    """Fallo esperable de una tarea, con un mensaje apto para el usuario."""
+    """Fallo esperable de una tarea; `code` es una clave del catálogo de mensajes (saas/errors.py)."""
 
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(message)
+    def __init__(self, code: str, detail: str = "") -> None:
+        super().__init__(detail or code)
         self.code = code
-        self.message = message
+        self.detail = detail
 
 
 class TaskRunner:
@@ -78,7 +78,7 @@ class TaskRunner:
                     task.status, task.dispatched_at = TaskStatus.QUEUED, None
                     log.warning("task.requeued", task_id=task.id)
                 else:
-                    self._finish_failed(s, task, "worker_lost", "El proceso se interrumpió. Inténtalo de nuevo.")
+                    self._finish_failed(s, task, "worker_lost")
 
     def _beat(self, task_id: str) -> None:
         with session_scope(self.sessions) as s:
@@ -107,30 +107,30 @@ class TaskRunner:
             elif kind == TaskKind.MORE_CLIPS:
                 self._more_clips(task_id, tmp)
             else:
-                raise TaskError("internal_error", f"Tarea desconocida: {kind}")
+                raise TaskError("internal_error", f"tarea desconocida: {kind}")
             with session_scope(self.sessions) as s:
                 task = s.get(Task, task_id)
                 task.status, task.finished_at = TaskStatus.DONE, utcnow()
             log.info("task.done", kind=kind)
         except Exception as exc:
             if isinstance(exc, TaskError):
-                code, message = exc.code, exc.message
+                code = exc.code
             else:
-                code, message = "processing_failed", "Algo falló al generar el clip. Inténtalo de nuevo."
+                code = "render_failed"
                 log.error("task.failed", error=str(exc), exc_info=not isinstance(exc, SmartCutsError))
                 sentry_sdk.capture_exception(exc)
             with session_scope(self.sessions) as s:
                 if task := s.get(Task, task_id):
-                    self._finish_failed(s, task, code, message, detail=f"{type(exc).__name__}: {exc}")
+                    self._finish_failed(s, task, code, detail=f"{type(exc).__name__}: {exc}")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
             clear_job()
 
-    def _finish_failed(self, s: Session, task: Task, code: str, message: str, detail: str = "") -> None:
+    def _finish_failed(self, s: Session, task: Task, code: str, detail: str = "") -> None:
         task.status, task.finished_at = TaskStatus.FAILED, utcnow()
-        task.error_code, task.error_detail = code, (detail or message)[:8000]
+        task.error_code, task.error_detail = code, (detail or code)[:8000]
         if task.clip_id and (clip := s.get(Clip, task.clip_id)):
-            clip.status, clip.render_error = ClipStatus.FAILED, message[:255]
+            clip.status, clip.render_error = ClipStatus.FAILED, code  # se traduce al mostrarlo
 
     # ------------------------------------------------------------------ piezas comunes
 
@@ -139,7 +139,7 @@ class TaskRunner:
         job = s.get(Job, task.job_id)
         upload = s.get(Upload, job.upload_id) if job and job.upload_id else None
         if job is None or upload is None or upload.status == UploadStatus.PURGED:
-            raise TaskError("source_unavailable", "El vídeo original ya no está disponible para este proyecto.")
+            raise TaskError("source_unavailable")
         return task, job, upload, s.get(User, job.user_id)
 
     def _source(self, upload_key: str, filename: str) -> Path:
@@ -163,7 +163,7 @@ class TaskRunner:
             task, job, upload, user = self._load(s, task_id)
             clip = s.get(Clip, task.clip_id)
             if clip is None:
-                raise TaskError("not_found", "El clip ya no existe.")
+                raise TaskError("not_found")
             start, end = float(task.payload["start"]), float(task.payload["end"])
             options, user_id, job_id, title = dict(job.options or {}), job.user_id, job.id, job.title
             rank, version, edits, style = clip.rank, clip.version, dict(clip.word_edits or {}), clip.caption_style
@@ -176,7 +176,7 @@ class TaskRunner:
 
         transcript = load_transcript(self.storage, user_id, job_id)
         if transcript is None:
-            raise TaskError("source_unavailable", "No se encuentra la transcripción de este proyecto.")
+            raise TaskError("no_transcript")
         source = self._source(upload_key, filename)
         self._beat(task_id)
         opts = PipelineOptions(profile=project_profile(self.settings, options, style), max_clips=1, language=None,
@@ -212,7 +212,7 @@ class TaskRunner:
         transcript = load_transcript(self.storage, user_id, job_id)
         signals = load_signals(self.storage, user_id, job_id)
         if transcript is None or signals is None:
-            raise TaskError("source_unavailable", "No se encuentra el análisis de este proyecto.")
+            raise TaskError("no_transcript")
         source = self._source(upload_key, filename)
         self._beat(task_id)
         opts = PipelineOptions(profile=project_profile(self.settings, options), max_clips=count,
@@ -223,10 +223,10 @@ class TaskRunner:
             result = pipeline.run(str(source), opts, out_dir=tmp / "out", transcript=transcript, signals=signals)
         except SmartCutsError as exc:
             if "ningún clip" in str(exc) or "vacía" in str(exc):
-                raise TaskError("no_more_clips", "No hemos encontrado más momentos que merezcan un clip.") from exc
+                raise TaskError("no_more_clips") from exc
             raise
         if not result.exports:
-            raise TaskError("no_more_clips", "No hemos encontrado más momentos que merezcan un clip.")
+            raise TaskError("no_more_clips")
 
         new_clips: list[Clip] = []
         for exp in result.exports:

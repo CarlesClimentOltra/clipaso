@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 
 import type { BrandingPrefs, CaptionStyle } from "@/lib/api/client";
 import { captionFontFamily, captionFontVariables } from "@/lib/caption-fonts";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export type ClipFormat = "vertical" | "square" | "horizontal";
@@ -15,7 +16,6 @@ const FRAME: Record<ClipFormat, { aspect: string; size: number; margin: number }
   horizontal: { aspect: "16 / 9", size: 0.045, margin: 0.12 },
 };
 const SIZE_FACTOR = { s: 0.8, m: 1, l: 1.25 } as const;
-const SAMPLE = ["Esto", "es", "increíble"];
 
 type Props = {
   style: CaptionStyle;
@@ -32,13 +32,15 @@ type Props = {
 export function CaptionPreview({
   style,
   format = "vertical",
-  words = SAMPLE,
+  words,
   activeIndex = 1,
   branding,
   logoUrl,
   background,
   className,
 }: Props) {
+  const { t } = useI18n();
+  words ??= t.styles.sample;
   const frame = FRAME[format];
   // Unidades relativas al alto del marco (container queries), como en el render real.
   const fontSize = `${frame.size * SIZE_FACTOR[style.size ?? "m"] * 100}cqh`;

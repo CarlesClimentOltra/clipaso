@@ -499,6 +499,71 @@
         }
       }
     },
+    "/me/locale": {
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Put Locale",
+        "description": "Idioma de la cuenta: el de la web y el de los emails (clips listos, fallos).",
+        "operationId": "put_locale_me_locale_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocaleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/uploads": {
       "post": {
         "tags": [
@@ -2567,6 +2632,23 @@
         ],
         "title": "JobSummary"
       },
+      "LocaleIn": {
+        "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "es",
+              "en"
+            ],
+            "title": "Locale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale"
+        ],
+        "title": "LocaleIn"
+      },
       "MeOut": {
         "properties": {
           "id": {
@@ -2576,6 +2658,22 @@
           "email": {
             "type": "string",
             "title": "Email"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "es",
+                  "en"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale",
+            "description": "Idioma elegido; null si aún no se ha fijado."
           },
           "plan": {
             "$ref": "#/components/schemas/PlanOut"
@@ -2588,6 +2686,7 @@
         "required": [
           "id",
           "email",
+          "locale",
           "plan",
           "usage"
         ],

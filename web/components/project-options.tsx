@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { CaptionStyle, JobOptions, Me } from "@/lib/api/client";
 import { useClipOptions, usePreferences } from "@/lib/api/hooks";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const FORMAT_ICON = { vertical: SmartphoneIcon, square: SquareIcon, horizontal: MonitorIcon } as const;
@@ -31,16 +32,18 @@ export function ProjectOptions({
 }) {
   const { data: options } = useClipOptions();
   const { data: prefs } = usePreferences();
+  const { t } = useI18n();
+  const o = t.options;
   const set = (patch: Partial<ProjectOptionsValue>) => onChange({ ...value, ...patch });
   const format = value.format as ClipFormat;
   const hasBrand = !!prefs && (!!prefs.branding.handle || prefs.branding.has_logo);
-  const duration = options?.durations.find((d) => d.id === value.duration);
+  const durationHint = o.durations[value.duration]?.[1];
 
   return (
     <div className="flex flex-col gap-6">
       <fieldset className="flex flex-col gap-2" disabled={disabled}>
-        <legend className="mb-2 text-sm font-medium">Formato</legend>
-        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Formato">
+        <legend className="mb-2 text-sm font-medium">{o.format}</legend>
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={o.format}>
           {(options?.formats ?? []).map((f) => {
             const Icon = FORMAT_ICON[f.id as ClipFormat] ?? SmartphoneIcon;
             const selected = value.format === f.id;
@@ -58,8 +61,8 @@ export function ProjectOptions({
               >
                 <Icon className={cn("size-5 shrink-0", selected ? "text-brand-ink" : "text-muted-foreground")} />
                 <span>
-                  <span className="block text-sm font-medium">{f.label}</span>
-                  <span className="block text-xs text-muted-foreground">{f.hint}</span>
+                  <span className="block text-sm font-medium">{o.formats[f.id]?.[0] ?? f.label}</span>
+                  <span className="block text-xs text-muted-foreground">{o.formats[f.id]?.[1] ?? f.hint}</span>
                 </span>
               </button>
             );
@@ -68,36 +71,39 @@ export function ProjectOptions({
       </fieldset>
 
       <div className="flex flex-col gap-2">
-        <Label>Duración de los clips</Label>
+        <Label>{o.duration}</Label>
         <div className="flex flex-wrap items-center gap-3">
           <Segmented
-            label="Duración de los clips"
+            label={o.duration}
             value={value.duration}
             disabled={disabled}
             onChange={(duration) => set({ duration })}
-            options={(options?.durations ?? []).map((d) => ({ value: d.id as ProjectOptionsValue["duration"], label: d.label }))}
+            options={(options?.durations ?? []).map((d) => ({
+              value: d.id as ProjectOptionsValue["duration"],
+              label: o.durations[d.id]?.[0] ?? d.label,
+            }))}
           />
-          {duration && <span className="text-xs text-muted-foreground">{duration.hint}</span>}
+          {durationHint && <span className="text-xs text-muted-foreground">{durationHint}</span>}
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="topic">
-          Tema <span className="font-normal text-muted-foreground">(opcional)</span>
+          {o.topic} <span className="font-normal text-muted-foreground">{t.common.optional}</span>
         </Label>
         <Input
           id="topic"
           maxLength={200}
-          placeholder="Por ejemplo: los momentos donde hablo de dinero"
+          placeholder={o.topicPlaceholder}
           value={value.topic}
           disabled={disabled}
           onChange={(e) => set({ topic: e.target.value })}
         />
-        <p className="text-xs text-muted-foreground">La IA dará prioridad a los fragmentos sobre ese tema.</p>
+        <p className="text-xs text-muted-foreground">{o.topicHint}</p>
       </div>
 
       <div className="flex flex-col gap-3">
-        <Label>Estilo de los subtítulos</Label>
+        <Label>{o.style}</Label>
         <div className="grid gap-4 md:grid-cols-[1fr_160px]">
           <StylePicker value={value.caption_style} onChange={(caption_style) => set({ caption_style })} format={format}
                        disabled={disabled} />
@@ -115,17 +121,17 @@ export function ProjectOptions({
 
       <div className="flex items-start justify-between gap-4 rounded-xl border p-4">
         <div className="flex flex-col gap-1">
-          <Label htmlFor="branding">Añadir mi marca</Label>
+          <Label htmlFor="branding">{o.branding}</Label>
           <p className="text-xs text-muted-foreground">
             {hasBrand ? (
               <>
-                {prefs!.branding.handle || "Tu logo"} en una esquina de cada clip.{" "}
-                <Link href="/account" className="underline underline-offset-4">Cambiar</Link>
+                {o.brandingOn(prefs!.branding.handle || o.yourLogo)}{" "}
+                <Link href="/account" className="underline underline-offset-4">{o.change}</Link>
               </>
             ) : (
               <>
-                Añade tu logo o tu @usuario desde{" "}
-                <Link href="/account" className="underline underline-offset-4">Mi cuenta</Link>.
+                {o.brandingOffStart}{" "}
+                <Link href="/account" className="underline underline-offset-4">{t.header.account}</Link>.
               </>
             )}
           </p>
@@ -146,11 +152,8 @@ export function ProjectOptions({
           className="mt-0.5"
         />
         <span>
-          <span className="font-medium">Guardar el vídeo original para editar los clips y pedir más</span>
-          <span className="block text-xs text-muted-foreground">
-            Se guarda mientras el proyecto esté disponible ({me.plan.retention_days} días) y después se borra. Si lo
-            desmarcas, se borra en cuanto terminen tus clips.
-          </span>
+          <span className="font-medium">{o.keepTitle}</span>
+          <span className="block text-xs text-muted-foreground">{o.keepText(me.plan.retention_days)}</span>
         </span>
       </label>
     </div>

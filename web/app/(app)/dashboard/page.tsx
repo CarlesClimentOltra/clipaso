@@ -15,28 +15,28 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
 import { PageHeader } from "@/components/page-header";
 import { Segmented } from "@/components/segmented";
-import { UsageRing, formatMinutes } from "@/components/usage-meter";
+import { UsageRing } from "@/components/usage-meter";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { JobSummary, Me } from "@/lib/api/client";
-import { useJobs, useMe } from "@/lib/api/hooks";
+import { useJobs, useMe, usePreferences } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "ready" | "active" | "other";
 
-const STATUS: Record<JobSummary["status"], { label: string; className: string }> = {
-  queued: { label: "En cola", className: "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-100" },
-  running: { label: "Procesando", className: "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-100" },
-  done: { label: "Listo", className: "bg-primary text-primary-foreground" },
-  failed: { label: "Error", className: "bg-destructive text-white" },
-  expired: { label: "Caducado", className: "bg-muted text-muted-foreground" },
+const STATUS_STYLE: Record<JobSummary["status"], string> = {
+  queued: "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-100",
+  running: "bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-100",
+  done: "bg-primary text-primary-foreground",
+  failed: "bg-destructive text-white",
+  expired: "bg-muted text-muted-foreground",
 };
-
-const dateFmt = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 function isActive(job: JobSummary) {
   return job.status === "queued" || job.status === "running";
@@ -69,27 +69,30 @@ function StatCard({ icon, label, value, hint, children }: {
 }
 
 function Stats({ me, jobs }: { me: Me; jobs: JobSummary[] }) {
+  const { t } = useI18n();
+  const d = t.dashboard;
+  const fm = t.common.minutes;
   const clips = jobs.reduce((n, j) => n + (j.status === "done" ? j.clip_count : 0), 0);
   const active = jobs.filter(isActive).length;
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-      <StatCard label="Minutos disponibles" value={formatMinutes(Math.max(0, me.usage.remaining_minutes))}
-                hint={`${formatMinutes(me.usage.used_minutes)} de ${formatMinutes(me.usage.limit_minutes)} usados`}
+      <StatCard label={d.statMinutes} value={fm(Math.max(0, me.usage.remaining_minutes))}
+                hint={d.statMinutesHint(fm(me.usage.used_minutes), fm(me.usage.limit_minutes))}
                 icon={null}>
         <UsageRing me={me} size={44} stroke={5} />
       </StatCard>
-      <StatCard icon={<FolderIcon className="size-5" />} label="Proyectos" value={jobs.length}
-                hint={active ? `${active} procesándose ahora` : "Todos al día"} />
-      <StatCard icon={<ScissorsIcon className="size-5" />} label="Clips generados" value={clips}
-                hint="Listos para publicar" />
-      <StatCard icon={<SparklesIcon className="size-5" />} label="Tu plan" value={me.plan.name}
-                hint={`Clips guardados ${me.plan.retention_days} días`} />
+      <StatCard icon={<FolderIcon className="size-5" />} label={d.statProjects} value={jobs.length}
+                hint={active ? d.statProjectsActive(active) : d.statProjectsIdle} />
+      <StatCard icon={<ScissorsIcon className="size-5" />} label={d.statClips} value={clips}
+                hint={d.statClipsHint} />
+      <StatCard icon={<SparklesIcon className="size-5" />} label={d.statPlan} value={t.plans[me.plan.code] ?? me.plan.name}
+                hint={d.statPlanHint(me.plan.retention_days)} />
     </div>
   );
 }
 
 function ProjectCard({ job }: { job: JobSummary }) {
-  const status = STATUS[job.status];
+  const { t, formatDate } = useI18n();
   const active = isActive(job);
   const pct = Math.round(job.progress * 100);
   return (
@@ -116,9 +119,9 @@ function ProjectCard({ job }: { job: JobSummary }) {
         )}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/45 to-transparent" />
         <span className={cn("absolute top-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium shadow-sm",
-          status.className)}>
+          STATUS_STYLE[job.status])}>
           {active && <span className="size-1.5 animate-pulse rounded-full bg-current" />}
-          {status.label}
+          {t.dashboard.status[job.status]}
         </span>
         {job.status === "done" && (
           <span className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-xs text-white backdrop-blur">
@@ -137,10 +140,10 @@ function ProjectCard({ job }: { job: JobSummary }) {
           </div>
         ) : (
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><ClockIcon className="size-3.5" /> {formatMinutes(job.video_minutes)}</span>
-            <span>{dateFmt.format(new Date(job.created_at))}</span>
-            {job.status === "failed" && <span className="text-destructive">No se pudo procesar</span>}
-            {job.status === "expired" && <span>Clips caducados</span>}
+            <span className="flex items-center gap-1"><ClockIcon className="size-3.5" /> {t.common.minutes(job.video_minutes)}</span>
+            <span>{formatDate(job.created_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+            {job.status === "failed" && <span className="text-destructive">{t.dashboard.failed}</span>}
+            {job.status === "expired" && <span>{t.dashboard.expired}</span>}
           </p>
         )}
       </div>
@@ -149,6 +152,7 @@ function ProjectCard({ job }: { job: JobSummary }) {
 }
 
 function NewProjectTile() {
+  const { t } = useI18n();
   return (
     <Link
       href="/new"
@@ -157,13 +161,14 @@ function NewProjectTile() {
       <span className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-transform group-hover:scale-110">
         <PlusIcon className="size-6" />
       </span>
-      <span className="font-medium">Nuevo proyecto</span>
-      <span className="text-sm text-muted-foreground">Sube un vídeo y te devolvemos los mejores momentos</span>
+      <span className="font-medium">{t.dashboard.newTitle}</span>
+      <span className="text-sm text-muted-foreground">{t.dashboard.newText}</span>
     </Link>
   );
 }
 
 function EmptyState() {
+  const { t } = useI18n();
   return (
     <div className="relative isolate flex flex-col items-center gap-6 overflow-hidden rounded-[2rem] border bg-card px-6 py-16 text-center">
       <div className="absolute -top-20 left-1/2 -z-10 size-80 -translate-x-1/2 rounded-full bg-brand-soft blur-3xl" />
@@ -171,22 +176,19 @@ function EmptyState() {
         <UploadCloudIcon className="size-8" />
       </span>
       <div className="flex max-w-md flex-col gap-2">
-        <h2 className="text-2xl font-semibold tracking-tight">Crea tus primeros clips</h2>
-        <p className="text-muted-foreground">
-          Sube un vídeo con diálogo (una entrevista, un podcast, una charla) y en unos minutos tendrás los mejores
-          momentos en vertical, con subtítulos y texto para publicar.
-        </p>
+        <h2 className="text-2xl font-semibold tracking-tight">{t.dashboard.emptyTitle}</h2>
+        <p className="text-muted-foreground">{t.dashboard.emptyText}</p>
       </div>
       <Link href="/new" className={cn(buttonVariants({ size: "lg" }), "h-11 rounded-full px-6 text-base")}>
-        <PlusIcon /> Subir un vídeo
+        <PlusIcon /> {t.dashboard.emptyButton}
       </Link>
       <ol className="grid w-full max-w-2xl gap-3 pt-2 text-left text-sm sm:grid-cols-3">
-        {["Sube tu vídeo", "La IA elige los momentos", "Retoca y descarga"].map((t, i) => (
-          <li key={t} className="flex items-center gap-3 rounded-2xl bg-muted/60 p-3">
+        {t.dashboard.emptySteps.map((step, i) => (
+          <li key={step} className="flex items-center gap-3 rounded-2xl bg-muted/60 p-3">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-card text-xs font-semibold shadow-xs">
               {i + 1}
             </span>
-            {t}
+            {step}
           </li>
         ))}
       </ol>
@@ -198,6 +200,9 @@ export default function DashboardPage() {
   const { data: jobs, isPending, error } = useJobs();
   const { data: me } = useMe();
   const { session } = useAuth();
+  const { data: prefs } = usePreferences();
+  const { t } = useI18n();
+  const d = t.dashboard;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const name = firstName(session?.email);
@@ -216,9 +221,9 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-10">
       <PageHeader
-        eyebrow="Mis proyectos"
-        title={name ? `Hola, ${name}` : "Hola"}
-        description="Aquí tienes tus vídeos y los clips que hemos sacado de cada uno."
+        eyebrow={d.eyebrow}
+        title={d.hello(name)}
+        description={d.lead}
       />
 
       {me && jobs ? (
@@ -229,6 +234,8 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {jobs && <OnboardingChecklist jobs={jobs} prefs={prefs} />}
+
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
       {isPending ? (
@@ -238,22 +245,22 @@ export default function DashboardPage() {
       ) : jobs && jobs.length > 0 ? (
         <section className="flex flex-col gap-5" aria-labelledby="projects-title">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="projects-title" className="text-lg font-semibold">Proyectos</h2>
+            <h2 id="projects-title" className="scroll-mt-24 text-lg font-semibold">{d.projects}</h2>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
                 <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar proyecto"
-                       aria-label="Buscar proyecto" className="h-9 w-52 rounded-full pl-9" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={d.search}
+                       aria-label={d.search} className="h-9 w-52 rounded-full pl-9" />
               </div>
               <Segmented
-                label="Filtrar proyectos"
+                label={d.filterLabel}
                 value={filter}
                 onChange={setFilter}
                 options={[
-                  { value: "all", label: "Todos" },
-                  { value: "ready", label: "Listos" },
-                  { value: "active", label: "En curso" },
-                  { value: "other", label: "Otros" },
+                  { value: "all", label: d.filters.all },
+                  { value: "ready", label: d.filters.ready },
+                  { value: "active", label: d.filters.active },
+                  { value: "other", label: d.filters.other },
                 ]}
               />
             </div>
@@ -263,7 +270,7 @@ export default function DashboardPage() {
             {visible.map((job) => <ProjectCard key={job.id} job={job} />)}
           </div>
           {visible.length === 0 && (
-            <p className="py-10 text-center text-sm text-muted-foreground">Ningún proyecto coincide con la búsqueda.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">{d.noMatch}</p>
           )}
         </section>
       ) : (

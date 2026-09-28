@@ -3,6 +3,8 @@
 import { PlayIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
+import { useI18n } from "@/lib/i18n";
+
 // Reproductor de clip: todo el vídeo es clicable. En escritorio, un <video controls> sin cargar
 // solo reacciona al pequeño botón de la barra; aquí un clic en cualquier parte lo reproduce.
 // Los controles nativos (pausa, volumen, pantalla completa) aparecen tras el primer clic.
@@ -22,6 +24,7 @@ export function ClipPlayer({
   aspect?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { t } = useI18n();
   const [started, setStarted] = useState(false);
 
   function start() {
@@ -43,14 +46,14 @@ export function ClipPlayer({
         playsInline
         preload="metadata"
         className="size-full object-contain"
-        aria-label={`Clip ${rank}: ${title}`}
+        aria-label={t.clip.videoLabel(rank, title)}
         onClick={started ? undefined : start}
       />
       {!started && (
         <button
           type="button"
           onClick={start}
-          aria-label={`Reproducir clip ${rank}`}
+          aria-label={t.clip.play(rank)}
           className="group absolute inset-0 flex items-center justify-center bg-black/10 transition-colors outline-none hover:bg-black/25 focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:ring-inset"
         >
           <span className="flex size-16 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition-transform group-hover:scale-110">

@@ -6,6 +6,7 @@
 //   conexión, al volver a elegir el mismo fichero se continúa donde se quedó.
 
 import { ApiError, unwrap, type Api } from "@/lib/api/client";
+import { dictionary } from "@/lib/i18n";
 
 const CONCURRENCY = 4;
 const MAX_RETRIES = 4;
@@ -49,7 +50,7 @@ function sleep(ms: number, signal?: AbortSignal) {
     const t = setTimeout(resolve, ms);
     signal?.addEventListener("abort", () => {
       clearTimeout(t);
-      reject(new ApiError("aborted", "Subida cancelada.", 0));
+      reject(new ApiError("aborted", dictionary().errors.aborted, 0));
     });
   });
 }
@@ -64,11 +65,11 @@ function putPart(url: string, body: Blob, onProgress: (loaded: number) => void, 
       const etag = xhr.getResponseHeader("ETag");
       if (xhr.status >= 200 && xhr.status < 300 && etag) resolve(etag);
       else if (xhr.status >= 200 && xhr.status < 300)
-        reject(new ApiError("cors_etag", "El almacenamiento no expone la cabecera ETag (revisa su CORS).", xhr.status));
-      else reject(new ApiError("part_failed", "Falló la subida de una parte.", xhr.status));
+        reject(new ApiError("cors_etag", dictionary().errors.cors_etag, xhr.status));
+      else reject(new ApiError("part_failed", dictionary().errors.part_failed, xhr.status));
     };
-    xhr.onerror = () => reject(new ApiError("network_error", "Se perdió la conexión durante la subida.", 0));
-    xhr.onabort = () => reject(new ApiError("aborted", "Subida cancelada.", 0));
+    xhr.onerror = () => reject(new ApiError("network_error", dictionary().errors.upload_network, 0));
+    xhr.onabort = () => reject(new ApiError("aborted", dictionary().errors.aborted, 0));
     signal?.addEventListener("abort", () => xhr.abort());
     xhr.send(body);
   });

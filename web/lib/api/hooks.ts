@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import {
   ApiError,
@@ -16,6 +16,8 @@ import {
 } from "@/lib/api/client";
 import { uploadFile, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useAuth } from "@/lib/auth";
+import { dictionary, useI18n } from "@/lib/i18n";
+import { getStoredLocale } from "@/lib/i18n/store";
 
 const ACTIVE = new Set(["queued", "running"]);
 
@@ -266,7 +268,7 @@ export function useDownloadCaptions() {
         parseAs: "blob",
       });
       if (!response.ok || !data) {
-        throw new ApiError("captions", "No se pudieron descargar los subtítulos.", response.status);
+        throw new ApiError("captions", dictionary().errors.captions, response.status);
       }
       saveBlob(data as Blob, v.filename);
     },
@@ -303,4 +305,27 @@ export function useDownloadAll(jobId: string) {
       window.location.assign(url);
     },
   });
+}
+
+/**
+ * Mantiene alineados el idioma de la web y el de la cuenta (que decide el idioma de los emails).
+ * Si el usuario nunca eligió idioma en este navegador, se adopta el de su cuenta; si la cuenta no tiene
+ * ninguno (usuario nuevo), se guarda el del navegador.
+ */
+export function useLocaleSync() {
+  const api = useApi();
+  const qc = useQueryClient();
+  const { data: me } = useMe();
+  const { locale, setLocale } = useI18n();
+  useEffect(() => {
+    if (!me || me.locale === locale) return;
+    // La cuenta ya tiene idioma y este navegador no ha elegido ninguno: se usa el de la cuenta.
+    if (me.locale && !getStoredLocale()) {
+      setLocale(me.locale);
+      return;
+    }
+    api.PUT("/me/locale", { body: { locale } }).then(() => {
+      qc.setQueryData(["me"], { ...me, locale });
+    });
+  }, [api, qc, me, locale, setLocale]);
 }

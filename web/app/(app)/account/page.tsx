@@ -29,6 +29,8 @@ import { ApiError } from "@/lib/api/client";
 import { useDeleteAccount, useMe } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
 import { config } from "@/lib/config";
+import { useI18n, type Locale } from "@/lib/i18n";
+import { Segmented } from "@/components/segmented";
 
 export default function AccountPage() {
   const { session, signOut } = useAuth();
@@ -38,41 +40,58 @@ export default function AccountPage() {
   const [confirmation, setConfirmation] = useState("");
   const email = session?.email ?? "";
   const confirmed = confirmation.trim().toLowerCase() === email.toLowerCase() && email !== "";
+  const { t, locale, setLocale } = useI18n();
+  const a = t.account;
 
   async function onDelete() {
     try {
       await remove.mutateAsync();
       await signOut().catch(() => {}); // la cuenta ya no existe: basta con olvidar la sesión local
-      toast.success("Tu cuenta y todos tus datos se han eliminado.");
+      toast.success(a.deleted);
       router.replace("/");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudo eliminar la cuenta. Inténtalo de nuevo.");
+      toast.error(err instanceof ApiError ? err.message : a.deleteError);
     }
   }
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <PageHeader eyebrow="Mi cuenta" title="Ajustes" description="Tu plan, tu estilo y tu marca, y el acceso a tu cuenta." />
+      <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.lead} />
 
       <Card>
         <CardHeader>
-          <CardTitle>Datos de la cuenta</CardTitle>
-          <CardDescription>Email con el que inicias sesión y plan actual.</CardDescription>
+          <CardTitle>{a.dataTitle}</CardTitle>
+          <CardDescription>{a.dataLead}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-muted-foreground">Email</span>
+            <span className="text-muted-foreground">{a.email}</span>
             <span className="font-medium">{email}</span>
           </div>
           {me && (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-muted-foreground">Plan</span>
-                <Badge variant="secondary">{me.plan.name}</Badge>
+                <span className="text-muted-foreground">{a.plan}</span>
+                <Badge variant="secondary">{t.plans[me.plan.code] ?? me.plan.name}</Badge>
               </div>
               <UsageMeter me={me} />
             </>
           )}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="flex flex-col">
+              <span className="text-muted-foreground">{t.common.language}</span>
+              <span className="text-xs text-muted-foreground">{a.languageHint}</span>
+            </span>
+            <Segmented<Locale>
+              label={t.common.language}
+              value={locale}
+              onChange={setLocale}
+              options={[
+                { value: "es", label: "Español" },
+                { value: "en", label: "English" },
+              ]}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -82,27 +101,26 @@ export default function AccountPage() {
 
       <Card className="border-destructive/40">
         <CardHeader>
-          <CardTitle>Eliminar cuenta</CardTitle>
+          <CardTitle>{a.deleteTitle}</CardTitle>
           <CardDescription>
-            Se borrarán para siempre tu cuenta, todos tus proyectos y clips, y tu historial de consumo. No se puede
-            deshacer. Si quieres conservar algún clip, descárgalo antes.
+            {a.deleteLead}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Dialog onOpenChange={(open) => !open && setConfirmation("")}>
             <DialogTrigger render={<Button variant="destructive" />}>
-              <Trash2Icon /> Eliminar mi cuenta
+              <Trash2Icon /> {a.deleteButton}
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>¿Eliminar tu cuenta definitivamente?</DialogTitle>
+                <DialogTitle>{a.deleteDialogTitle}</DialogTitle>
                 <DialogDescription>
-                  Se borrarán tu cuenta, tus proyectos, tus clips y tu historial. Esta acción no se puede deshacer.
+                  {a.deleteDialogText}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="confirm-email">
-                  Para confirmar, escribe tu email: <span className="font-medium">{email}</span>
+                  {a.confirmEmail} <span className="font-medium">{email}</span>
                 </Label>
                 <Input
                   id="confirm-email"
@@ -113,15 +131,15 @@ export default function AccountPage() {
                 />
               </div>
               <DialogFooter>
-                <DialogClose render={<Button variant="outline" />}>Cancelar</DialogClose>
+                <DialogClose render={<Button variant="outline" />}>{t.common.cancel}</DialogClose>
                 <Button variant="destructive" onClick={onDelete} disabled={!confirmed || remove.isPending}>
-                  {remove.isPending ? "Eliminando…" : "Eliminar definitivamente"}
+                  {remove.isPending ? a.deleting : a.deleteConfirm}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
           <p className="mt-4 text-xs text-muted-foreground">
-            Más información en la <Link href="/legal/privacidad" className="underline underline-offset-4">Política de privacidad</Link>.
+            {a.moreInfo} <Link href="/legal/privacidad" className="underline underline-offset-4">{a.privacy}</Link>.
           </p>
         </CardContent>
       </Card>

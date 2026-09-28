@@ -136,7 +136,7 @@ def _owned_upload(session: Session, user: User, upload_id: str) -> Upload:
 def _pending_upload(session: Session, user: User, upload_id: str) -> Upload:
     upload = _owned_upload(session, user, upload_id)
     if upload.status != UploadStatus.PENDING or not upload.multipart_id:
-        raise AppError("upload_incomplete", 409, message="Esta subida ya no está activa. Vuelve a elegir el vídeo.")
+        raise AppError("upload_incomplete", 409, key="upload_inactive")
     return upload
 
 
@@ -197,7 +197,7 @@ def complete_upload(
     expected = part_count(upload)
     numbers = sorted(p.part_number for p in parts)
     if numbers != list(range(1, expected + 1)):
-        raise AppError("upload_incomplete", message="Faltan partes del vídeo por subir. Vuelve a intentarlo.")
+        raise AppError("upload_incomplete", key="upload_missing_parts")
     try:
         storage.complete_multipart(upload.storage_key, upload.multipart_id, parts)
     except Exception as exc:  # partes corruptas, caducadas o inexistentes
@@ -223,9 +223,8 @@ def complete_upload(
     if duration / 60 > user.plan.max_video_minutes:
         _reject(storage, upload)
         raise AppError(
-            "video_too_long",
-            message=f"El vídeo dura {duration / 60:.0f} min y tu plan permite hasta "
-                    f"{user.plan.max_video_minutes} min por vídeo.",
+            "video_too_long", key="video_too_long_detail",
+            params={"minutes": f"{duration / 60:.0f}", "limit": user.plan.max_video_minutes},
         )
 
     upload.duration_seconds = duration
@@ -266,7 +265,7 @@ def create_job(
     if upload.status != UploadStatus.READY or upload.duration_seconds is None:
         raise AppError("upload_not_ready", 409)
     if max_clips < 1 or max_clips > plan.max_clips_per_job:
-        raise AppError("too_many_clips", message=f"Tu plan permite hasta {plan.max_clips_per_job} clips por vídeo.")
+        raise AppError("too_many_clips", key="plan_clip_limit", params={"limit": plan.max_clips_per_job})
     if running_jobs(session, user) >= plan.max_concurrent_jobs:
         raise AppError("too_many_jobs", 429)
 
@@ -274,9 +273,8 @@ def create_job(
     usage = usage_for(session, user, now)
     if minutes > usage.remaining_minutes:
         raise AppError(
-            "quota_exceeded", 402,
-            message=f"Este vídeo necesita {minutes:g} min y te quedan {usage.remaining_minutes:g} min "
-                    f"de tu plan este mes.",
+            "quota_exceeded", 402, key="quota_detail",
+            params={"needed": f"{minutes:g}", "remaining": f"{usage.remaining_minutes:g}"},
         )
 
     job = Job(
@@ -327,7 +325,7 @@ def list_jobs(session: Session, user: User, limit: int = 50) -> list[Job]:
 def delete_job(session: Session, storage: Storage, user: User, job_id: str, now: datetime) -> None:
     job = get_job(session, user, job_id)
     if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
-        raise AppError("validation_error", 409, message="No se puede borrar un vídeo mientras se procesa.")
+        raise AppError("validation_error", 409, key="delete_while_processing")
     storage.delete_prefix(clips_prefix(user.id, job.id))
     storage.delete_prefix(job_prefix(user.id, job.id))
     if job.upload_id:

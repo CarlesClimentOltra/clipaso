@@ -65,45 +65,89 @@ def build_notifier(settings: NotificationSettings) -> Notifier:
     return NullNotifier()
 
 
-def _layout(title: str, body: str, button: tuple[str, str] | None) -> str:
+TEXTS = {
+    "es": {
+        "footer": "Recibes este email porque subiste un vídeo a SmartCuts.",
+        "ready_title": "Tus clips están listos",
+        "ready_subject": "Tus clips de «{title}» están listos",
+        "ready_body": "Hemos terminado <strong>{title}</strong>: tienes {clips} listos para ver y descargar.",
+        "ready_text": "Hemos terminado «{title}»: tienes {clips} listos.",
+        "ready_keep": "Estarán disponibles durante {days} días.",
+        "ready_button": "Ver mis clips",
+        "open": "Ver y descargar",
+        "clip_one": "1 clip",
+        "clip_many": "{n} clips",
+        "failed_title": "No hemos podido procesar tu vídeo",
+        "failed_subject": "No hemos podido procesar «{title}»",
+        "failed_body": "No hemos podido procesar <strong>{title}</strong>.",
+        "failed_text": "No hemos podido procesar «{title}».",
+        "refund": "Los minutos de este vídeo se han devuelto a tu cuenta.",
+        "retry": "Probar de nuevo",
+    },
+    "en": {
+        "footer": "You're receiving this email because you uploaded a video to SmartCuts.",
+        "ready_title": "Your clips are ready",
+        "ready_subject": "Your clips from “{title}” are ready",
+        "ready_body": "We've finished <strong>{title}</strong>: you have {clips} ready to watch and download.",
+        "ready_text": "We've finished “{title}”: you have {clips} ready.",
+        "ready_keep": "They'll be available for {days} days.",
+        "ready_button": "See my clips",
+        "open": "Watch and download",
+        "clip_one": "1 clip",
+        "clip_many": "{n} clips",
+        "failed_title": "We couldn't process your video",
+        "failed_subject": "We couldn't process “{title}”",
+        "failed_body": "We couldn't process <strong>{title}</strong>.",
+        "failed_text": "We couldn't process “{title}”.",
+        "refund": "The minutes for this video have been returned to your account.",
+        "retry": "Try again",
+    },
+}
+
+
+def _t(lang: str) -> dict[str, str]:
+    return TEXTS.get(lang, TEXTS["es"])
+
+
+def _layout(title: str, body: str, button: tuple[str, str] | None, lang: str) -> str:
     cta = ""
     if button:
         label, url = button
-        cta = (f'<p style="margin:28px 0"><a href="{escape(url)}" style="background:#6d4aff;color:#fff;'
-               f'padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600">{escape(label)}</a></p>')
+        cta = (f'<p style="margin:28px 0"><a href="{escape(url)}" style="background:#b6e34a;color:#1f2d0c;'
+               f'padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600">{escape(label)}</a></p>')
     return (
         '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;'
         'color:#1a1a1a;line-height:1.5">'
-        f'<p style="font-weight:700;font-size:18px;margin:0 0 20px">SmartCuts</p>'
+        '<p style="font-weight:700;font-size:18px;margin:0 0 20px">Smart<span style="color:#4d7c0f">Cuts</span></p>'
         f'<h1 style="font-size:20px;margin:0 0 12px">{escape(title)}</h1>{body}{cta}'
-        '<p style="color:#888;font-size:12px;margin-top:32px">Recibes este email porque subiste un vídeo a '
-        'SmartCuts.</p></div>'
+        f'<p style="color:#888;font-size:12px;margin-top:32px">{escape(_t(lang)["footer"])}</p></div>'
     )
 
 
-def clips_ready(to: str, title: str, clip_count: int, retention_days: int, project_url: str) -> Email:
-    clips = "1 clip" if clip_count == 1 else f"{clip_count} clips"
-    body = (f"<p>Hemos terminado <strong>{escape(title)}</strong>: tienes {clips} listos para ver y descargar.</p>"
-            f"<p>Estarán disponibles durante {retention_days} días.</p>")
+def clips_ready(to: str, title: str, clip_count: int, retention_days: int, project_url: str,
+                lang: str = "es") -> Email:
+    tx = _t(lang)
+    clips = tx["clip_one"] if clip_count == 1 else tx["clip_many"].format(n=clip_count)
+    keep = tx["ready_keep"].format(days=retention_days)
+    body = f"<p>{tx['ready_body'].format(title=escape(title), clips=clips)}</p><p>{keep}</p>"
     return Email(
         to=to,
-        subject=f"Tus clips de «{title}» están listos",
-        html=_layout("Tus clips están listos", body, ("Ver mis clips", project_url)),
-        text=(f"Hemos terminado «{title}»: tienes {clips} listos.\nVer y descargar: {project_url}\n"
-              f"Estarán disponibles durante {retention_days} días."),
+        subject=tx["ready_subject"].format(title=title),
+        html=_layout(tx["ready_title"], body, (tx["ready_button"], project_url), lang),
+        text=f"{tx['ready_text'].format(title=title, clips=clips)}\n{tx['open']}: {project_url}\n{keep}",
     )
 
 
-def processing_failed(to: str, title: str, error_code: str, new_project_url: str) -> Email:
-    reason = user_message(error_code) or ""
-    body = (f"<p>No hemos podido procesar <strong>{escape(title)}</strong>.</p><p>{escape(reason)}</p>"
-            "<p>Los minutos de este vídeo se han devuelto a tu cuenta.</p>")
+def processing_failed(to: str, title: str, error_code: str, new_project_url: str, lang: str = "es") -> Email:
+    tx = _t(lang)
+    reason = user_message(error_code, lang) or ""
+    body = (f"<p>{tx['failed_body'].format(title=escape(title))}</p><p>{escape(reason)}</p>"
+            f"<p>{tx['refund']}</p>")
     return Email(
         to=to,
-        subject=f"No hemos podido procesar «{title}»",
-        html=_layout("No hemos podido procesar tu vídeo", body, ("Probar de nuevo", new_project_url)),
-        text=(f"No hemos podido procesar «{title}». {reason}\nLos minutos se han devuelto a tu cuenta.\n"
-              f"Probar de nuevo: {new_project_url}"),
+        subject=tx["failed_subject"].format(title=title),
+        html=_layout(tx["failed_title"], body, (tx["retry"], new_project_url), lang),
+        text=f"{tx['failed_text'].format(title=title)} {reason}\n{tx['refund']}\n{tx['retry']}: {new_project_url}",
     )
 
 

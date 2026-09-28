@@ -107,7 +107,7 @@ def clip_words(storage: Storage, job: Job, clip: Clip, start: float | None = Non
     """Palabras del tramo (con las correcciones del usuario), con tiempos absolutos."""
     transcript = load_transcript(storage, job.user_id, job.id)
     if transcript is None:
-        raise AppError("not_found", 404, message="Este proyecto no tiene transcripción guardada.")
+        raise AppError("not_found", 404, key="no_transcript")
     lo, hi = clip.start if start is None else start, clip.end if end is None else end
     return transcript, lo, hi
 
@@ -161,8 +161,8 @@ def request_render(
     duration = upload.duration_seconds or 0
     start, end = round(max(0.0, start), 3), round(min(end, duration), 3)
     if not MIN_CLIP_SECONDS <= end - start <= MAX_CLIP_SECONDS:
-        raise AppError("validation_error", message=f"Un clip debe durar entre {MIN_CLIP_SECONDS:.0f} y "
-                                                   f"{MAX_CLIP_SECONDS:.0f} segundos.")
+        raise AppError("validation_error", key="clip_duration",
+                       params={"min": f"{MIN_CLIP_SECONDS:.0f}", "max": f"{MAX_CLIP_SECONDS:.0f}"})
     clip.word_edits = {k: v.strip()[:60] for k, v in word_edits.items() if k.isdigit()}
     clip.caption_style = caption_style.model_dump() if caption_style else None
     clip.status, clip.render_error = ClipStatus.RENDERING, None
@@ -183,7 +183,7 @@ def request_more_clips(session: Session, user: User, job: Job, *, count: int, to
         raise AppError("too_many_tasks", 429)
     available = more_clips_available(job, user)
     if available <= 0:
-        raise AppError("too_many_clips", message="Este proyecto ya tiene el máximo de clips de tu plan.")
+        raise AppError("too_many_clips", key="project_clip_limit")
     count = max(1, min(count, available, user.plan.max_clips_per_job))
     task = Task(user_id=user.id, job_id=job.id, kind=TaskKind.MORE_CLIPS,
                 payload={"count": count, "topic": topic.strip()[:200]}, created_at=now)
@@ -214,17 +214,17 @@ def save_logo(storage: Storage, user: User, data: bytes) -> None:
     import numpy as np
 
     if not data or len(data) > LOGO_MAX_BYTES:
-        raise AppError("validation_error", message="El logo debe ser una imagen PNG o JPG de 1 MB como máximo.")
+        raise AppError("validation_error", key="logo_invalid")
     img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_UNCHANGED)
     if img is None or img.ndim < 2:
-        raise AppError("validation_error", message="No hemos podido leer la imagen. Prueba con un PNG o JPG.")
+        raise AppError("validation_error", key="logo_unreadable")
     h, w = img.shape[:2]
     scale = min(1.0, LOGO_MAX_SIDE / max(h, w))
     if scale < 1.0:
         img = cv2.resize(img, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA)
     ok, png = cv2.imencode(".png", img)
     if not ok:
-        raise AppError("validation_error", message="No hemos podido procesar la imagen.")
+        raise AppError("validation_error", key="logo_unprocessable")
     storage.put_bytes(logo_key(user.id), png.tobytes(), "image/png")
     _set_has_logo(user, True)
 

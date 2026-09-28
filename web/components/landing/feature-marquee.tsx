@@ -1,3 +1,5 @@
+"use client";
+
 import {
   CaptionsIcon,
   CropIcon,
@@ -10,21 +12,18 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-const ITEMS: { icon: LucideIcon; title: string; text: string }[] = [
-  { icon: SparklesIcon, title: "IA que elige", text: "Los mejores momentos" },
-  { icon: CaptionsIcon, title: "Subtítulos automáticos", text: "Palabra a palabra" },
-  { icon: CropIcon, title: "Reencuadre 9:16", text: "Sigue a quien habla" },
-  { icon: ScissorsIcon, title: "Editor integrado", text: "Corrige en segundos" },
-  { icon: PaletteIcon, title: "Tu marca", text: "Logo y @usuario" },
-  { icon: DownloadIcon, title: "Todo en un ZIP", text: "MP4, SRT y textos" },
-  { icon: ZapIcon, title: "Listo en minutos", text: "Sin editar a mano" },
-  { icon: ShieldCheckIcon, title: "Datos en la UE", text: "Privacidad RGPD" },
+import { useI18n } from "@/lib/i18n";
+
+const ICONS: LucideIcon[] = [
+  SparklesIcon, CaptionsIcon, CropIcon, ScissorsIcon, PaletteIcon, DownloadIcon, ZapIcon, ShieldCheckIcon,
 ];
 
 function Row({ hidden }: { hidden?: boolean }) {
+  const { t } = useI18n();
+  const items = t.landing.marquee.map(([title, text], i) => ({ icon: ICONS[i], title, text }));
   return (
     <ul className="flex shrink-0 items-center gap-14 pr-14" aria-hidden={hidden || undefined}>
-      {ITEMS.map(({ icon: Icon, title, text }) => (
+      {items.map(({ icon: Icon, title, text }) => (
         <li key={title} className="flex items-center gap-3 whitespace-nowrap">
           <Icon className="size-5 text-brand-ink" aria-hidden="true" />
           <span className="flex flex-col leading-tight">
@@ -39,8 +38,9 @@ function Row({ hidden }: { hidden?: boolean }) {
 
 /** Cinta de ventajas en bucle: la lista va duplicada para que el desplazamiento no tenga saltos. */
 export function FeatureMarquee() {
+  const { t } = useI18n();
   return (
-    <section aria-label="Ventajas de SmartCuts" className="marquee overflow-hidden border-y py-6">
+    <section aria-label={t.landing.marqueeLabel} className="marquee overflow-hidden border-y py-6">
       <div className="marquee-track flex w-max">
         <Row />
         <Row hidden />

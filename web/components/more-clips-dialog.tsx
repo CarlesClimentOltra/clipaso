@@ -20,9 +20,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError, type Job } from "@/lib/api/client";
 import { useMoreClips } from "@/lib/api/hooks";
+import { useI18n } from "@/lib/i18n";
 
 export function MoreClipsDialog({ job, maxPerRequest }: { job: Job; maxPerRequest: number }) {
   const more = useMoreClips(job.id);
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const limit = Math.max(1, Math.min(job.more_clips_available, maxPerRequest));
   const [count, setCount] = useState(String(Math.min(3, limit)));
@@ -32,32 +34,31 @@ export function MoreClipsDialog({ job, maxPerRequest }: { job: Job; maxPerReques
   async function submit() {
     try {
       await more.mutateAsync({ count: Number(count), topic });
-      toast.success("Buscando más momentos en tu vídeo…");
+      toast.success(t.more.started);
       setOpen(false);
       setTopic("");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudo pedir más clips.");
+      toast.error(err instanceof ApiError ? err.message : t.more.error);
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" className="h-9 rounded-full px-4" disabled={searching || job.more_clips_available <= 0} />}>
-        <SparklesIcon /> Más clips
+        <SparklesIcon /> {t.more.button}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Buscar más clips en este vídeo</DialogTitle>
+          <DialogTitle>{t.more.title}</DialogTitle>
           <DialogDescription>
-            Usamos el vídeo que ya subiste, así que no gasta minutos de tu plan. No repetiremos los momentos que ya
-            tienes.
+            {t.more.text}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <Label>¿Cuántos?</Label>
+            <Label>{t.more.howMany}</Label>
             <Segmented
-              label="Número de clips"
+              label={t.more.countLabel}
               value={count}
               onChange={setCount}
               options={Array.from({ length: limit }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
@@ -65,16 +66,16 @@ export function MoreClipsDialog({ job, maxPerRequest }: { job: Job; maxPerReques
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="more-topic">
-              Tema <span className="font-normal text-muted-foreground">(opcional)</span>
+              {t.options.topic} <span className="font-normal text-muted-foreground">{t.common.optional}</span>
             </Label>
             <Input id="more-topic" maxLength={200} value={topic} onChange={(e) => setTopic(e.target.value)}
-                   placeholder="Por ejemplo: los consejos prácticos" />
+                   placeholder={t.more.topicPlaceholder} />
           </div>
         </div>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Cancelar</DialogClose>
+          <DialogClose render={<Button variant="outline" />}>{t.common.cancel}</DialogClose>
           <Button onClick={submit} disabled={more.isPending}>
-            {more.isPending ? "Enviando…" : "Buscar clips"}
+            {more.isPending ? t.more.sending : t.more.submit}
           </Button>
         </DialogFooter>
       </DialogContent>

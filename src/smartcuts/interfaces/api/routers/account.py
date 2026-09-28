@@ -6,6 +6,7 @@ from sqlalchemy import select
 from smartcuts.interfaces.api.auth import delete_identity
 from smartcuts.interfaces.api.deps import SessionDep, SettingsDep, StorageDep, UserDep
 from smartcuts.interfaces.api.schemas import (
+    LocaleIn,
     MeOut,
     OptionItem,
     OptionsOut,
@@ -36,6 +37,7 @@ def me(user: UserDep, session: SessionDep) -> MeOut:
     return MeOut(
         id=user.id,
         email=user.email,
+        locale=(user.preferences or {}).get("locale"),
         plan=PlanOut.model_validate(user.plan, from_attributes=True),
         usage=UsageOut(period=usage.period, used_minutes=usage.used_minutes,
                        limit_minutes=usage.limit_minutes, remaining_minutes=usage.remaining_minutes),
@@ -90,7 +92,7 @@ def put_preferences(body: PreferencesIn, user: UserDep, storage: StorageDep, set
 async def put_logo(request: Request, user: UserDep, storage: StorageDep, settings: SettingsDep) -> PreferencesOut:
     """Sube el logo (PNG o JPG, máx. 1 MB) como cuerpo de la petición."""
     if int(request.headers.get("content-length") or 0) > editing.LOGO_MAX_BYTES:
-        raise AppError("validation_error", 413, message="El logo debe ocupar 1 MB como máximo.")
+        raise AppError("validation_error", 413, key="logo_too_big")
     editing.save_logo(storage, user, await request.body())
     return _preferences_out(user, storage, settings.api.signed_url_ttl_seconds)
 
@@ -99,3 +101,10 @@ async def put_logo(request: Request, user: UserDep, storage: StorageDep, setting
 def remove_logo(user: UserDep, storage: StorageDep, settings: SettingsDep) -> PreferencesOut:
     editing.delete_logo(storage, user)
     return _preferences_out(user, storage, settings.api.signed_url_ttl_seconds)
+
+
+@router.put("/me/locale", status_code=204)
+def put_locale(body: LocaleIn, user: UserDep) -> Response:
+    """Idioma de la cuenta: el de la web y el de los emails (clips listos, fallos)."""
+    user.preferences = {**(user.preferences or {}), "locale": body.locale}
+    return Response(status_code=204)

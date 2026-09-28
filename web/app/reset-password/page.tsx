@@ -16,10 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 
 export default function ResetPasswordPage() {
   const { session, loading, updatePassword } = useAuth();
   const router = useRouter();
+  const { t } = useI18n();
+  const r = t.reset;
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,16 +35,16 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
     if (password !== repeat) {
-      setError("Las contraseñas no coinciden.");
+      setError(r.mismatch);
       return;
     }
     setSubmitting(true);
     try {
       await updatePassword(password);
-      toast.success("Contraseña cambiada. Ya has iniciado sesión.");
+      toast.success(r.done);
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cambiar la contraseña.");
+      setError(err instanceof Error ? err.message : r.error);
     } finally {
       setSubmitting(false);
     }
@@ -54,15 +57,14 @@ export default function ResetPasswordPage() {
     content = (
       <>
         <CardHeader>
-          <CardTitle>Enlace no válido o caducado</CardTitle>
+          <CardTitle>{r.invalidTitle}</CardTitle>
           <CardDescription>
-            Los enlaces para cambiar la contraseña caducan al cabo de un tiempo y solo se pueden usar una vez. Pide uno
-            nuevo.
+            {r.invalidText}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Link href="/login" className={buttonVariants({ className: "w-full" })}>
-            Volver a entrar
+            {r.backToLogin}
           </Link>
         </CardContent>
       </>
@@ -71,13 +73,13 @@ export default function ResetPasswordPage() {
     content = (
       <>
         <CardHeader>
-          <CardTitle>Elige una contraseña nueva</CardTitle>
-          <CardDescription>Para la cuenta {session.email}</CardDescription>
+          <CardTitle>{r.title}</CardTitle>
+          <CardDescription>{r.forAccount(session.email)}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Contraseña nueva</Label>
+              <Label htmlFor="password">{r.newPassword}</Label>
               <Input
                 id="password"
                 type="password"
@@ -87,10 +89,10 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>
+              <p className="text-xs text-muted-foreground">{t.login.minChars}</p>
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="repeat">Repite la contraseña</Label>
+              <Label htmlFor="repeat">{r.repeat}</Label>
               <Input
                 id="repeat"
                 type="password"
@@ -107,7 +109,7 @@ export default function ResetPasswordPage() {
               </p>
             )}
             <Button type="submit" className="h-9" disabled={submitting}>
-              {submitting ? "Guardando…" : "Guardar contraseña"}
+              {submitting ? t.common.saving : r.saveButton}
             </Button>
           </form>
         </CardContent>

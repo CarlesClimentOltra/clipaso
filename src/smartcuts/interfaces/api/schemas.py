@@ -41,8 +41,13 @@ class UsageOut(BaseModel):
 class MeOut(BaseModel):
     id: str
     email: str
+    locale: Literal["es", "en"] | None = Field(description="Idioma elegido; null si aún no se ha fijado.")
     plan: PlanOut
     usage: UsageOut
+
+
+class LocaleIn(BaseModel):
+    locale: Literal["es", "en"]
 
 
 class UploadCreateIn(BaseModel):

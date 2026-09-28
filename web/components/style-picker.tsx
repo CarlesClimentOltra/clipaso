@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { CaptionPreset, CaptionStyle } from "@/lib/api/client";
 import { useClipOptions } from "@/lib/api/hooks";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 function sameStyle(a: CaptionStyle, b: CaptionStyle) {
@@ -46,6 +47,8 @@ export function StylePicker({
 }) {
   const { data: options } = useClipOptions();
   const [custom, setCustom] = useState(false);
+  const { t } = useI18n();
+  const s = t.styles;
   const presets: CaptionPreset[] = options?.presets ?? [];
   const set = (patch: Partial<CaptionStyle>) => onChange({ ...value, ...patch });
   const enabled = value.enabled !== false;
@@ -53,14 +56,14 @@ export function StylePicker({
   if (format === "horizontal") {
     return (
       <p className="text-sm text-muted-foreground">
-        En formato horizontal los clips no llevan subtítulos incrustados (puedes descargarlos en SRT).
+        {s.horizontalNote}
       </p>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6" role="radiogroup" aria-label="Estilo de subtítulos">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6" role="radiogroup" aria-label={s.label}>
         {presets.map((p) => {
           const selected = sameStyle(value, p.style);
           return (
@@ -76,11 +79,11 @@ export function StylePicker({
                 selected ? "ring-2 ring-primary" : "hover:bg-muted",
               )}
             >
-              <CaptionPreview style={p.style} format="vertical" words={["Hola", "mundo"]} activeIndex={1}
+              <CaptionPreview style={p.style} format="vertical" words={s.thumbWords} activeIndex={1}
                               className="rounded-lg" />
               <span className="flex items-center gap-1 px-0.5 text-xs font-medium">
                 {selected && <CheckIcon className="size-3 text-brand-ink" />}
-                {p.name}
+                {s.presets[p.id] ?? p.name}
               </span>
             </button>
           );
@@ -95,17 +98,17 @@ export function StylePicker({
         onClick={() => setCustom(!custom)}
         aria-expanded={custom}
       >
-        <SlidersHorizontalIcon /> {custom ? "Ocultar ajustes" : "Personalizar"}
+        <SlidersHorizontalIcon /> {custom ? s.hide : s.customize}
       </Button>
 
       {custom && (
         <div className="grid gap-4 rounded-xl border p-4 sm:grid-cols-2">
           <div className="flex items-center justify-between gap-3 sm:col-span-2">
-            <Label htmlFor="subs-enabled">Subtítulos incrustados</Label>
+            <Label htmlFor="subs-enabled">{s.burnIn}</Label>
             <Switch id="subs-enabled" checked={enabled} onCheckedChange={(c: boolean) => set({ enabled: c })} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="subs-font">Fuente</Label>
+            <Label htmlFor="subs-font">{s.font}</Label>
             <select
               id="subs-font"
               value={value.font ?? "Archivo Black"}
@@ -121,51 +124,51 @@ export function StylePicker({
             </select>
           </div>
           <div className="flex flex-col gap-2">
-            <Label>Tamaño</Label>
+            <Label>{s.size}</Label>
             <Segmented
-              label="Tamaño"
+              label={s.size}
               value={value.size ?? "m"}
               disabled={!enabled}
               onChange={(size) => set({ size })}
               options={[
-                { value: "s", label: "Pequeño" },
-                { value: "m", label: "Medio" },
-                { value: "l", label: "Grande" },
+                { value: "s", label: s.sizes.s },
+                { value: "m", label: s.sizes.m },
+                { value: "l", label: s.sizes.l },
               ]}
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label>Posición</Label>
+            <Label>{s.position}</Label>
             <Segmented
-              label="Posición"
+              label={s.position}
               value={value.position ?? "bottom"}
               disabled={!enabled}
               onChange={(position) => set({ position })}
               options={[
-                { value: "top", label: "Arriba" },
-                { value: "middle", label: "Centro" },
-                { value: "bottom", label: "Abajo" },
+                { value: "top", label: s.positions.top },
+                { value: "middle", label: s.positions.middle },
+                { value: "bottom", label: s.positions.bottom },
               ]}
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label>Colores</Label>
+            <Label>{s.colors}</Label>
             <div className="flex flex-wrap gap-4">
-              <ColorField id="c-text" label="Texto" value={value.text_color ?? "FFFFFF"} onChange={(v) => set({ text_color: v })} />
-              <ColorField id="c-hl" label="Palabra activa" value={value.highlight_color ?? "00E5FF"}
+              <ColorField id="c-text" label={s.text} value={value.text_color ?? "FFFFFF"} onChange={(v) => set({ text_color: v })} />
+              <ColorField id="c-hl" label={s.highlight} value={value.highlight_color ?? "00E5FF"}
                           onChange={(v) => set({ highlight_color: v })} />
               {value.box && (
-                <ColorField id="c-box" label="Caja" value={value.box_color ?? "000000"} onChange={(v) => set({ box_color: v })} />
+                <ColorField id="c-box" label={s.box} value={value.box_color ?? "000000"} onChange={(v) => set({ box_color: v })} />
               )}
             </div>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="subs-upper">Mayúsculas</Label>
+            <Label htmlFor="subs-upper">{s.uppercase}</Label>
             <Switch id="subs-upper" checked={!!value.uppercase} disabled={!enabled}
                     onCheckedChange={(c: boolean) => set({ uppercase: c })} />
           </div>
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="subs-box">Texto sobre caja</Label>
+            <Label htmlFor="subs-box">{s.boxToggle}</Label>
             <Switch id="subs-box" checked={!!value.box} disabled={!enabled} onCheckedChange={(c: boolean) => set({ box: c })} />
           </div>
         </div>

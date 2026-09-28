@@ -199,7 +199,8 @@ class JobRunner:
                     purge_upload(self.storage, upload)
                 user = s.get(User, user_id)
                 email = clips_ready(user.email, title, len(clips), user.plan.retention_days,
-                                    f"{self.settings.notifications.web_url}/projects/{job_id}")
+                                    f"{self.settings.notifications.web_url}/projects/{job_id}",
+                                    lang=(user.preferences or {}).get("locale", "es"))
             log.info("job.done", clips=len(clips), cost_usd=round(result.cost_usd, 4))
             deliver(self.notifier, email)
 
@@ -232,7 +233,8 @@ class JobRunner:
         self.storage.delete_prefix(clips_prefix(job.user_id, job.id))
         if user := s.get(User, job.user_id):
             deliver(self.notifier, processing_failed(user.email, job.title, code,
-                                                     f"{self.settings.notifications.web_url}/new"))
+                                                     f"{self.settings.notifications.web_url}/new",
+                                                     lang=(user.preferences or {}).get("locale", "es")))
 
     def _write_progress(self, job_id: str, stage: str, overall: float, state: dict, force: bool = False) -> None:
         now = time.monotonic()

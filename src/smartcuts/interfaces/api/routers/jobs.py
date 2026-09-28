@@ -23,7 +23,7 @@ from smartcuts.interfaces.api.schemas import (
 from smartcuts.saas import editing, services
 from smartcuts.saas.db import utcnow
 from smartcuts.saas.dispatch import dispatch_job
-from smartcuts.saas.errors import AppError, NotFound, user_message
+from smartcuts.saas.errors import AppError, NotFound, translate, user_message
 from smartcuts.saas.models import Clip, Job, TaskKind, User
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -38,7 +38,7 @@ def clip_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> ClipOut:
         id=clip.id, rank=clip.rank, title=clip.title, reason=clip.reason, description=clip.description or "",
         hashtags=list(clip.hashtags or []), rating=clip.rating, start=clip.start, end=clip.end,
         duration=round(clip.end - clip.start, 2), score=clip.score, status=clip.status,
-        render_error=clip.render_error, version=clip.version,
+        render_error=translate(clip.render_error), version=clip.version,
         video_url=storage.signed_url(clip.video_key, expires=ttl),
         download_url=storage.signed_url(clip.video_key, expires=ttl, download_name=clip_filename(job, clip, "mp4")),
         thumbnail_url=storage.signed_url(clip.thumb_key, expires=ttl) if clip.thumb_key else None,
@@ -185,8 +185,7 @@ def archive(
 ) -> StreamingResponse:
     job = session.get(Job, job_id)
     if job is None or not editing.verify_archive_token(settings.api.secret_key, job.id, job.user_id, token):
-        raise AppError("not_found", 404,
-                       message="El enlace de descarga ha caducado. Vuelve a pulsar «Descargar todos».")
+        raise AppError("not_found", 404, key="archive_expired")
     entries: list[tuple[str, Callable[[], Iterator[bytes]]]] = []
     for clip in job.clips:
         entries.append((clip_filename(job, clip, "mp4"), lambda key=clip.video_key: storage.iter_bytes(key)))

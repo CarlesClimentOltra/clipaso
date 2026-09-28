@@ -14,26 +14,13 @@ import { Progress } from "@/components/ui/progress";
 import { ApiError, type Me } from "@/lib/api/client";
 import { useApi, useClipOptions, useCreateProject, usePreferences } from "@/lib/api/hooks";
 import { discardUpload, type UploadProgress } from "@/lib/api/multipart-upload";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = [".mp4", ".mov", ".mkv", ".webm", ".m4v"];
-const LANGUAGES = [
-  { value: "es", label: "Español" },
-  { value: "en", label: "Inglés" },
-  { value: "pt", label: "Portugués" },
-  { value: "fr", label: "Francés" },
-  { value: "it", label: "Italiano" },
-  { value: "de", label: "Alemán" },
-  { value: "auto", label: "Detectar automáticamente" },
-];
+const LANGUAGES = ["es", "en", "pt", "fr", "it", "de", "auto"];
 
 type Phase = "idle" | "uploading" | "checking" | "starting";
-const PHASE_LABEL: Record<Phase, string> = {
-  idle: "",
-  uploading: "Subiendo vídeo…",
-  checking: "Comprobando el vídeo…",
-  starting: "Iniciando el procesamiento…",
-};
 
 const LARGE_FILE = 1024 ** 3; // a partir de 1 GB avisamos de que la subida puede tardar
 
@@ -42,8 +29,8 @@ function formatBytes(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / 1024 ** 2))} MB`;
 }
 
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return "menos de 1 min";
+function formatDuration(seconds: number, lessThanMinute: string): string {
+  if (seconds < 60) return lessThanMinute;
   const minutes = Math.round(seconds / 60);
   if (minutes < 60) return `${minutes} min`;
   return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
@@ -62,7 +49,7 @@ export function UploadForm({ me }: { me: Me }) {
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [maxClips, setMaxClips] = useState(Math.min(3, me.plan.max_clips_per_job));
-  const [language, setLanguage] = useState("es");
+  const [languageChoice, setLanguage] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [optionsDraft, setOptionsDraft] = useState<Omit<ProjectOptionsValue, "caption_style"> & {
     caption_style: ProjectOptionsValue["caption_style"] | null;
@@ -77,9 +64,13 @@ export function UploadForm({ me }: { me: Me }) {
       : null;
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const cancelledRef = useRef(false);
+  const { t, locale } = useI18n();
+  const u = t.upload;
   const create = useCreateProject();
   const api = useApi();
 
+  // Por defecto, el idioma del vídeo es el de la interfaz.
+  const language = languageChoice ?? locale;
   const busy = phase !== "idle";
   const outOfMinutes = me.usage.remaining_minutes <= 0;
   const maxBytes = me.plan.max_upload_mb * 1024 * 1024;
@@ -89,11 +80,11 @@ export function UploadForm({ me }: { me: Me }) {
     if (!candidate) return;
     const ext = candidate.name.slice(candidate.name.lastIndexOf(".")).toLowerCase();
     if (!ACCEPT.includes(ext)) {
-      setFileError("Formato no compatible. Sube un vídeo MP4, MOV, MKV o WEBM.");
+      setFileError(u.formatError);
       return;
     }
     if (candidate.size > maxBytes) {
-      setFileError(`El archivo pesa ${formatBytes(candidate.size)} y tu plan permite hasta ${formatBytes(maxBytes)}.`);
+      setFileError(u.tooBig(formatBytes(candidate.size), formatBytes(maxBytes)));
       return;
     }
     setFile(candidate);
@@ -120,7 +111,7 @@ export function UploadForm({ me }: { me: Me }) {
         onPhase: setPhase,
         signal: abortRef.current.signal,
       });
-      toast.success("¡Vídeo recibido! Estamos preparando tus clips.");
+      toast.success(u.received);
       router.push(`/projects/${job.id}`);
     } catch (err) {
       setPhase("idle");
@@ -128,10 +119,10 @@ export function UploadForm({ me }: { me: Me }) {
       const interrupted = err instanceof ApiError && ["network_error", "part_failed"].includes(err.code);
       toast.error(
         interrupted
-          ? "La subida se interrumpió. Pulsa «Crear clips» de nuevo y continuará donde se quedó."
+          ? u.interrupted
           : err instanceof ApiError
             ? err.message
-            : "Algo salió mal. Inténtalo de nuevo.",
+            : t.common.genericError,
       );
     }
   }
@@ -148,15 +139,15 @@ export function UploadForm({ me }: { me: Me }) {
     <div className="flex flex-col gap-6">
       {outOfMinutes && (
         <Alert variant="destructive">
-          <AlertTitle>Has agotado los minutos de este mes</AlertTitle>
-          <AlertDescription>Tu plan se renueva a principios de mes. Pronto podrás ampliar tu plan desde aquí.</AlertDescription>
+          <AlertTitle>{u.outOfMinutesTitle}</AlertTitle>
+          <AlertDescription>{u.outOfMinutesText}</AlertDescription>
         </Alert>
       )}
 
       <div
         role="button"
         tabIndex={0}
-        aria-label="Seleccionar vídeo"
+        aria-label={u.selectVideo}
         onClick={() => !busy && inputRef.current?.click()}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && !busy && inputRef.current?.click()}
         onDragOver={(e) => {
@@ -199,7 +190,7 @@ export function UploadForm({ me }: { me: Me }) {
                   if (inputRef.current) inputRef.current.value = "";
                 }}
               >
-                <XIcon /> Cambiar vídeo
+                <XIcon /> {u.changeVideo}
               </Button>
             )}
           </>
@@ -209,9 +200,9 @@ export function UploadForm({ me }: { me: Me }) {
               <UploadCloudIcon className="size-7" />
             </span>
             <div>
-              <p className="font-medium">Arrastra tu vídeo aquí o haz clic para elegirlo</p>
+              <p className="font-medium">{u.drop}</p>
               <p className="text-sm text-muted-foreground">
-                MP4, MOV, MKV o WEBM · hasta {formatBytes(maxBytes)} y {me.plan.max_video_minutes} min de duración
+                {u.dropHint(formatBytes(maxBytes), me.plan.max_video_minutes)}
               </p>
             </div>
           </>
@@ -221,8 +212,8 @@ export function UploadForm({ me }: { me: Me }) {
 
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label>Número de clips</Label>
-          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Número de clips">
+          <Label>{u.clipCount}</Label>
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={u.clipCount}>
             {Array.from({ length: me.plan.max_clips_per_job }, (_, i) => i + 1).map((n) => (
               <Button
                 key={n}
@@ -241,7 +232,7 @@ export function UploadForm({ me }: { me: Me }) {
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="language">Idioma del vídeo</Label>
+          <Label htmlFor="language">{u.videoLanguage}</Label>
           <select
             id="language"
             value={language}
@@ -250,8 +241,8 @@ export function UploadForm({ me }: { me: Me }) {
             className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           >
             {LANGUAGES.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
+              <option key={l} value={l}>
+                {u.languages[l]}
               </option>
             ))}
           </select>
@@ -262,10 +253,9 @@ export function UploadForm({ me }: { me: Me }) {
 
       {file && !busy && file.size >= LARGE_FILE && (
         <Alert>
-          <AlertTitle>Archivo grande ({formatBytes(file.size)})</AlertTitle>
+          <AlertTitle>{u.largeTitle(formatBytes(file.size))}</AlertTitle>
           <AlertDescription>
-            La subida puede tardar varios minutos según tu conexión. Si se corta, podrás continuar donde se quedó.
-            Consejo: exportar el vídeo en 1080p lo hace mucho más rápido sin perder calidad en los clips.
+            {u.largeText}
           </AlertDescription>
         </Alert>
       )}
@@ -273,7 +263,7 @@ export function UploadForm({ me }: { me: Me }) {
       {busy ? (
         <div className="flex flex-col gap-2" aria-live="polite">
           <div className="flex justify-between gap-3 text-sm">
-            <span>{PHASE_LABEL[phase]}</span>
+            <span>{u.phases[phase]}</span>
             {phase === "uploading" && progress && (
               <span className="tabular-nums text-muted-foreground">
                 {Math.floor((progress.sentBytes / progress.totalBytes) * 100)}%
@@ -282,37 +272,36 @@ export function UploadForm({ me }: { me: Me }) {
           </div>
           <Progress
             value={phase === "uploading" && progress ? (progress.sentBytes / progress.totalBytes) * 100 : 100}
-            aria-label="Progreso de la subida"
+            aria-label={u.progressLabel}
           />
           {phase === "uploading" && progress && (
             <p className="text-xs text-muted-foreground tabular-nums">
-              {progress.resumed && "Continuando una subida anterior · "}
-              {formatBytes(progress.sentBytes)} de {formatBytes(progress.totalBytes)}
+              {progress.resumed && u.resumed}
+              {formatBytes(progress.sentBytes)} {u.of} {formatBytes(progress.totalBytes)}
               {progress.bytesPerSecond ? ` · ${formatSpeed(progress.bytesPerSecond)}` : ""}
-              {progress.secondsLeft != null ? ` · quedan ${formatDuration(progress.secondsLeft)}` : " · calculando tiempo…"}
+              {progress.secondsLeft != null ? u.left(formatDuration(progress.secondsLeft, u.lessThanMinute)) : u.calculating}
             </p>
           )}
           {phase === "uploading" && (
             <Button variant="ghost" size="sm" className="self-start" onClick={cancel}>
-              Cancelar subida
+              {u.cancel}
             </Button>
           )}
         </div>
       ) : (
         <Button size="lg" className="h-12 rounded-full text-base" disabled={!file || outOfMinutes} onClick={submit}>
-          Crear clips
+          {u.create}
         </Button>
       )}
       <p className="text-xs text-muted-foreground">
-        Al subir un vídeo confirmas que tienes los derechos necesarios sobre su contenido y el permiso de las personas
-        que aparecen en él (ver{" "}
+        {u.rightsStart}{" "}
         <Link href="/legal/terminos" className="underline underline-offset-4" target="_blank">
-          Términos
+          {u.rightsTerms}
         </Link>
         ).{" "}
         {optionsDraft.keep_source
-          ? `El vídeo original se guarda ${me.plan.retention_days} días para que puedas editar los clips y después se borra.`
-          : "El vídeo original se borra al terminar de procesarlo."}
+          ? u.keepNote(me.plan.retention_days)
+          : u.purgeNote}
       </p>
     </div>
   );

@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ApiError } from "@/lib/api/client";
 import { AuthProvider } from "@/lib/auth";
+import { I18nProvider } from "@/lib/i18n";
 
 let browserQueryClient: QueryClient | undefined;
 
@@ -32,12 +33,14 @@ function getQueryClient() {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <I18nProvider>
       <QueryClientProvider client={getQueryClient()}>
         <AuthProvider>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster richColors position="top-center" />
         </AuthProvider>
       </QueryClientProvider>
+      </I18nProvider>
     </ThemeProvider>
   );
 }

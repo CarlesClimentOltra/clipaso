@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { EditorWord } from "@/lib/api/client";
 import { formatTime } from "@/lib/captions";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,6 +25,8 @@ export function WordEditor({
   disabled?: boolean;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
+  const { t } = useI18n();
+  const tw = t.editor.words;
   const [draft, setDraft] = useState("");
   const changed = Object.keys(edits).length;
 
@@ -45,16 +48,16 @@ export function WordEditor({
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Toca una palabra para corregirla (por ejemplo, un nombre propio). Déjala vacía para quitarla.
+          {tw.hint}
         </p>
         {changed > 0 && (
           <Button type="button" variant="ghost" size="sm" onClick={() => onChange({})} disabled={disabled}>
-            <Undo2Icon /> Deshacer {changed} {changed === 1 ? "cambio" : "cambios"}
+            <Undo2Icon /> {tw.undo(changed)}
           </Button>
         )}
       </div>
       {words.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No hay palabras en este tramo.</p>
+        <p className="text-sm text-muted-foreground">{tw.none}</p>
       ) : (
         <div className="flex max-h-80 flex-wrap gap-1 overflow-y-auto rounded-lg border p-3">
           {words.map((w) => {
@@ -67,7 +70,7 @@ export function WordEditor({
                   autoFocus
                   value={draft}
                   maxLength={60}
-                  aria-label={`Corregir «${w.original}»`}
+                  aria-label={tw.fix(w.original)}
                   size={Math.max(3, draft.length + 1)}
                   onChange={(e) => setDraft(e.target.value)}
                   onBlur={() => commit(w)}
@@ -84,7 +87,7 @@ export function WordEditor({
                 key={w.key}
                 type="button"
                 disabled={disabled}
-                title={edited ? `Original: ${w.original} · ${formatTime(w.start, true)}` : formatTime(w.start, true)}
+                title={edited ? `${tw.original(w.original)} · ${formatTime(w.start, true)}` : formatTime(w.start, true)}
                 onClick={() => begin(w)}
                 className={cn(
                   "rounded-md px-1.5 py-0.5 text-sm hover:bg-muted",

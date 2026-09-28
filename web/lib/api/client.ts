@@ -4,6 +4,8 @@
 import createClient from "openapi-fetch";
 
 import { config } from "@/lib/config";
+import { dictionary } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n/store";
 import type { components, paths } from "@/lib/api/schema";
 
 export type Schemas = components["schemas"];
@@ -30,6 +32,8 @@ export function createApi(getToken: () => Promise<string | null>) {
     async onRequest({ request }) {
       const token = await getToken();
       if (token) request.headers.set("Authorization", `Bearer ${token}`);
+      // Los mensajes de error de la API llegan en el idioma de la interfaz.
+      request.headers.set("Accept-Language", getLocale());
       return request;
     },
   });
@@ -46,14 +50,14 @@ export async function unwrap<T>(
   try {
     result = await promise;
   } catch {
-    throw new ApiError("network_error", "No hay conexión con el servidor. Revisa tu conexión e inténtalo de nuevo.", 0);
+    throw new ApiError("network_error", dictionary().errors.network_error, 0);
   }
   const { data, error, response } = result;
   if (error !== undefined || !response.ok) {
     const body = (error ?? {}) as { error?: { code?: string; message?: string } };
     throw new ApiError(
       body.error?.code ?? "internal_error",
-      body.error?.message ?? "Ha ocurrido un error inesperado.",
+      body.error?.message ?? dictionary().errors.unexpected,
       response.status,
     );
   }

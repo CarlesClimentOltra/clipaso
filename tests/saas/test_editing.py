@@ -216,3 +216,30 @@ def test_stale_task_is_requeued(client, sample_video, monkeypatch):
 def _clip_row(client, clip_id: str) -> Clip:
     with session_scope(client.app.state.sessions) as s:
         return s.get(Clip, clip_id)
+
+
+def test_messages_follow_the_request_language(client):
+    r = client.post("/uploads", json={"filename": "notas.pdf", "size_bytes": 10}, headers=AUTH)
+    assert r.json()["error"]["message"].startswith("Formato no compatible")
+    r = client.post("/uploads", json={"filename": "notas.pdf", "size_bytes": 10},
+                    headers={**AUTH, "Accept-Language": "en-GB,en;q=0.9"})
+    assert r.json()["error"]["message"].startswith("Unsupported format")
+    r = client.get("/me", headers={"Accept-Language": "en"})
+    assert r.json()["error"]["message"] == "Please sign in to continue."
+
+
+def test_account_locale_drives_notification_language(client, sample_video, monkeypatch):
+    from tests.saas.test_api_flow import RecordingNotifier
+
+    assert client.get("/me", headers=AUTH).json()["locale"] is None
+    assert client.put("/me/locale", json={"locale": "en"}, headers=AUTH).status_code == 204
+    assert client.get("/me", headers=AUTH).json()["locale"] == "en"
+
+    upload_id = upload_video(client, sample_video)
+    job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
+    monkeypatch.setattr(worker_mod, "build_pipeline", lambda *a, **k: FakePipeline())
+    notifier = RecordingNotifier()
+    app = client.app
+    JobRunner(app.state.settings, app.state.sessions, app.state.storage, notifier=notifier).process(job_id)
+    [email] = notifier.sent
+    assert email.subject.startswith("Your clips from") and "See my clips" in email.html

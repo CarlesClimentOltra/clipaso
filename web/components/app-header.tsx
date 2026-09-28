@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { FolderIcon, LogOutIcon, PlusIcon, UserIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
+import { LanguageSwitcher, ThemeToggle } from "@/components/preferences-controls";
 import { UsageRing } from "@/components/usage-meter";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -19,12 +20,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMe } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/dashboard", label: "Proyectos", match: ["/dashboard", "/projects"] },
-  { href: "/account", label: "Mi cuenta", match: ["/account"] },
-];
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -32,13 +30,18 @@ export function AppHeader() {
   const { session, signOut } = useAuth();
   const { data: me } = useMe();
   const initial = (session?.email ?? "?").charAt(0).toUpperCase();
+  const { t } = useI18n();
+  const nav = [
+    { href: "/dashboard", label: t.header.projects, match: ["/dashboard", "/projects"] },
+    { href: "/account", label: t.header.account, match: ["/account"] },
+  ];
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/75 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-6 px-4">
         <Brand href="/dashboard" />
         <nav aria-label="Principal" className="hidden items-center gap-1 rounded-full border bg-card/60 p-1 sm:flex">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active = item.match.some((m) => pathname.startsWith(m));
             return (
               <Link
@@ -55,26 +58,30 @@ export function AppHeader() {
             );
           })}
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {me && (
             <Link href="/account" className="hidden items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs hover:bg-muted md:flex"
-                  title="Minutos de vídeo usados este mes">
+                  title={t.header.usageTitle}>
               <UsageRing me={me} size={30} />
               <span className="leading-tight">
                 <span className="block font-medium tabular-nums">
                   {Math.max(0, Math.round(me.usage.remaining_minutes * 10) / 10)} min
                 </span>
-                <span className="text-muted-foreground">disponibles</span>
+                <span className="text-muted-foreground">{t.header.available}</span>
               </span>
             </Link>
           )}
           <Link href="/new" className={cn(buttonVariants(), "h-9 rounded-full px-4")}>
             <PlusIcon />
-            <span className="hidden sm:inline">Nuevo proyecto</span>
+            <span className="hidden sm:inline">{t.header.newProject}</span>
           </Link>
+          <span className="hidden items-center lg:flex">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </span>
           <DropdownMenu>
             <DropdownMenuTrigger
-              aria-label="Menú de cuenta"
+              aria-label={t.header.accountMenu}
               className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand-ink ring-1 ring-primary/40 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               {initial}
@@ -85,17 +92,17 @@ export function AppHeader() {
                   <span className="truncate text-sm font-medium text-foreground">{session?.email}</span>
                   {me && (
                     <span>
-                      Plan <Badge variant="secondary">{me.plan.name}</Badge>
+                      {t.header.plan} <Badge variant="secondary">{t.plans[me.plan.code] ?? me.plan.name}</Badge>
                     </span>
                   )}
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push("/dashboard")}>
-                <FolderIcon /> Mis proyectos
+                <FolderIcon /> {t.header.myProjects}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/account")}>
-                <UserIcon /> Mi cuenta
+                <UserIcon /> {t.header.account}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -104,7 +111,7 @@ export function AppHeader() {
                   router.replace("/login");
                 }}
               >
-                <LogOutIcon /> Cerrar sesión
+                <LogOutIcon /> {t.header.signOut}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

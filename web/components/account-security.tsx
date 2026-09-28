@@ -10,9 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 
 function ChangeEmail() {
   const { session, updateEmail } = useAuth();
+  const { t } = useI18n();
+  const s = t.security;
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -23,7 +26,7 @@ function ChangeEmail() {
     setError(null);
     const next = email.trim().toLowerCase();
     if (next === session?.email.toLowerCase()) {
-      setError("Ese ya es tu email actual.");
+      setError(s.sameEmail);
       return;
     }
     setSubmitting(true);
@@ -32,7 +35,7 @@ function ChangeEmail() {
       setSentTo(next);
       setEmail("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cambiar el email.");
+      setError(err instanceof Error ? err.message : s.emailError);
     } finally {
       setSubmitting(false);
     }
@@ -41,19 +44,19 @@ function ChangeEmail() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="new-email">Cambiar email</Label>
+        <Label htmlFor="new-email">{s.changeEmail}</Label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             id="new-email"
             type="email"
             autoComplete="email"
-            placeholder="nuevo@email.com"
+            placeholder={s.newEmailPlaceholder}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <Button type="submit" variant="outline" className="h-8 shrink-0" disabled={submitting}>
-            {submitting ? "Enviando…" : "Cambiar email"}
+            {submitting ? s.sending : s.changeEmail}
           </Button>
         </div>
       </div>
@@ -64,8 +67,7 @@ function ChangeEmail() {
       )}
       {sentTo && (
         <p className="text-sm text-brand-ink" role="status">
-          Te hemos enviado un enlace a <strong>{sentTo}</strong> para confirmar el cambio (y un aviso a tu email
-          actual). Hasta que lo confirmes seguirás entrando con el email de siempre.
+          {s.emailSentStart} <strong>{sentTo}</strong> {s.emailSentEnd}
         </p>
       )}
     </form>
@@ -74,6 +76,8 @@ function ChangeEmail() {
 
 function ChangePassword() {
   const { session, signIn, updatePassword } = useAuth();
+  const { t } = useI18n();
+  const s = t.security;
   const hasPassword = session?.hasPassword ?? false;
   const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
@@ -88,7 +92,7 @@ function ChangePassword() {
     e.preventDefault();
     setError(null);
     if (password !== repeat) {
-      setError("Las contraseñas nuevas no coinciden.");
+      setError(s.mismatch);
       return;
     }
     setSubmitting(true);
@@ -96,16 +100,16 @@ function ChangePassword() {
       if (hasPassword) {
         // Confirmar la contraseña actual: así nadie puede cambiarla con una sesión abierta olvidada.
         await signIn(session!.email, current, captchaToken ?? undefined).catch(() => {
-          throw new Error("La contraseña actual no es correcta.");
+          throw new Error(s.wrongCurrent);
         });
       }
       await updatePassword(password);
-      toast.success(hasPassword ? "Contraseña cambiada." : "Contraseña creada: ya puedes entrar también con tu email.");
+      toast.success(hasPassword ? s.changed : s.created);
       setCurrent("");
       setPassword("");
       setRepeat("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cambiar la contraseña.");
+      setError(err instanceof Error ? err.message : s.passwordError);
     } finally {
       setSubmitting(false);
       if (needsCaptcha) setCaptchaReset((n) => n + 1);
@@ -114,16 +118,16 @@ function ChangePassword() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <p className="text-sm font-medium">{hasPassword ? "Cambiar contraseña" : "Crear una contraseña"}</p>
+      <p className="text-sm font-medium">{hasPassword ? s.changePassword : s.createPassword}</p>
       {!hasPassword && (
         <p className="text-sm text-muted-foreground">
-          Entras con Google. Si quieres, crea una contraseña para poder entrar también con tu email.
+          {s.googleOnly}
         </p>
       )}
       <div className="grid gap-3 sm:grid-cols-3">
         {hasPassword && (
           <div className="flex flex-col gap-2">
-            <Label htmlFor="current-password">Actual</Label>
+            <Label htmlFor="current-password">{s.current}</Label>
             <Input
               id="current-password"
               type="password"
@@ -135,7 +139,7 @@ function ChangePassword() {
           </div>
         )}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="new-password">Nueva</Label>
+          <Label htmlFor="new-password">{s.newPassword}</Label>
           <Input
             id="new-password"
             type="password"
@@ -147,7 +151,7 @@ function ChangePassword() {
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="repeat-password">Repite la nueva</Label>
+          <Label htmlFor="repeat-password">{s.repeat}</Label>
           <Input
             id="repeat-password"
             type="password"
@@ -171,18 +175,19 @@ function ChangePassword() {
         className="h-8 self-start"
         disabled={submitting || (needsCaptcha && !captchaToken)}
       >
-        {submitting ? "Guardando…" : hasPassword ? "Cambiar contraseña" : "Crear contraseña"}
+        {submitting ? t.common.saving : hasPassword ? s.changePassword : s.createPassword}
       </Button>
     </form>
   );
 }
 
 export function AccountSecurity() {
+  const { t } = useI18n();
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Acceso</CardTitle>
-        <CardDescription>Cambia el email con el que entras o tu contraseña.</CardDescription>
+        <CardTitle>{t.security.title}</CardTitle>
+        <CardDescription>{t.security.lead}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <ChangeEmail />

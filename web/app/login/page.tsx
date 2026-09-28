@@ -15,22 +15,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
 import { config } from "@/lib/config";
+import { useI18n } from "@/lib/i18n";
 
 type Mode = "login" | "signup" | "forgot";
 
-const TITLES: Record<Mode, { title: string; description: string; submit: string }> = {
-  login: { title: "Entra en tu cuenta", description: "Bienvenido de nuevo.", submit: "Entrar" },
-  signup: {
-    title: "Crea tu cuenta gratis",
-    description: "30 minutos de vídeo al mes gratis. Sin tarjeta.",
-    submit: "Crear cuenta",
-  },
-  forgot: {
-    title: "Recupera tu contraseña",
-    description: "Te enviaremos un enlace para elegir una contraseña nueva.",
-    submit: "Enviar enlace",
-  },
-};
 
 function GoogleIcon() {
   return (
@@ -46,6 +34,8 @@ function GoogleIcon() {
 export default function LoginPage() {
   const { session, loading, signIn, signUp, signInWithGoogle, requestPasswordReset } = useAuth();
   const router = useRouter();
+  const { t } = useI18n();
+  const l = t.login;
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -76,15 +66,15 @@ export default function LoginPage() {
     try {
       if (mode === "forgot") {
         await requestPasswordReset(email, token);
-        setNotice("Si existe una cuenta con ese email, te llegará un enlace en unos minutos. Revisa también el spam.");
+        setNotice(l.resetSent);
       } else if (mode === "login" || devMode) {
         await signIn(email, password, token);
       } else {
         const { needsConfirmation } = await signUp(email, password, token);
-        if (needsConfirmation) setNotice("Te hemos enviado un email para confirmar tu cuenta. Ábrelo y vuelve a entrar.");
+        if (needsConfirmation) setNotice(l.confirmSent);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo completar la operación.");
+      setError(err instanceof Error ? err.message : t.auth.generic);
     } finally {
       setSubmitting(false);
       if (needsCaptcha) setCaptchaReset((n) => n + 1); // cada token sirve una sola vez
@@ -96,11 +86,11 @@ export default function LoginPage() {
     try {
       await signInWithGoogle(); // redirige a Google y vuelve a /dashboard
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar sesión con Google.");
+      setError(err instanceof Error ? err.message : l.googleError);
     }
   }
 
-  const texts = TITLES[mode];
+  const [title, description, submitLabel] = l.titles[mode];
   const showGoogle = !devMode && config.googleAuth && mode !== "forgot";
 
   return (
@@ -110,28 +100,28 @@ export default function LoginPage() {
           <Brand />
           <Card className="w-full max-w-sm shadow-sm">
             <CardHeader>
-              <CardTitle>{texts.title}</CardTitle>
-              <CardDescription>{texts.description}</CardDescription>
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {showGoogle && (
                 <>
                   <Button type="button" variant="outline" className="h-9" onClick={onGoogle}>
-                    <GoogleIcon /> Continuar con Google
+                    <GoogleIcon /> {l.google}
                   </Button>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="h-px flex-1 bg-border" />o con tu email<span className="h-px flex-1 bg-border" />
+                    <span className="h-px flex-1 bg-border" />{l.orEmail}<span className="h-px flex-1 bg-border" />
                   </div>
                 </>
               )}
               <form onSubmit={onSubmit} className="flex flex-col gap-4">
                 {devMode && (
                   <Alert>
-                    <AlertDescription>Modo desarrollo: basta con un email, sin contraseña.</AlertDescription>
+                    <AlertDescription>{l.devMode}</AlertDescription>
                   </Alert>
                 )}
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{l.email}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -144,14 +134,14 @@ export default function LoginPage() {
                 {!devMode && mode !== "forgot" && (
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Contraseña</Label>
+                      <Label htmlFor="password">{l.password}</Label>
                       {mode === "login" && (
                         <button
                           type="button"
                           className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                           onClick={() => switchMode("forgot")}
                         >
-                          ¿La has olvidado?
+                          {l.forgot}
                         </button>
                       )}
                     </div>
@@ -164,7 +154,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    {mode === "signup" && <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>}
+                    {mode === "signup" && <p className="text-xs text-muted-foreground">{l.minChars}</p>}
                   </div>
                 )}
                 {needsCaptcha && <Captcha onToken={setCaptchaToken} resetKey={captchaReset} />}
@@ -180,30 +170,30 @@ export default function LoginPage() {
                 )}
                 {mode === "signup" && !devMode && (
                   <p className="text-xs text-muted-foreground">
-                    Al crear tu cuenta aceptas los{" "}
+                    {l.acceptStart}{" "}
                     <Link href="/legal/terminos" className="underline underline-offset-4" target="_blank">
-                      Términos del servicio
+                      {l.terms}
                     </Link>{" "}
-                    y confirmas que has leído la{" "}
+                    {l.acceptMiddle}{" "}
                     <Link href="/legal/privacidad" className="underline underline-offset-4" target="_blank">
-                      Política de privacidad
+                      {l.privacy}
                     </Link>
                     .
                   </p>
                 )}
                 <Button type="submit" className="h-9" disabled={submitting || (needsCaptcha && !captchaToken)}>
-                  {submitting ? "Un momento…" : texts.submit}
+                  {submitting ? l.wait : submitLabel}
                 </Button>
               </form>
               {!devMode && (
                 <p className="text-center text-sm text-muted-foreground">
-                  {mode === "login" ? "¿No tienes cuenta?" : mode === "signup" ? "¿Ya tienes cuenta?" : "¿La recuerdas?"}{" "}
+                  {mode === "login" ? l.noAccount : mode === "signup" ? l.haveAccount : l.remember}{" "}
                   <button
                     type="button"
                     className="font-medium text-foreground underline-offset-4 hover:underline"
                     onClick={() => switchMode(mode === "login" ? "signup" : "login")}
                   >
-                    {mode === "login" ? "Regístrate" : "Inicia sesión"}
+                    {mode === "login" ? l.signUp : l.signIn}
                   </button>
                 </p>
               )}
@@ -215,9 +205,9 @@ export default function LoginPage() {
           <div className="flex w-full max-w-lg flex-col gap-10">
             <div className="flex flex-col gap-2">
               <p className="text-3xl font-semibold tracking-tight text-balance">
-                De un vídeo largo a <em className="text-brand-ink">clips virales</em>, en minutos
+                {l.asideTitleStart} <em className="text-brand-ink">{l.asideTitleAccent}</em>{l.asideTitleEnd}
               </p>
-              <p className="text-muted-foreground">La IA elige los mejores momentos y los deja listos para publicar.</p>
+              <p className="text-muted-foreground">{l.asideLead}</p>
             </div>
             <HeroVisual />
           </div>

@@ -124,6 +124,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/locale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Locale
+         * @description Idioma de la cuenta: el de la web y el de los emails (clips listos, fallos).
+         */
+        put: operations["put_locale_me_locale_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads": {
         parameters: {
             query?: never;
@@ -738,12 +758,25 @@ export interface components {
             /** Expires At */
             expires_at: string | null;
         };
+        /** LocaleIn */
+        LocaleIn: {
+            /**
+             * Locale
+             * @enum {string}
+             */
+            locale: "es" | "en";
+        };
         /** MeOut */
         MeOut: {
             /** Id */
             id: string;
             /** Email */
             email: string;
+            /**
+             * Locale
+             * @description Idioma elegido; null si aún no se ha fijado.
+             */
+            locale: ("es" | "en") | null;
             plan: components["schemas"]["PlanOut"];
             usage: components["schemas"]["UsageOut"];
         };
@@ -1385,6 +1418,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    put_locale_me_locale_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocaleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

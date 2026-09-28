@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ApiError, type CaptionStyle, type Editor } from "@/lib/api/client";
 import { useEditor, useRenderClip, useUpdateClip } from "@/lib/api/hooks";
 import type { TimedWord } from "@/lib/captions";
+import { useI18n } from "@/lib/i18n";
 
 function sameEdits(a: Record<string, string>, b: Record<string, string>) {
   const ka = Object.keys(a);
@@ -31,6 +32,7 @@ function sameEdits(a: Record<string, string>, b: Record<string, string>) {
 
 function TextsForm({ data, jobId }: { data: Editor; jobId: string }) {
   const update = useUpdateClip(jobId);
+  const { t } = useI18n();
   const [title, setTitle] = useState(data.clip.title);
   const [description, setDescription] = useState(data.clip.description);
   const [hashtags, setHashtags] = useState(data.clip.hashtags.map((t) => `#${t}`).join(" "));
@@ -43,30 +45,30 @@ function TextsForm({ data, jobId }: { data: Editor; jobId: string }) {
         description,
         hashtags: hashtags.split(/[\s,]+/).filter(Boolean),
       });
-      toast.success("Textos guardados");
+      toast.success(t.clip.saved);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudieron guardar los textos.");
+      toast.error(err instanceof ApiError ? err.message : t.clip.saveError);
     }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xs text-muted-foreground">Se guardan al momento; no hace falta volver a generar el clip.</p>
+      <p className="text-xs text-muted-foreground">{t.editor.textsNote}</p>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="ed-title">Título</Label>
+        <Label htmlFor="ed-title">{t.clip.title}</Label>
         <Input id="ed-title" maxLength={255} value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="ed-desc">Descripción para publicar</Label>
+        <Label htmlFor="ed-desc">{t.editor.publishDescription}</Label>
         <Textarea id="ed-desc" rows={4} maxLength={2000} value={description}
                   onChange={(e) => setDescription(e.target.value)} />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="ed-tags">Hashtags</Label>
+        <Label htmlFor="ed-tags">{t.clip.hashtags}</Label>
         <Input id="ed-tags" value={hashtags} placeholder="#viral #podcast" onChange={(e) => setHashtags(e.target.value)} />
       </div>
       <Button type="button" variant="outline" className="self-start" onClick={save} disabled={update.isPending}>
-        {update.isPending ? "Guardando…" : "Guardar textos"}
+        {update.isPending ? t.common.saving : t.editor.saveTexts}
       </Button>
     </div>
   );
@@ -75,6 +77,8 @@ function TextsForm({ data, jobId }: { data: Editor; jobId: string }) {
 function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
   const router = useRouter();
   const render = useRenderClip(jobId, data.clip.id);
+  const { t } = useI18n();
+  const e = t.editor;
   const initialEdits = useMemo(
     () => Object.fromEntries(data.words.filter((w) => w.text !== w.original).map((w) => [w.key, w.text])),
     [data.words],
@@ -101,10 +105,10 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
   async function save() {
     try {
       await render.mutateAsync({ start, end, word_edits: edits, caption_style: style });
-      toast.success("Generando la nueva versión del clip. Tardará un minuto.");
+      toast.success(e.started);
       router.push(`/projects/${jobId}`);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "No se pudo generar el clip.");
+      toast.error(err instanceof ApiError ? err.message : e.renderError);
     }
   }
 
@@ -126,7 +130,7 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
             <ClipPlayer src={data.clip.video_url} poster={data.clip.thumbnail_url ?? undefined} title={data.clip.title}
                         rank={data.clip.rank} aspect={CLIP_ASPECT[format]} />
             <p className="text-center text-xs text-muted-foreground">
-              Versión actual del clip. Los cambios se verán al generarlo de nuevo.
+              {e.currentVersion}
             </p>
           </div>
         )}
@@ -136,15 +140,15 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
         {rendering && (
           <Alert>
             <Loader2Icon className="animate-spin" />
-            <AlertTitle>Generando la nueva versión…</AlertTitle>
-            <AlertDescription>Podrás seguir editando en cuanto termine.</AlertDescription>
+            <AlertTitle>{e.renderingTitle}</AlertTitle>
+            <AlertDescription>{e.renderingText}</AlertDescription>
           </Alert>
         )}
         {!data.can_render && (
           <Alert>
-            <AlertTitle>No se puede volver a generar este clip</AlertTitle>
+            <AlertTitle>{e.cannotTitle}</AlertTitle>
             <AlertDescription>
-              El proyecto no guardó el vídeo original. Puedes cambiar los textos para publicar.
+              {e.cannotText}
             </AlertDescription>
           </Alert>
         )}
@@ -156,10 +160,10 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
 
         <Tabs defaultValue={data.can_render ? "trim" : "texts"}>
           <TabsList>
-            <TabsTrigger value="trim" disabled={!data.can_render}>Recorte</TabsTrigger>
-            <TabsTrigger value="words" disabled={!data.can_render}>Subtítulos</TabsTrigger>
-            <TabsTrigger value="style" disabled={!data.can_render}>Estilo</TabsTrigger>
-            <TabsTrigger value="texts">Textos</TabsTrigger>
+            <TabsTrigger value="trim" disabled={!data.can_render}>{e.tabs.trim}</TabsTrigger>
+            <TabsTrigger value="words" disabled={!data.can_render}>{e.tabs.words}</TabsTrigger>
+            <TabsTrigger value="style" disabled={!data.can_render}>{e.tabs.style}</TabsTrigger>
+            <TabsTrigger value="texts">{e.tabs.texts}</TabsTrigger>
           </TabsList>
           <Card className="mt-2">
             <CardContent>
@@ -194,13 +198,13 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
       {data.can_render && (
         <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-end gap-3 px-4 py-3">
-            {dirty && <span className="mr-auto text-sm text-muted-foreground">Tienes cambios sin aplicar</span>}
+            {dirty && <span className="mr-auto text-sm text-muted-foreground">{e.unsaved}</span>}
             <Button type="button" variant="ghost" onClick={discard} disabled={!dirty || locked}>
-              Descartar
+              {e.discard}
             </Button>
             <Button type="button" onClick={save} disabled={!dirty || locked}>
               {render.isPending ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
-              Guardar y generar clip
+              {e.generate}
             </Button>
           </div>
         </div>
@@ -212,16 +216,17 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
 export default function ClipEditorPage() {
   const { id, clipId } = useParams<{ id: string; clipId: string }>();
   const { data, error, isPending } = useEditor(clipId);
+  const { t } = useI18n();
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <Link href={`/projects/${id}`} className={buttonVariants({ variant: "ghost", size: "sm", className: "self-start" })}>
-          <ArrowLeftIcon /> Volver al proyecto
+          <ArrowLeftIcon /> {t.editor.back}
         </Link>
         {data && (
           <div>
-            <h1 className="truncate text-2xl font-semibold tracking-tight">Editar clip {data.clip.rank}</h1>
+            <h1 className="truncate text-2xl font-semibold tracking-tight">{t.editor.title(data.clip.rank)}</h1>
             <p className="truncate text-sm text-muted-foreground">{data.project_title}</p>
           </div>
         )}
@@ -233,8 +238,8 @@ export default function ClipEditorPage() {
         </div>
       ) : error || !data ? (
         <Alert variant="destructive">
-          <AlertTitle>No se pudo abrir el editor</AlertTitle>
-          <AlertDescription>{error instanceof ApiError ? error.message : "Inténtalo de nuevo."}</AlertDescription>
+          <AlertTitle>{t.editor.openError}</AlertTitle>
+          <AlertDescription>{error instanceof ApiError ? error.message : t.common.loadingError}</AlertDescription>
         </Alert>
       ) : (
         <EditorForm key={`${data.clip.id}-${data.clip.version}-${data.clip.status}`} data={data} jobId={id} />
