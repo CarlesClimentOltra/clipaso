@@ -159,10 +159,13 @@ class JobRunner:
                 topic=options.get("topic") or "",
                 branding=branding,
             )
-            result = pipeline.run(
-                str(source), opts, out_dir=tmp / "out",
-                on_progress=lambda stage, overall: self._write_progress(job_id, stage, overall, state),
-            )
+            on_progress = lambda stage, overall: self._write_progress(job_id, stage, overall, state)  # noqa: E731
+            if options.get("mode") == "subtitle":
+                # Solo subtitular: el vídeo entero (traducido si se pidió), sin que la IA elija momentos.
+                result = pipeline.subtitle(str(source), opts, out_dir=tmp / "out", on_progress=on_progress,
+                                           translate_to=options.get("subtitle_language"))
+            else:
+                result = pipeline.run(str(source), opts, out_dir=tmp / "out", on_progress=on_progress)
             if not result.exports:
                 raise SelectionError("La transcripción está vacía o no hay fragmentos válidos")
 

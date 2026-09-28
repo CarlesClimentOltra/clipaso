@@ -678,6 +678,7 @@ export interface components {
             project_title: string;
             /**
              * Format
+             * @description Encuadre del clip (en el formato «original», el del vídeo).
              * @enum {string}
              */
             format: "vertical" | "square" | "horizontal";
@@ -783,11 +784,23 @@ export interface components {
         /** JobCreateIn */
         JobCreateIn: {
             /**
+             * Mode
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.
+             * @default clips
+             * @enum {string}
+             */
+            mode: "clips" | "subtitle";
+            /**
+             * Subtitle Language
+             * @description Solo subtitular: traducir los subtítulos a este idioma.
+             */
+            subtitle_language?: string | null;
+            /**
              * Format
              * @default vertical
              * @enum {string}
              */
-            format: "vertical" | "square" | "horizontal";
+            format: "vertical" | "square" | "horizontal" | "original";
             /**
              * Duration
              * @default auto
@@ -840,11 +853,23 @@ export interface components {
          */
         JobOptions: {
             /**
+             * Mode
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.
+             * @default clips
+             * @enum {string}
+             */
+            mode: "clips" | "subtitle";
+            /**
+             * Subtitle Language
+             * @description Solo subtitular: traducir los subtítulos a este idioma.
+             */
+            subtitle_language?: string | null;
+            /**
              * Format
              * @default vertical
              * @enum {string}
              */
-            format: "vertical" | "square" | "horizontal";
+            format: "vertical" | "square" | "horizontal" | "original";
             /**
              * Duration
              * @default auto
@@ -907,6 +932,12 @@ export interface components {
             /** Error Message */
             error_message: string | null;
             options: components["schemas"]["JobOptions"];
+            /**
+             * Frame
+             * @description Encuadre de los clips (en el formato «original», el del vídeo).
+             * @enum {string}
+             */
+            frame: "vertical" | "square" | "horizontal";
             /**
              * Can Edit
              * @description Se conserva el original: se puede editar y pedir más clips.

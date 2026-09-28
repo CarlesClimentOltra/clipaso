@@ -20,18 +20,28 @@ STAGE_WEIGHTS: dict[str, float] = {
     "select": 0.17,
     "export": 0.30,
 }
+# Modo «solo subtitular»: sin selección de momentos; traducción opcional y un render más largo.
+SUBTITLE_WEIGHTS: dict[str, float] = {
+    "ingest": 0.03,
+    "audio": 0.03,
+    "transcribe": 0.45,
+    "signals": 0.02,
+    "translate": 0.12,
+    "export": 0.35,
+}
 
 
 class ProgressReporter:
-    def __init__(self, callback: ProgressCallback | None = None) -> None:
+    def __init__(self, callback: ProgressCallback | None = None, weights: dict[str, float] | None = None) -> None:
         self.callback = callback
+        self.weights = weights or STAGE_WEIGHTS
         self._last = 0.0
 
     def report(self, stage: str, fraction: float = 0.0) -> None:
         if self.callback is None:
             return
         done = 0.0
-        for name, weight in STAGE_WEIGHTS.items():
+        for name, weight in self.weights.items():
             if name == stage:
                 done += weight * max(0.0, min(1.0, fraction))
                 break

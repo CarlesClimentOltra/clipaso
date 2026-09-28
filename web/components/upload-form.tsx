@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
+import { CaptionsIcon, FileVideoIcon, ScissorsIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
+import type { ClipFormat } from "@/components/caption-preview";
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
 import { TrimSelector, type TrimRange } from "@/components/trim-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 
 const ACCEPT = [".mp4", ".mov", ".mkv", ".webm", ".m4v"];
 const LANGUAGES = ["es", "en", "pt", "fr", "it", "de", "auto"];
+const SUBTITLE_LANGUAGES = ["es", "en", "pt", "fr", "it", "de", "ca"];
 
 type Phase = "idle" | "trimming" | "uploading" | "checking" | "starting";
 
@@ -50,6 +52,7 @@ export function UploadForm({ me }: { me: Me }) {
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
+  const [sourceFrame, setSourceFrame] = useState<ClipFormat>("horizontal");
   const [trim, setTrim] = useState<TrimRange | null>(null);
   const [trimProgress, setTrimProgress] = useState(0);
   const uploadingRef = useRef<File | null>(null);
@@ -60,7 +63,11 @@ export function UploadForm({ me }: { me: Me }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [optionsDraft, setOptionsDraft] = useState<Omit<ProjectOptionsValue, "caption_style"> & {
     caption_style: ProjectOptionsValue["caption_style"] | null;
-  }>({ format: "vertical", duration: "auto", topic: "", keep_source: true, branding: true, caption_style: null });
+  }>({
+    mode: "clips", subtitle_language: null, format: "vertical", duration: "auto", topic: "", keep_source: true,
+    branding: true, caption_style: null,
+  });
+  const subtitleMode = optionsDraft.mode === "subtitle";
   const { data: prefs } = usePreferences();
   const { data: catalog } = useClipOptions();
   // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo).
@@ -155,7 +162,7 @@ export function UploadForm({ me }: { me: Me }) {
       const job = await create.mutateAsync({
         file: prepared.upload,
         trim: prepared.serverTrim,
-        maxClips,
+        maxClips: subtitleMode ? 1 : maxClips,
         language,
         options: options ?? { ...optionsDraft, caption_style: null },
         onUploadProgress: setProgress,
@@ -186,8 +193,52 @@ export function UploadForm({ me }: { me: Me }) {
     setProgress(null);
   }
 
+  function setMode(mode: "clips" | "subtitle") {
+    setOptionsDraft((d) => ({
+      ...d,
+      mode,
+      // Al subtitular, por defecto se respeta el formato del vídeo; los clips, en vertical.
+      format: mode === "subtitle" ? "original" : d.format === "original" ? "vertical" : d.format,
+      subtitle_language: mode === "subtitle" ? d.subtitle_language : null,
+    }));
+  }
+
+  const MODES = [
+    { id: "clips" as const, icon: ScissorsIcon, title: u.modes.clips[0], text: u.modes.clips[1] },
+    { id: "subtitle" as const, icon: CaptionsIcon, title: u.modes.subtitle[0], text: u.modes.subtitle[1] },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
+      <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={u.modeLabel}>
+        {MODES.map((m) => {
+          const selected = optionsDraft.mode === m.id;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              disabled={busy}
+              onClick={() => setMode(m.id)}
+              className={cn(
+                "flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                selected ? "border-primary bg-brand-soft/60 ring-1 ring-primary" : "hover:bg-muted/50",
+              )}
+            >
+              <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl",
+                                  selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                <m.icon className="size-5" />
+              </span>
+              <span>
+                <span className="block font-medium">{m.title}</span>
+                <span className="block text-sm text-muted-foreground">{m.text}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {outOfMinutes && (
         <Alert variant="destructive">
           <AlertTitle>{u.outOfMinutesTitle}</AlertTitle>
@@ -273,7 +324,10 @@ export function UploadForm({ me }: { me: Me }) {
           duration={duration}
           value={trim}
           onChange={setTrim}
-          onDuration={setDuration}
+          onDuration={(d, w, h) => {
+            setDuration(d);
+            if (w && h) setSourceFrame(w / h < 0.8 ? "vertical" : w / h < 1.25 ? "square" : "horizontal");
+          }}
           maxSeconds={maxSeconds}
           disabled={busy}
         />
@@ -287,26 +341,45 @@ export function UploadForm({ me }: { me: Me }) {
       )}
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label>{u.clipCount}</Label>
-          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={u.clipCount}>
-            {Array.from({ length: me.plan.max_clips_per_job }, (_, i) => i + 1).map((n) => (
-              <Button
-                key={n}
-                type="button"
-                role="radio"
-                aria-checked={maxClips === n}
-                variant={maxClips === n ? "default" : "outline"}
-                size="sm"
-                className="min-w-9"
-                disabled={busy}
-                onClick={() => setMaxClips(n)}
-              >
-                {n}
-              </Button>
-            ))}
+        {subtitleMode ? (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="subtitle-language">{u.subtitleLanguage}</Label>
+            <select
+              id="subtitle-language"
+              value={optionsDraft.subtitle_language ?? ""}
+              disabled={busy}
+              onChange={(e) => setOptionsDraft((d) => ({ ...d, subtitle_language: e.target.value || null }))}
+              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            >
+              <option value="">{u.sameLanguage}</option>
+              {SUBTITLE_LANGUAGES.map((l) => (
+                <option key={l} value={l}>{u.translateTo(u.languages[l] ?? l)}</option>
+              ))}
+            </select>
+            {optionsDraft.subtitle_language && <p className="text-xs text-muted-foreground">{u.translateHint}</p>}
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <Label>{u.clipCount}</Label>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={u.clipCount}>
+              {Array.from({ length: me.plan.max_clips_per_job }, (_, i) => i + 1).map((n) => (
+                <Button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={maxClips === n}
+                  variant={maxClips === n ? "default" : "outline"}
+                  size="sm"
+                  className="min-w-9"
+                  disabled={busy}
+                  onClick={() => setMaxClips(n)}
+                >
+                  {n}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           <Label htmlFor="language">{u.videoLanguage}</Label>
           <select
@@ -331,6 +404,7 @@ export function UploadForm({ me }: { me: Me }) {
           value={options}
           onChange={setOptionsDraft}
           disabled={busy}
+          sourceFrame={sourceFrame}
           background={
             fileUrl ? (
               // Un fotograma del propio vídeo (del inicio del tramo) de fondo en la vista previa.
@@ -396,7 +470,7 @@ export function UploadForm({ me }: { me: Me }) {
       ) : (
         <Button size="lg" className="h-12 rounded-full text-base"
                 disabled={!file || !duration || outOfMinutes || tooLong || tooBig} onClick={submit}>
-          {u.create}
+          {subtitleMode ? u.createSubtitle : u.create}
         </Button>
       )}
       <p className="text-xs text-muted-foreground">

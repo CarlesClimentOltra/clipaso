@@ -15,7 +15,7 @@ from smartcuts.infra.registry import register
 
 log = get_logger(__name__)
 
-LOGO_WIDTH_RATIO = 0.16  # ancho del logo respecto al ancho del vídeo
+LOGO_WIDTH_RATIO = 0.16  # ancho del logo respecto al lado corto del vídeo
 LOGO_MARGIN_RATIO = 0.035
 
 
@@ -77,7 +77,8 @@ class FFmpegExporter:
         filter_complex = plan.filter_complex
         margin = int(min(profile.width, profile.height) * LOGO_MARGIN_RATIO)
         logo = branding.logo_path if branding.logo_path and Path(branding.logo_path).is_file() else None
-        logo_w, logo_h = _logo_size(Path(logo), profile.width) if logo else (0, 0)
+        # Tamaño relativo al lado corto: igual de discreto en vertical que en horizontal.
+        logo_w, logo_h = _logo_size(Path(logo), min(profile.width, profile.height)) if logo else (0, 0)
 
         if profile.subtitles.enabled or branding.handle.strip():
             words = [

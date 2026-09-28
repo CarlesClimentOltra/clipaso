@@ -2687,7 +2687,8 @@
               "square",
               "horizontal"
             ],
-            "title": "Format"
+            "title": "Format",
+            "description": "Encuadre del clip (en el formato «original», el del vídeo)."
           },
           "source_duration": {
             "type": "number",
@@ -2981,12 +2982,36 @@
       },
       "JobCreateIn": {
         "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "clips",
+              "subtitle"
+            ],
+            "title": "Mode",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.",
+            "default": "clips"
+          },
+          "subtitle_language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z]{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle Language",
+            "description": "Solo subtitular: traducir los subtítulos a este idioma."
+          },
           "format": {
             "type": "string",
             "enum": [
               "vertical",
               "square",
-              "horizontal"
+              "horizontal",
+              "original"
             ],
             "title": "Format",
             "default": "vertical"
@@ -3083,12 +3108,36 @@
       },
       "JobOptions": {
         "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "clips",
+              "subtitle"
+            ],
+            "title": "Mode",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.",
+            "default": "clips"
+          },
+          "subtitle_language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z]{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle Language",
+            "description": "Solo subtitular: traducir los subtítulos a este idioma."
+          },
           "format": {
             "type": "string",
             "enum": [
               "vertical",
               "square",
-              "horizontal"
+              "horizontal",
+              "original"
             ],
             "title": "Format",
             "default": "vertical"
@@ -3248,6 +3297,16 @@
           "options": {
             "$ref": "#/components/schemas/JobOptions"
           },
+          "frame": {
+            "type": "string",
+            "enum": [
+              "vertical",
+              "square",
+              "horizontal"
+            ],
+            "title": "Frame",
+            "description": "Encuadre de los clips (en el formato «original», el del vídeo)."
+          },
           "can_edit": {
             "type": "boolean",
             "title": "Can Edit",
@@ -3291,6 +3350,7 @@
           "error_code",
           "error_message",
           "options",
+          "frame",
           "can_edit",
           "more_clips_available",
           "more_clips_task",

@@ -332,7 +332,7 @@ export const en: Dict = {
   },
   upload: {
     languages: {
-      es: "Spanish", en: "English", pt: "Portuguese", fr: "French", it: "Italian", de: "German",
+      es: "Spanish", en: "English", pt: "Portuguese", fr: "French", it: "Italian", de: "German", ca: "Catalan",
       auto: "Detect automatically",
     },
     phases: {
@@ -367,6 +367,16 @@ export const en: Dict = {
     lessThanMinute: "less than 1 min",
     cancel: "Cancel upload",
     create: "Create clips",
+    createSubtitle: "Subtitle video",
+    modeLabel: "What do you want to do",
+    modes: {
+      clips: ["Create clips with AI", "The AI picks the best moments and turns them into captioned clips."],
+      subtitle: ["Subtitles only", "We give you back the whole video with captions, in its language or translated."],
+    },
+    subtitleLanguage: "Captions in",
+    sameLanguage: "The same language as the video",
+    translateTo: (lang: string) => `Translate into ${lang}`,
+    translateHint: "The AI translates sentence by sentence; you can then fix any word in the editor.",
     rightsStart:
       "By uploading a video you confirm you have the necessary rights to its content and permission from the people who appear in it (see",
     rightsTerms: "Terms",
@@ -396,6 +406,7 @@ export const en: Dict = {
       vertical: ["Vertical 9:16", "TikTok, Reels and Shorts"],
       square: ["Square 1:1", "Instagram feed and LinkedIn"],
       horizontal: ["Horizontal 16:9", "YouTube and web"],
+      original: ["Original", "The same format as your video"],
     },
     duration: "Clip length",
     durations: {
@@ -517,10 +528,19 @@ export const en: Dict = {
     notEditable:
       "This project didn't keep the original video, so its clips can't be edited or extended. You can change the copy and download the captions.",
     clipsTitle: (n: number) => `${n} ${plural(n, "clip", "clips")}, best first`,
+    subtitledTitle: "Your captioned video",
+    subtitledBadge: (lang?: string | null) => (lang ? `Captioned · translated (${lang.toUpperCase()})` : "Captioned"),
   },
   progress: {
     steps: ["Preparing the video", "Transcribing the audio", "Finding the best moments", "Generating your clips"],
     preparing: "We're preparing your clips",
+    preparingSubtitle: "We're captioning your video",
+    subtitleSteps: (translated: boolean) => [
+      "Preparing the video",
+      "Transcribing the audio",
+      translated ? "Translating the captions" : "Preparing the captions",
+      "Generating your video",
+    ],
     queued: "Queued, starting shortly…",
     label: "Processing progress",
     leave: "You can close this page: we'll keep working and your clips will appear in",

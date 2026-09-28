@@ -249,7 +249,7 @@ def test_legacy_default_style_becomes_a_custom_style(client):
 
 def test_options_catalog(client):
     body = client.get("/options").json()
-    assert {f["id"] for f in body["formats"]} == {"vertical", "square", "horizontal"}
+    assert {f["id"] for f in body["formats"]} == {"vertical", "square", "horizontal", "original"}
     assert body["presets"][0]["id"] == "clasico" and "Anton" in body["fonts"]
 
 
@@ -417,3 +417,35 @@ def test_line_breaks_chosen_by_the_user(client, sample_video, monkeypatch):
     assert words[0]["brk"] == "split" and words[2]["brk"] == "join" and words[1]["brk"] is None
     srt = client.get(f"/clips/{clip_id}/captions?format=srt", headers=AUTH).text
     assert "\nHola\n" in srt and "a todos, esto es" in srt
+
+
+def test_subtitle_only_mode(client, sample_video, monkeypatch):
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch, mode="subtitle", format="original",
+                                     subtitle_language="en")
+    call = pipeline.calls[0]
+    assert call["kind"] == "subtitle" and call["translate_to"] == "en"
+    profile = call["opts"].profile
+    assert (profile.name, profile.width, profile.height) == ("original", 320, 180)  # tal cual, sin recorte
+    assert profile.reframe.value == "center" and profile.subtitles.enabled
+
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["status"] == "done" and len(job["clips"]) == 1 and job["more_clips_available"] == 0
+    assert job["options"]["mode"] == "subtitle" and job["options"]["subtitle_language"] == "en"
+    clip_id = job["clips"][0]["id"]
+    r = client.post(f"/jobs/{job_id}/more", json={"count": 1}, headers=AUTH)
+    assert r.status_code == 400 and r.json()["error"]["code"] == "too_many_clips"
+    # El vídeo entero se puede volver a generar aunque dure más que un clip normal.
+    assert client.post(f"/clips/{clip_id}/render", json={"start": 0, "end": 3}, headers=AUTH).status_code == 202
+
+
+def test_original_profile_keeps_the_frame():
+    from smartcuts.infra.config import Settings
+    from smartcuts.saas.rendering import original_profile
+
+    settings = Settings(_env_file=None)
+    vertical = original_profile(settings, (2160, 3840))
+    assert (vertical.width, vertical.height) == (1080, 1920) and vertical.subtitles.font_size_ratio == 0.045
+    wide = original_profile(settings, (3840, 2160))
+    assert (wide.width, wide.height) == (1920, 1080) and wide.subtitles.font_size_ratio == 0.06
+    odd = original_profile(settings, (853, 481))
+    assert odd.width % 2 == 0 and odd.height % 2 == 0

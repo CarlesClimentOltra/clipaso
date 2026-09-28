@@ -19,7 +19,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from smartcuts.application.cost import CostTracker
-from smartcuts.application.progress import ProgressCallback, ProgressReporter
+from smartcuts.application.progress import SUBTITLE_WEIGHTS, ProgressCallback, ProgressReporter
+from smartcuts.application.translation import Translator
 from smartcuts.application.workspace import Workspace
 from smartcuts.domain.errors import RenderError, SmartCutsError, UnsupportedSourceError
 from smartcuts.domain.models import (
@@ -75,6 +76,7 @@ class Components:
     reframer_factory: Callable[[str], Reframer]
     exporter_factory: Callable[[str], Exporter]
     cost: CostTracker
+    translator_factory: Callable[[], Translator] | None = None
 
 
 def slugify(text: str, max_len: int = 50) -> str:
@@ -321,6 +323,49 @@ class Pipeline:
             result = JobResult(source=source, selection=selection, exports=exports, cost_usd=self.c.cost.spent,
                                transcript=transcript, signals=signals)
             (out_dir / "manifest.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
+            progress.report("export", 1.0)
+            return result
+        finally:
+            clear_job()
+
+    def subtitle(
+        self,
+        uri: str,
+        opts: PipelineOptions,
+        *,
+        out_dir: Path,
+        translate_to: str | None = None,
+        on_progress: ProgressCallback | None = None,
+    ) -> JobResult:
+        """Modo «solo subtitular»: el vídeo entero con subtítulos (traducidos si se pide), sin elegir momentos."""
+        progress = ProgressReporter(on_progress, SUBTITLE_WEIGHTS)
+        try:
+            progress.report("ingest")
+            source, ws = self._open(uri, opts)
+            progress.report("audio")
+            audio = self._audio(source, ws)
+            progress.report("transcribe")
+            transcript = self._transcribe(audio, ws, opts, progress)
+            if not transcript.sentences:
+                raise SmartCutsError("La transcripción está vacía")
+            progress.report("signals")
+            signals = self._signals(AnalysisContext(source, audio, transcript), ws, opts)
+            if translate_to and translate_to != transcript.language:
+                if self.c.translator_factory is None:
+                    raise SmartCutsError("Traducción no disponible")
+                progress.report("translate")
+                with stage("translate"):
+                    transcript = self.c.translator_factory().translate(
+                        transcript, translate_to, on_progress=progress.stage_callback("translate"))
+            whole = ClipCandidate(start=0.0, end=source.duration, first_sentence=0,
+                                  last_sentence=len(transcript.sentences) - 1, score=1.0,
+                                  title=opts.title or source.title or "Vídeo")
+            out_dir.mkdir(parents=True, exist_ok=True)
+            progress.report("export")
+            exports = self._export(source, transcript, [(1, whole)], ws, opts, out_dir, progress)
+            selection = Selection(strategy="subtitle", clips=[whole])
+            result = JobResult(source=source, selection=selection, exports=exports, cost_usd=self.c.cost.spent,
+                               transcript=transcript, signals=signals)
             progress.report("export", 1.0)
             return result
         finally:

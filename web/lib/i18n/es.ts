@@ -332,7 +332,7 @@ export const es = {
   },
   upload: {
     languages: {
-      es: "Español", en: "Inglés", pt: "Portugués", fr: "Francés", it: "Italiano", de: "Alemán",
+      es: "Español", en: "Inglés", pt: "Portugués", fr: "Francés", it: "Italiano", de: "Alemán", ca: "Catalán",
       auto: "Detectar automáticamente",
     } as Record<string, string>,
     phases: {
@@ -367,6 +367,16 @@ export const es = {
     lessThanMinute: "menos de 1 min",
     cancel: "Cancelar subida",
     create: "Crear clips",
+    createSubtitle: "Subtitular vídeo",
+    modeLabel: "Qué quieres hacer",
+    modes: {
+      clips: ["Crear clips con IA", "La IA elige los mejores momentos y los convierte en clips con subtítulos."],
+      subtitle: ["Solo subtitular", "Te devolvemos el vídeo entero con subtítulos, en su idioma o traducidos."],
+    },
+    subtitleLanguage: "Subtítulos en",
+    sameLanguage: "El mismo idioma del vídeo",
+    translateTo: (lang: string) => `Traducir al ${lang.toLowerCase()}`,
+    translateHint: "La traducción la hace la IA frase a frase; luego puedes corregir cualquier palabra en el editor.",
     rightsStart:
       "Al subir un vídeo confirmas que tienes los derechos necesarios sobre su contenido y el permiso de las personas que aparecen en él (ver",
     rightsTerms: "Términos",
@@ -396,6 +406,7 @@ export const es = {
       vertical: ["Vertical 9:16", "TikTok, Reels y Shorts"],
       square: ["Cuadrado 1:1", "Feed de Instagram y LinkedIn"],
       horizontal: ["Horizontal 16:9", "YouTube y web"],
+      original: ["Original", "El mismo formato que tu vídeo"],
     } as Record<string, [string, string]>,
     duration: "Duración de los clips",
     durations: {
@@ -517,10 +528,19 @@ export const es = {
     notEditable:
       "Este proyecto no guardó el vídeo original, así que los clips no se pueden editar ni ampliar. Puedes cambiar los textos y descargar los subtítulos.",
     clipsTitle: (n: number) => `${n} ${plural(n, "clip", "clips")}, del mejor al menos destacado`,
+    subtitledTitle: "Tu vídeo subtitulado",
+    subtitledBadge: (lang?: string | null) => (lang ? `Subtitulado · traducido (${lang.toUpperCase()})` : "Subtitulado"),
   },
   progress: {
     steps: ["Preparando el vídeo", "Transcribiendo el audio", "Buscando los mejores momentos", "Generando tus clips"],
     preparing: "Estamos preparando tus clips",
+    preparingSubtitle: "Estamos subtitulando tu vídeo",
+    subtitleSteps: (translated: boolean) => [
+      "Preparando el vídeo",
+      "Transcribiendo el audio",
+      translated ? "Traduciendo los subtítulos" : "Preparando los subtítulos",
+      "Generando tu vídeo",
+    ],
     queued: "En cola, empezamos enseguida…",
     label: "Progreso del procesamiento",
     leave: "Puedes cerrar esta página: seguiremos trabajando y tus clips aparecerán en",

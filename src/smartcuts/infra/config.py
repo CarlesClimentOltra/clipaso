@@ -47,6 +47,9 @@ class LLMSettings(BaseModel):
     max_output_tokens: int = 16000
     # Reenvía la petición a otro modelo si los clasificadores de seguridad la rechazan.
     server_side_fallback: bool = True
+    # Traducción de subtítulos (modo «solo subtitular»): tarea sencilla, modelo rápido y barato.
+    translation_model: str = "claude-haiku-4-5-20251001"
+    translation_cli_model: str = "haiku"
     timeout_seconds: float = 600.0
 
 
@@ -71,6 +74,7 @@ class BudgetSettings(BaseModel):
             "claude-opus-5": (5.0, 25.0),
             "claude-sonnet-5": (2.0, 10.0),
             "claude-haiku-4-5": (1.0, 5.0),
+            "claude-haiku-4-5-20251001": (1.0, 5.0),
         }
     )
 

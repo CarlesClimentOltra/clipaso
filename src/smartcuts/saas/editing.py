@@ -70,7 +70,13 @@ def _active_tasks(session: Session, user: User) -> int:
     ) or 0
 
 
+def is_subtitle_job(job: Job) -> bool:
+    return (job.options or {}).get("mode") == "subtitle"
+
+
 def more_clips_available(job: Job, user: User) -> int:
+    if is_subtitle_job(job):
+        return 0  # un vídeo subtitulado no tiene «más clips»
     return max(0, user.plan.max_clips_per_job * MORE_CLIPS_FACTOR - len(job.clips))
 
 
@@ -175,9 +181,11 @@ def request_render(
     upload = session.get(Upload, job.upload_id)
     duration = upload.duration_seconds or 0
     start, end = round(max(0.0, start), 3), round(min(end, duration), 3)
-    if not MIN_CLIP_SECONDS <= end - start <= MAX_CLIP_SECONDS:
+    # Un vídeo subtitulado entero puede durar lo que el vídeo; un clip, como mucho MAX_CLIP_SECONDS.
+    longest = max(duration, MAX_CLIP_SECONDS) if is_subtitle_job(job) else MAX_CLIP_SECONDS
+    if not MIN_CLIP_SECONDS <= end - start <= longest:
         raise AppError("validation_error", key="clip_duration",
-                       params={"min": f"{MIN_CLIP_SECONDS:.0f}", "max": f"{MAX_CLIP_SECONDS:.0f}"})
+                       params={"min": f"{MIN_CLIP_SECONDS:.0f}", "max": f"{longest:.0f}"})
     # Palabras corregidas y cortes de línea («br:<clave>»: split | join).
     clip.word_edits = {
         **{k: v.strip()[:60] for k, v in word_edits.items() if WORD_KEY.fullmatch(k)},

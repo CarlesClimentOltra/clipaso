@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MonitorIcon, SmartphoneIcon, SquareIcon } from "lucide-react";
+import { FrameIcon, MonitorIcon, SmartphoneIcon, SquareIcon } from "lucide-react";
 
 import { CaptionPreview, type ClipFormat } from "@/components/caption-preview";
 import { Segmented } from "@/components/segmented";
@@ -15,7 +15,7 @@ import { useClipOptions, usePreferences } from "@/lib/api/hooks";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const FORMAT_ICON = { vertical: SmartphoneIcon, square: SquareIcon, horizontal: MonitorIcon } as const;
+const FORMAT_ICON = { vertical: SmartphoneIcon, square: SquareIcon, horizontal: MonitorIcon, original: FrameIcon } as const;
 
 export type ProjectOptionsValue = Required<Omit<JobOptions, "caption_style">> & { caption_style: CaptionStyle };
 
@@ -25,6 +25,7 @@ export function ProjectOptions({
   onChange,
   disabled,
   background,
+  sourceFrame = "horizontal",
 }: {
   me: Me;
   value: ProjectOptionsValue;
@@ -32,13 +33,20 @@ export function ProjectOptions({
   disabled?: boolean;
   /** Fondo de la vista previa (p. ej. un fotograma del vídeo elegido). */
   background?: React.ReactNode;
+  /** Encuadre del vídeo elegido (para la vista previa del formato «original»). */
+  sourceFrame?: ClipFormat;
 }) {
   const { data: options } = useClipOptions();
   const { data: prefs } = usePreferences();
   const { t } = useI18n();
   const o = t.options;
   const set = (patch: Partial<ProjectOptionsValue>) => onChange({ ...value, ...patch });
-  const format = value.format as ClipFormat;
+  const subtitleMode = value.mode === "subtitle";
+  const format: ClipFormat = value.format === "original" ? sourceFrame : (value.format as ClipFormat);
+  // «Original» solo tiene sentido al subtitular el vídeo entero (los clips se reencuadran siempre).
+  const formats = (options?.formats ?? [])
+    .filter((f) => subtitleMode || f.id !== "original")
+    .sort((a, b) => (subtitleMode ? Number(b.id === "original") - Number(a.id === "original") : 0));
   const hasBrand = !!prefs && (!!prefs.branding.handle || prefs.branding.has_logo);
   const durationHint = o.durations[value.duration]?.[1];
 
@@ -46,8 +54,9 @@ export function ProjectOptions({
     <div className="flex flex-col gap-6">
       <fieldset className="flex flex-col gap-2" disabled={disabled}>
         <legend className="mb-2 text-sm font-medium">{o.format}</legend>
-        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={o.format}>
-          {(options?.formats ?? []).map((f) => {
+        <div className={cn("grid gap-2", subtitleMode ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}
+             role="radiogroup" aria-label={o.format}>
+          {formats.map((f) => {
             const Icon = FORMAT_ICON[f.id as ClipFormat] ?? SmartphoneIcon;
             const selected = value.format === f.id;
             return (
@@ -73,37 +82,41 @@ export function ProjectOptions({
         </div>
       </fieldset>
 
-      <div className="flex flex-col gap-2">
-        <Label>{o.duration}</Label>
-        <div className="flex flex-wrap items-center gap-3">
-          <Segmented
-            label={o.duration}
-            value={value.duration}
-            disabled={disabled}
-            onChange={(duration) => set({ duration })}
-            options={(options?.durations ?? []).map((d) => ({
-              value: d.id as ProjectOptionsValue["duration"],
-              label: o.durations[d.id]?.[0] ?? d.label,
-            }))}
-          />
-          {durationHint && <span className="text-xs text-muted-foreground">{durationHint}</span>}
-        </div>
-      </div>
+      {!subtitleMode && (
+        <>
+          <div className="flex flex-col gap-2">
+            <Label>{o.duration}</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <Segmented
+                label={o.duration}
+                value={value.duration}
+                disabled={disabled}
+                onChange={(duration) => set({ duration })}
+                options={(options?.durations ?? []).map((d) => ({
+                  value: d.id as ProjectOptionsValue["duration"],
+                  label: o.durations[d.id]?.[0] ?? d.label,
+                }))}
+              />
+              {durationHint && <span className="text-xs text-muted-foreground">{durationHint}</span>}
+            </div>
+          </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="topic">
-          {o.topic} <span className="font-normal text-muted-foreground">{t.common.optional}</span>
-        </Label>
-        <Input
-          id="topic"
-          maxLength={200}
-          placeholder={o.topicPlaceholder}
-          value={value.topic}
-          disabled={disabled}
-          onChange={(e) => set({ topic: e.target.value })}
-        />
-        <p className="text-xs text-muted-foreground">{o.topicHint}</p>
-      </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="topic">
+              {o.topic} <span className="font-normal text-muted-foreground">{t.common.optional}</span>
+            </Label>
+            <Input
+              id="topic"
+              maxLength={200}
+              placeholder={o.topicPlaceholder}
+              value={value.topic}
+              disabled={disabled}
+              onChange={(e) => set({ topic: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">{o.topicHint}</p>
+          </div>
+        </>
+      )}
 
       <div className="flex flex-col gap-3">
         <Label>{o.style}</Label>

@@ -275,6 +275,10 @@ def create_job(
         raise AppError("too_many_jobs", 429)
 
     options = dict(options or {})
+    if options.get("format") == "original":
+        if not (upload.width and upload.height):
+            raise AppError("upload_not_ready", 409)
+        options["source_size"] = [upload.width, upload.height]
     seconds = upload.duration_seconds
     if trim is not None:
         start, end = round(max(0.0, trim[0]), 3), round(min(trim[1], upload.duration_seconds), 3)

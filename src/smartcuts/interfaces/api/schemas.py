@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from smartcuts.saas.presets import BrandingPrefs, CaptionPreset, CaptionStyle, DurationT, FormatT
+from smartcuts.saas.presets import BrandingPrefs, CaptionPreset, CaptionStyle, DurationT, FormatT, ModeT
 from smartcuts.saas.styles import UserStyle
 
 
@@ -107,6 +107,10 @@ class UploadOut(BaseModel):
 class JobOptions(BaseModel):
     """Cómo quiere el usuario sus clips."""
 
+    mode: ModeT = Field("clips", description="clips: la IA elige los mejores momentos · subtitle: el vídeo "
+                                             "entero con subtítulos.")
+    subtitle_language: str | None = Field(None, pattern=r"^[a-z]{2}$",
+                                          description="Solo subtitular: traducir los subtítulos a este idioma.")
     format: FormatT = "vertical"
     duration: DurationT = "auto"
     topic: str = Field("", max_length=200, description="Tema opcional: «momentos donde hablo de dinero».")
@@ -166,10 +170,13 @@ class EditorWordOut(BaseModel):
     brk: Literal["split", "join"] | None = Field(None, description="Corte de línea elegido tras esta palabra.")
 
 
+FrameT = Literal["vertical", "square", "horizontal"]
+
+
 class EditorOut(BaseModel):
     clip: ClipOut
     project_title: str
-    format: FormatT
+    format: FrameT = Field(description="Encuadre del clip (en el formato «original», el del vídeo).")
     source_duration: float
     window_start: float
     window_end: float
@@ -288,6 +295,8 @@ class JobOut(JobSummary):
     error_code: str | None
     error_message: str | None
     options: JobOptions
+    frame: Literal["vertical", "square", "horizontal"] = Field(
+        description="Encuadre de los clips (en el formato «original», el del vídeo).")
     can_edit: bool = Field(description="Se conserva el original: se puede editar y pedir más clips.")
     more_clips_available: int
     more_clips_task: TaskOut | None

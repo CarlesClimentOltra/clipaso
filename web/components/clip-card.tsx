@@ -161,7 +161,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
           poster={clip.thumbnail_url ?? undefined}
           title={clip.title}
           rank={clip.rank}
-          aspect={CLIP_ASPECT[job.options.format ?? "vertical"]}
+          aspect={CLIP_ASPECT[job.frame]}
         />
         {rendering && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 text-sm text-white">

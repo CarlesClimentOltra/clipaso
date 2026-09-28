@@ -9,6 +9,7 @@ from __future__ import annotations
 import smartcuts.adapters  # noqa: F401  (registra todos los adaptadores)
 from smartcuts.application.cost import CostTracker
 from smartcuts.application.pipeline import Components, Pipeline
+from smartcuts.application.translation import Translator
 from smartcuts.domain.ports import Storage, Transcriber
 from smartcuts.infra import registry
 from smartcuts.infra.config import Settings
@@ -53,6 +54,13 @@ def build_components(
     def exporter_factory(name: str):
         return registry.create("exporters", name)
 
+    def translator_factory() -> Translator:
+        params = settings.llm.model_dump(exclude={"provider"}) | {
+            "model": settings.llm.translation_model, "cli_model": settings.llm.translation_cli_model,
+            "server_side_fallback": False,
+        }
+        return Translator(registry.create("llm", settings.llm.provider, **params), cost)
+
     return Components(
         sources=sources,
         transcriber=transcriber,
@@ -64,6 +72,7 @@ def build_components(
         reframer_factory=reframer_factory,
         exporter_factory=exporter_factory,
         cost=cost,
+        translator_factory=translator_factory,
     )
 
 

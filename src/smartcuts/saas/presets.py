@@ -18,8 +18,12 @@ FORMATS: dict[str, dict] = {
     "vertical": {"label": "Vertical 9:16", "hint": "TikTok, Reels y Shorts", "profile": "vertical_9x16"},
     "square": {"label": "Cuadrado 1:1", "hint": "Feed de Instagram y LinkedIn", "profile": "square_1x1"},
     "horizontal": {"label": "Horizontal 16:9", "hint": "YouTube y web", "profile": "horizontal_16x9"},
+    # Solo subtitular: el vídeo tal cual (la base de tamaños de letra se elige según su proporción).
+    "original": {"label": "Original", "hint": "El mismo formato que tu vídeo", "profile": None},
 }
-FormatT = Literal["vertical", "square", "horizontal"]
+FormatT = Literal["vertical", "square", "horizontal", "original"]
+ModeT = Literal["clips", "subtitle"]
+MAX_ORIGINAL_SHORT_SIDE = 1080  # el vídeo subtitulado sale como mucho en 1080p (4K se pide aparte)
 
 DURATIONS: dict[str, dict] = {
     "auto": {"label": "Automática", "hint": "La que mejor encaje con cada momento", "range": None},

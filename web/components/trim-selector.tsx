@@ -96,7 +96,7 @@ export function TrimSelector({
   duration: number | null;
   value: TrimRange | null;
   onChange: (range: TrimRange | null) => void;
-  onDuration: (seconds: number) => void;
+  onDuration: (seconds: number, width: number, height: number) => void;
   maxSeconds: number;
   disabled?: boolean;
 }) {
@@ -168,8 +168,8 @@ export function TrimSelector({
           playsInline
           className="mx-auto max-h-72 w-full object-contain"
           onLoadedMetadata={(e) => {
-            const d = e.currentTarget.duration;
-            if (Number.isFinite(d) && d > 0) onDuration(d);
+            const v = e.currentTarget;
+            if (Number.isFinite(v.duration) && v.duration > 0) onDuration(v.duration, v.videoWidth, v.videoHeight);
           }}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}

@@ -159,7 +159,7 @@ export function CaptionPreview({
         >
           {logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt="" className="w-[16cqw] opacity-90" />
+            <img src={logoUrl} alt="" className="w-[min(16cqw,16cqh)] opacity-90" />
           )}
           {branding?.handle && (
             <span

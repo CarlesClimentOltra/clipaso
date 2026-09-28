@@ -25,6 +25,7 @@ from smartcuts.saas.db import utcnow
 from smartcuts.saas.dispatch import dispatch_job
 from smartcuts.saas.errors import AppError, NotFound, translate, user_message
 from smartcuts.saas.models import Clip, Job, TaskKind, User
+from smartcuts.saas.rendering import result_frame
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -64,6 +65,7 @@ def job_out(session: Session, job: Job, user: User, storage: Storage, ttl: int) 
         error_code=job.error_code,
         error_message=user_message(job.error_code),
         options=JobOptions.model_validate(options),
+        frame=result_frame(options),
         can_edit=can_edit,
         more_clips_available=editing.more_clips_available(job, user) if can_edit else 0,
         more_clips_task=TaskOut(status=task.status, error_message=user_message(task.error_code)) if task else None,

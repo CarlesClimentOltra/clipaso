@@ -26,6 +26,7 @@ from smartcuts.saas.db import utcnow
 from smartcuts.saas.dispatch import dispatch_job
 from smartcuts.saas.errors import user_message
 from smartcuts.saas.models import Clip, Job, Upload
+from smartcuts.saas.rendering import result_frame
 
 router = APIRouter(prefix="/clips", tags=["clips"])
 
@@ -80,7 +81,7 @@ def clip_editor(
     return EditorOut(
         clip=clip_out(clip, job, storage, ttl),
         project_title=job.title,
-        format=(job.options or {}).get("format", "vertical"),
+        format=result_frame(job.options or {}),
         source_duration=duration,
         window_start=window[0],
         window_end=window[1],

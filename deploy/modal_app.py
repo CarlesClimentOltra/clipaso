@@ -156,7 +156,9 @@ def smoke() -> dict:
     from smartcuts.domain.models import SubtitleStyle, Word
 
     fonts_ok = {}
-    for font in ("Archivo Black", "Anton", "Bebas Neue", "Poppins ExtraBold", "Luckiest Guy"):
+    from smartcuts.saas.presets import FONTS
+
+    for font in FONTS.values():
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
             (work / "subs.ass").write_text(build_ass([Word(text=" hola", start=0, end=1)], SubtitleStyle(font=font),

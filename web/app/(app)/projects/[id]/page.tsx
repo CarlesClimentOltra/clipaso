@@ -78,6 +78,7 @@ export default function ProjectPage() {
   }
 
   const active = job.status === "queued" || job.status === "running";
+  const subtitle = job.options.mode === "subtitle";
   const moreTask = job.more_clips_task;
   const searchingMore = !!moreTask && (moreTask.status === "queued" || moreTask.status === "running");
 
@@ -119,7 +120,8 @@ export default function ProjectPage() {
               </span>
               {job.status === "done" && (
                 <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
-                  <ScissorsIcon className="size-3.5 text-brand-ink" /> {t.common.clips(job.clips.length)}
+                  <ScissorsIcon className="size-3.5 text-brand-ink" />
+                  {subtitle ? p.subtitledBadge(job.options.subtitle_language) : t.common.clips(job.clips.length)}
                 </span>
               )}
               {job.status === "done" && job.expires_at && (
@@ -130,12 +132,12 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {job.status === "done" && job.clips.length > 0 && (
+            {job.status === "done" && job.clips.length > 0 && !subtitle && (
               <Button size="sm" className="h-9 rounded-full px-4" onClick={onDownloadAll} disabled={downloadAll.isPending}>
                 <FolderDownIcon /> {p.downloadAll}
               </Button>
             )}
-            {job.status === "done" && job.can_edit && me && (
+            {job.status === "done" && job.can_edit && me && !subtitle && (
               <MoreClipsDialog job={job} maxPerRequest={me.plan.max_clips_per_job} />
             )}
             {!active && (
@@ -216,9 +218,11 @@ export default function ProjectPage() {
       {job.status === "done" && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
           <h2 id="clips-title" className="text-xl font-semibold tracking-tight">
-            {p.clipsTitle(job.clips.length)}
+            {subtitle ? p.subtitledTitle : p.clipsTitle(job.clips.length)}
           </h2>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={cn("grid gap-5", subtitle
+            ? job.frame === "horizontal" ? "max-w-3xl" : "max-w-sm"
+            : "sm:grid-cols-2 lg:grid-cols-3")}>
             {job.clips.map((clip) => (
               <ClipCard key={clip.id} clip={clip} job={job} />
             ))}

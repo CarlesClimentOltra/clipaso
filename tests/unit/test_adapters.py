@@ -175,3 +175,47 @@ def test_chunk_words_respects_user_breaks():
     words[2] = words[2].model_copy(update={"brk": "join"})
     chunks = chunk_words(words, max_words=3, max_seconds=10)
     assert [[w.text.strip() for w in c] for c in chunks] == [["uno"], ["dos", "tres", "cuatro"]]
+
+
+def test_translator_keeps_sentence_timing():
+    from smartcuts.application.cost import CostTracker
+    from smartcuts.application.translation import Translator
+    from smartcuts.domain.models import Sentence, Word
+    from smartcuts.domain.ports import LLMResponse, LLMUsage
+
+    class FakeLLM:
+        name, model, billable = "fake", "claude-haiku-4-5", True
+
+        def __init__(self):
+            self.users = []
+
+        def estimate_input_tokens(self, text):
+            return len(text) // 3
+
+        def complete_json(self, *, system, user, schema, max_tokens=None):
+            import json
+
+            self.users.append(user)
+            items = [json.loads(line) for line in user.splitlines()]
+            texts = {0: "Hello everyone, this is SmartCuts.", 1: "See you later."}
+            return LLMResponse(data={"items": [{"i": it["i"], "text": texts[it["i"]]} for it in items]},
+                               usage=LLMUsage(model=self.model, input_tokens=100, output_tokens=20))
+
+    names = ["Hola", "a", "todos", "esto", "es"]
+    words = [Word(text=f" {w}", start=i * 0.5, end=i * 0.5 + 0.4) for i, w in enumerate(names)]
+    transcript = Transcript(language="es", duration=10, sentences=[
+        Sentence(index=0, start=0, end=2.4, text="Hola a todos, esto es SmartCuts.", words=words),
+        Sentence(index=1, start=5, end=6, text="Hasta luego.",
+                 words=[Word(text=" Hasta", start=5, end=5.4), Word(text=" luego.", start=5.5, end=6)]),
+    ])
+    llm = FakeLLM()
+    cost = CostTracker(budget_usd=1, pricing={"claude-haiku-4-5": (1.0, 5.0)})
+    out = Translator(llm, cost).translate(transcript, "en")
+    assert out.language == "en" and out.sentences[0].text == "Hello everyone, this is SmartCuts."
+    first = out.sentences[0].words
+    assert [w.text.strip() for w in first] == ["Hello", "everyone,", "this", "is", "SmartCuts."]
+    assert first[0].start == 0 and first[-1].end <= 2.4 + 1e-6
+    assert all(a.start <= b.start for a, b in zip(first, first[1:], strict=False))
+    second = out.sentences[1].words
+    assert second[0].start >= 5 and second[-1].end == 6  # cada frase se queda en su tramo
+    assert '"text": "Hola a todos, esto es SmartCuts."' in llm.users[0] and cost.spent > 0
