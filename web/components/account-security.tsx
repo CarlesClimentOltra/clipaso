@@ -63,7 +63,7 @@ function ChangeEmail() {
         </p>
       )}
       {sentTo && (
-        <p className="text-sm text-primary" role="status">
+        <p className="text-sm text-brand-ink" role="status">
           Te hemos enviado un enlace a <strong>{sentTo}</strong> para confirmar el cambio (y un aviso a tu email
           actual). Hasta que lo confirmes seguirás entrando con el email de siempre.
         </p>

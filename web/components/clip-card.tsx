@@ -194,7 +194,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
         {(clip.description || clip.hashtags.length > 0) && (
           <div className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
             {clip.description && <p className="line-clamp-4 whitespace-pre-line">{clip.description}</p>}
-            {clip.hashtags.length > 0 && <p className="text-primary">{hashtagLine(clip)}</p>}
+            {clip.hashtags.length > 0 && <p className="text-brand-ink">{hashtagLine(clip)}</p>}
             <div className="-mx-2 -mb-1 flex flex-wrap gap-0.5">
               <CopyButton text={clip.title} label="Título" />
               {publishText && <CopyButton text={publishText} label="Descripción" />}
@@ -210,7 +210,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
           </span>
           <span className="flex gap-0.5" aria-label="Valorar el clip">
             <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === 1} aria-label="Me gusta"
-                    onClick={() => vote(1)} className={cn(clip.rating === 1 && "text-primary")}>
+                    onClick={() => vote(1)} className={cn(clip.rating === 1 && "text-brand-ink")}>
               <ThumbsUpIcon className={cn(clip.rating === 1 && "fill-current")} />
             </Button>
             <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === -1} aria-label="No me gusta"

@@ -88,7 +88,7 @@ export function WordEditor({
                 onClick={() => begin(w)}
                 className={cn(
                   "rounded-md px-1.5 py-0.5 text-sm hover:bg-muted",
-                  edited && text && "bg-primary/10 text-primary underline decoration-dotted underline-offset-4",
+                  edited && text && "bg-primary/10 text-brand-ink underline decoration-dotted underline-offset-4",
                   edited && !text && "text-muted-foreground line-through",
                 )}
               >

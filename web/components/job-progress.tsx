@@ -51,7 +51,7 @@ export function JobProgress({ job }: { job: Job }) {
                 className={cn(
                   "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs",
                   done && "border-primary bg-primary text-primary-foreground",
-                  active && "border-primary text-primary",
+                  active && "border-primary text-brand-ink",
                 )}
               >
                 {done ? <CheckIcon className="size-3.5" /> : active ? <LoaderCircleIcon className="size-3.5 animate-spin" /> : i + 1}

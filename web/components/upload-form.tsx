@@ -180,7 +180,7 @@ export function UploadForm({ me }: { me: Me }) {
         />
         {file ? (
           <>
-            <FileVideoIcon className="size-10 text-primary" />
+            <FileVideoIcon className="size-10 text-brand-ink" />
             <div>
               <p className="font-medium break-all">{file.name}</p>
               <p className="text-sm text-muted-foreground">{formatBytes(file.size)}</p>

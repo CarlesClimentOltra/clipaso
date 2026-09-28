@@ -53,7 +53,7 @@ export function Pricing() {
                   `Clips disponibles ${plan.retention_days} días`,
                 ].map((feature) => (
                   <li key={feature} className="flex gap-2">
-                    <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <CheckIcon className="mt-0.5 size-4 shrink-0 text-brand-ink" />
                     {feature}
                   </li>
                 ))}

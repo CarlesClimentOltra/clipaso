@@ -56,7 +56,7 @@ export function ProjectOptions({
                   selected ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:bg-muted/50",
                 )}
               >
-                <Icon className={cn("size-5 shrink-0", selected ? "text-primary" : "text-muted-foreground")} />
+                <Icon className={cn("size-5 shrink-0", selected ? "text-brand-ink" : "text-muted-foreground")} />
                 <span>
                   <span className="block text-sm font-medium">{f.label}</span>
                   <span className="block text-xs text-muted-foreground">{f.hint}</span>

@@ -79,7 +79,7 @@ export function StylePicker({
               <CaptionPreview style={p.style} format="vertical" words={["Hola", "mundo"]} activeIndex={1}
                               className="rounded-lg" />
               <span className="flex items-center gap-1 px-0.5 text-xs font-medium">
-                {selected && <CheckIcon className="size-3 text-primary" />}
+                {selected && <CheckIcon className="size-3 text-brand-ink" />}
                 {p.name}
               </span>
             </button>

@@ -172,7 +172,7 @@ export default function LoginPage() {
                 </p>
               )}
               {notice && (
-                <p className="text-sm text-primary" role="status">
+                <p className="text-sm text-brand-ink" role="status">
                   {notice}
                 </p>
               )}
