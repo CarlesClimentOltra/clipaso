@@ -42,7 +42,7 @@ export function MoreClipsDialog({ job, maxPerRequest }: { job: Job; maxPerReques
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" disabled={searching || job.more_clips_available <= 0} />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="h-9 rounded-full px-4" disabled={searching || job.more_clips_available <= 0} />}>
         <SparklesIcon /> Más clips
       </DialogTrigger>
       <DialogContent>

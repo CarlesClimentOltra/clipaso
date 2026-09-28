@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeftIcon, FolderDownIcon, Loader2Icon, RotateCcwIcon, Trash2Icon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  CalendarClockIcon,
+  ClockIcon,
+  FolderDownIcon,
+  Loader2Icon,
+  RotateCcwIcon,
+  ScissorsIcon,
+  SmartphoneIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ClipCard } from "@/components/clip-card";
@@ -11,7 +21,6 @@ import { MoreClipsDialog } from "@/components/more-clips-dialog";
 import { formatMinutes } from "@/components/usage-meter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -25,6 +34,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { useDeleteJob, useDownloadAll, useJob, useMe } from "@/lib/api/hooks";
+import { cn } from "@/lib/utils";
 
 const dateFmt = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long" });
 
@@ -81,21 +91,39 @@ export default function ProjectPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-3">
-        <Link href="/dashboard" className={buttonVariants({ variant: "ghost", size: "sm", className: "self-start" })}>
+      <div className="flex flex-col gap-4">
+        <Link href="/dashboard" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 self-start rounded-full")}>
           <ArrowLeftIcon /> Mis proyectos
         </Link>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-semibold tracking-tight">{job.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              {formatMinutes(job.video_minutes)} de vídeo
-              {job.status === "done" && job.expires_at && ` · disponible hasta el ${dateFmt.format(new Date(job.expires_at))}`}
-            </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-3">
+            <span className="text-sm font-medium text-brand-ink">Proyecto</span>
+            <h1 className="truncate text-3xl font-semibold tracking-tight">{job.title}</h1>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                <ClockIcon className="size-3.5 text-brand-ink" /> {formatMinutes(job.video_minutes)} de vídeo
+              </span>
+              <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                <SmartphoneIcon className="size-3.5 text-brand-ink" />
+                {{ vertical: "Vertical 9:16", square: "Cuadrado 1:1", horizontal: "Horizontal 16:9" }[job.options.format ?? "vertical"]}
+              </span>
+              {job.status === "done" && (
+                <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                  <ScissorsIcon className="size-3.5 text-brand-ink" /> {job.clips.length}{" "}
+                  {job.clips.length === 1 ? "clip" : "clips"}
+                </span>
+              )}
+              {job.status === "done" && job.expires_at && (
+                <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                  <CalendarClockIcon className="size-3.5 text-brand-ink" /> Disponible hasta el{" "}
+                  {dateFmt.format(new Date(job.expires_at))}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {job.status === "done" && job.clips.length > 0 && (
-              <Button variant="outline" size="sm" onClick={onDownloadAll} disabled={downloadAll.isPending}>
+              <Button size="sm" className="h-9 rounded-full px-4" onClick={onDownloadAll} disabled={downloadAll.isPending}>
                 <FolderDownIcon /> Descargar todos
               </Button>
             )}
@@ -104,7 +132,7 @@ export default function ProjectPage() {
             )}
             {!active && (
               <Dialog>
-                <DialogTrigger render={<Button variant="outline" size="sm" />}>
+                <DialogTrigger render={<Button variant="outline" size="sm" className="h-9 rounded-full px-4" />}>
                   <Trash2Icon /> Borrar
                 </DialogTrigger>
                 <DialogContent>
@@ -129,11 +157,10 @@ export default function ProjectPage() {
       </div>
 
       {active && (
-        <Card>
-          <CardContent>
-            <JobProgress job={job} />
-          </CardContent>
-        </Card>
+        <div className="relative isolate overflow-hidden rounded-[2rem] border bg-card p-6 sm:p-8">
+          <div className="absolute -top-24 -right-16 -z-10 size-72 rounded-full bg-brand-soft blur-3xl" />
+          <JobProgress job={job} />
+        </div>
       )}
 
       {job.status === "failed" && (
@@ -185,7 +212,7 @@ export default function ProjectPage() {
 
       {job.status === "done" && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
-          <h2 id="clips-title" className="text-lg font-semibold">
+          <h2 id="clips-title" className="text-xl font-semibold tracking-tight">
             {job.clips.length} {job.clips.length === 1 ? "clip" : "clips"}, del mejor al menos destacado
           </h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

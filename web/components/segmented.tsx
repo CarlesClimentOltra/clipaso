@@ -32,7 +32,12 @@ export function Segmented<T extends string>({
       }}
     >
       {options.map((o) => (
-        <ToggleGroupItem key={o.value} value={o.value} title={o.title} className="px-3">
+        <ToggleGroupItem
+          key={o.value}
+          value={o.value}
+          title={o.title}
+          className="px-3 aria-pressed:bg-foreground aria-pressed:font-medium aria-pressed:text-background"
+        >
           {o.label}
         </ToggleGroupItem>
       ))}

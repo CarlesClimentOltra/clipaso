@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { Brand } from "@/components/brand";
+import { HeroVisual } from "@/components/landing/hero-visual";
 import { Captcha, captchaEnabled } from "@/components/captcha";
 import { SiteFooter } from "@/components/site-footer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -103,110 +104,124 @@ export default function LoginPage() {
   const showGoogle = !devMode && config.googleAuth && mode !== "forgot";
 
   return (
-    <div className="flex flex-1 flex-col bg-muted/30">
-      <main className="flex flex-1 flex-col items-center justify-center gap-6 p-4">
-        <Brand />
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>{texts.title}</CardTitle>
-            <CardDescription>{texts.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {showGoogle && (
-              <>
-                <Button type="button" variant="outline" className="h-9" onClick={onGoogle}>
-                  <GoogleIcon /> Continuar con Google
-                </Button>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="h-px flex-1 bg-border" />o con tu email<span className="h-px flex-1 bg-border" />
-                </div>
-              </>
-            )}
-            <form onSubmit={onSubmit} className="flex flex-col gap-4">
-              {devMode && (
-                <Alert>
-                  <AlertDescription>Modo desarrollo: basta con un email, sin contraseña.</AlertDescription>
-                </Alert>
-              )}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              {!devMode && mode !== "forgot" && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Contraseña</Label>
-                    {mode === "login" && (
-                      <button
-                        type="button"
-                        className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                        onClick={() => switchMode("forgot")}
-                      >
-                        ¿La has olvidado?
-                      </button>
-                    )}
+    <div className="flex flex-1 flex-col">
+      <main className="grid flex-1 lg:grid-cols-2">
+        <div className="flex flex-col items-center justify-center gap-6 p-4 py-12">
+          <Brand />
+          <Card className="w-full max-w-sm shadow-sm">
+            <CardHeader>
+              <CardTitle>{texts.title}</CardTitle>
+              <CardDescription>{texts.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {showGoogle && (
+                <>
+                  <Button type="button" variant="outline" className="h-9" onClick={onGoogle}>
+                    <GoogleIcon /> Continuar con Google
+                  </Button>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="h-px flex-1 bg-border" />o con tu email<span className="h-px flex-1 bg-border" />
                   </div>
+                </>
+              )}
+              <form onSubmit={onSubmit} className="flex flex-col gap-4">
+                {devMode && (
+                  <Alert>
+                    <AlertDescription>Modo desarrollo: basta con un email, sin contraseña.</AlertDescription>
+                  </Alert>
+                )}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="password"
-                    type="password"
-                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    id="email"
+                    type="email"
+                    autoComplete="email"
                     required
-                    minLength={mode === "signup" ? 8 : 6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
-                  {mode === "signup" && <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>}
                 </div>
-              )}
-              {needsCaptcha && <Captcha onToken={setCaptchaToken} resetKey={captchaReset} />}
-              {error && (
-                <p className="text-sm text-destructive" role="alert">
-                  {error}
+                {!devMode && mode !== "forgot" && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Contraseña</Label>
+                      {mode === "login" && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                          onClick={() => switchMode("forgot")}
+                        >
+                          ¿La has olvidado?
+                        </button>
+                      )}
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
+                      required
+                      minLength={mode === "signup" ? 8 : 6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {mode === "signup" && <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>}
+                  </div>
+                )}
+                {needsCaptcha && <Captcha onToken={setCaptchaToken} resetKey={captchaReset} />}
+                {error && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                )}
+                {notice && (
+                  <p className="text-sm text-brand-ink" role="status">
+                    {notice}
+                  </p>
+                )}
+                {mode === "signup" && !devMode && (
+                  <p className="text-xs text-muted-foreground">
+                    Al crear tu cuenta aceptas los{" "}
+                    <Link href="/legal/terminos" className="underline underline-offset-4" target="_blank">
+                      Términos del servicio
+                    </Link>{" "}
+                    y confirmas que has leído la{" "}
+                    <Link href="/legal/privacidad" className="underline underline-offset-4" target="_blank">
+                      Política de privacidad
+                    </Link>
+                    .
+                  </p>
+                )}
+                <Button type="submit" className="h-9" disabled={submitting || (needsCaptcha && !captchaToken)}>
+                  {submitting ? "Un momento…" : texts.submit}
+                </Button>
+              </form>
+              {!devMode && (
+                <p className="text-center text-sm text-muted-foreground">
+                  {mode === "login" ? "¿No tienes cuenta?" : mode === "signup" ? "¿Ya tienes cuenta?" : "¿La recuerdas?"}{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                    onClick={() => switchMode(mode === "login" ? "signup" : "login")}
+                  >
+                    {mode === "login" ? "Regístrate" : "Inicia sesión"}
+                  </button>
                 </p>
               )}
-              {notice && (
-                <p className="text-sm text-brand-ink" role="status">
-                  {notice}
-                </p>
-              )}
-              {mode === "signup" && !devMode && (
-                <p className="text-xs text-muted-foreground">
-                  Al crear tu cuenta aceptas los{" "}
-                  <Link href="/legal/terminos" className="underline underline-offset-4" target="_blank">
-                    Términos del servicio
-                  </Link>{" "}
-                  y confirmas que has leído la{" "}
-                  <Link href="/legal/privacidad" className="underline underline-offset-4" target="_blank">
-                    Política de privacidad
-                  </Link>
-                  .
-                </p>
-              )}
-              <Button type="submit" className="h-9" disabled={submitting || (needsCaptcha && !captchaToken)}>
-                {submitting ? "Un momento…" : texts.submit}
-              </Button>
-            </form>
-            {!devMode && (
-              <p className="text-center text-sm text-muted-foreground">
-                {mode === "login" ? "¿No tienes cuenta?" : mode === "signup" ? "¿Ya tienes cuenta?" : "¿La recuerdas?"}{" "}
-                <button
-                  type="button"
-                  className="font-medium text-foreground underline-offset-4 hover:underline"
-                  onClick={() => switchMode(mode === "login" ? "signup" : "login")}
-                >
-                  {mode === "login" ? "Regístrate" : "Inicia sesión"}
-                </button>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="relative isolate hidden items-center justify-center overflow-hidden bg-brand-soft p-10 lg:flex">
+          <div className="absolute -top-32 -right-32 -z-10 size-[28rem] rounded-full bg-primary/30 blur-3xl" />
+          <div className="flex w-full max-w-lg flex-col gap-10">
+            <div className="flex flex-col gap-2">
+              <p className="text-3xl font-semibold tracking-tight text-balance">
+                De un vídeo largo a <em className="text-brand-ink">clips virales</em>, en minutos
               </p>
-            )}
-          </CardContent>
-        </Card>
+              <p className="text-muted-foreground">La IA elige los mejores momentos y los deja listos para publicar.</p>
+            </div>
+            <HeroVisual />
+          </div>
+        </div>
       </main>
       <SiteFooter />
     </div>

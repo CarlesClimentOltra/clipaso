@@ -27,11 +27,14 @@ export function JobProgress({ job }: { job: Job }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between text-sm">
-          <span className="font-medium">{queued ? "En cola, empezamos enseguida…" : STEPS[current].label}</span>
-          <span className="tabular-nums text-muted-foreground">{pct}%</span>
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Estamos preparando tus clips</p>
+            <p className="text-xl font-semibold tracking-tight">{queued ? "En cola, empezamos enseguida…" : STEPS[current].label}</p>
+          </div>
+          <span className="text-4xl font-semibold tracking-tight tabular-nums">{pct}%</span>
         </div>
-        <Progress value={pct} aria-label="Progreso del procesamiento" />
+        <Progress value={pct} aria-label="Progreso del procesamiento" className="h-2.5" />
       </div>
       <ol className="grid gap-3 sm:grid-cols-4">
         {STEPS.map((step, i) => {
@@ -41,9 +44,9 @@ export function JobProgress({ job }: { job: Job }) {
             <li
               key={step.key}
               className={cn(
-                "flex items-center gap-2 rounded-lg border p-3 text-sm transition-colors",
-                done && "border-primary/30 bg-primary/5",
-                active && "border-primary",
+                "flex items-center gap-2 rounded-2xl border bg-card/70 p-3 text-sm transition-colors",
+                done && "border-primary/40 bg-brand-soft",
+                active && "border-primary ring-2 ring-primary/30",
                 !done && !active && "text-muted-foreground",
               )}
             >

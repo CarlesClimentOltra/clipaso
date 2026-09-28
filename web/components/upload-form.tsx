@@ -166,8 +166,10 @@ export function UploadForm({ me }: { me: Me }) {
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-10 text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-          dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/40",
+          "flex cursor-pointer flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed px-6 py-12 text-center transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+          dragging
+            ? "border-primary bg-brand-soft"
+            : "border-primary/40 bg-brand-soft/30 hover:border-primary hover:bg-brand-soft/70",
           busy && "pointer-events-none opacity-60",
         )}
       >
@@ -180,7 +182,9 @@ export function UploadForm({ me }: { me: Me }) {
         />
         {file ? (
           <>
-            <FileVideoIcon className="size-10 text-brand-ink" />
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+              <FileVideoIcon className="size-7" />
+            </span>
             <div>
               <p className="font-medium break-all">{file.name}</p>
               <p className="text-sm text-muted-foreground">{formatBytes(file.size)}</p>
@@ -201,7 +205,9 @@ export function UploadForm({ me }: { me: Me }) {
           </>
         ) : (
           <>
-            <UploadCloudIcon className="size-10 text-muted-foreground" />
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-card text-brand-ink shadow-sm ring-1 ring-primary/30">
+              <UploadCloudIcon className="size-7" />
+            </span>
             <div>
               <p className="font-medium">Arrastra tu vídeo aquí o haz clic para elegirlo</p>
               <p className="text-sm text-muted-foreground">
@@ -293,7 +299,7 @@ export function UploadForm({ me }: { me: Me }) {
           )}
         </div>
       ) : (
-        <Button size="lg" className="h-10" disabled={!file || outOfMinutes} onClick={submit}>
+        <Button size="lg" className="h-12 rounded-full text-base" disabled={!file || outOfMinutes} onClick={submit}>
           Crear clips
         </Button>
       )}

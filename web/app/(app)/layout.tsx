@@ -26,10 +26,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <>
+    <div className="relative isolate flex flex-1 flex-col">
+      {/* Halo lima arriba a la derecha, como en la portada */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-105 bg-[radial-gradient(60%_100%_at_85%_0%,var(--color-brand-soft),transparent)]"
+      />
       <AppHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">{children}</main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

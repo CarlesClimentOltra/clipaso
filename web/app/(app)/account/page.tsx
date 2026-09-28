@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { AccountSecurity } from "@/components/account-security";
 import { BrandSettings } from "@/components/brand-settings";
+import { PageHeader } from "@/components/page-header";
 import { UsageMeter } from "@/components/usage-meter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export default function AccountPage() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Mi cuenta</h1>
+      <PageHeader eyebrow="Mi cuenta" title="Ajustes" description="Tu plan, tu estilo y tu marca, y el acceso a tu cuenta." />
 
       <Card>
         <CardHeader>
