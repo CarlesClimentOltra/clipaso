@@ -303,7 +303,8 @@ def test_words_starting_at_the_same_time_get_distinct_keys():
     from smartcuts.domain.models import Sentence, Transcript, Word
     from smartcuts.saas.artifacts import apply_edits, word_keys
 
-    words = [Word(text=" a", start=1.0, end=1.0), Word(text=" b", start=1.0, end=1.2), Word(text=" c", start=2, end=2.5)]
+    words = [Word(text=" a", start=1.0, end=1.0), Word(text=" b", start=1.0, end=1.2),
+             Word(text=" c", start=2, end=2.5)]
     transcript = Transcript(language="es", duration=3, sentences=[
         Sentence(index=0, start=1, end=2.5, text="a b c", words=words)])
     assert sorted(word_keys(transcript).values()) == ["1000", "1000.1", "2000"]
@@ -319,7 +320,8 @@ def test_trim_on_the_server_bills_only_the_part_and_replaces_the_original(client
     from tests.saas.test_api_flow import put_parts
 
     video = tmp_path / "larga.mp4"
-    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=25:duration=30",
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi",
+                    "-i", "testsrc=size=320x180:rate=25:duration=30",
                     "-f", "lavfi", "-i", "sine=duration=30", "-shortest", "-g", "25", "-c:v", "libx264", "-c:a", "aac",
                     str(video)], check=True)
     data = video.read_bytes()
