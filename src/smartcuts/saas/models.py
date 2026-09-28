@@ -45,6 +45,7 @@ class ClipStatus(StrEnum):
 class TaskKind(StrEnum):
     RENDER_CLIP = "render_clip"  # volver a exportar un clip editado
     MORE_CLIPS = "more_clips"  # buscar y exportar más clips del mismo vídeo
+    EXPORT_CLIP = "export_clip"  # el clip en otra calidad (480p, 720p, 4K)
 
 
 class TaskStatus(StrEnum):
@@ -170,6 +171,8 @@ class Clip(Base):
     version: Mapped[int] = mapped_column(Integer, default=1)
     status: Mapped[str] = mapped_column(String(16), default=ClipStatus.READY)
     render_error: Mapped[str | None] = mapped_column(String(255))
+    # Otras versiones descargables: {"720p": {"version": 2, "key": …, "size": …}, "mp3": {…}}.
+    exports: Mapped[dict] = mapped_column(JSON, default=dict)
 
     job: Mapped[Job] = relationship(back_populates="clips")
 

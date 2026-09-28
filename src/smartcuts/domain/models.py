@@ -45,6 +45,8 @@ class Word(BaseModel):
     start: float
     end: float
     probability: float = 1.0
+    # Corte de subtítulo elegido por el usuario tras esta palabra: "split" (nueva línea) o "join" (seguir).
+    brk: Literal["split", "join"] | None = None
 
 
 class Sentence(BaseModel):

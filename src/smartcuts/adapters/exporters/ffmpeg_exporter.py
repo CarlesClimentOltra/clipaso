@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from smartcuts.adapters.exporters.subtitles import FONTS_DIR, build_ass
-from smartcuts.domain.models import Branding, OutputProfile, Word
+from smartcuts.domain.models import Branding, OutputProfile
 from smartcuts.domain.ports import ExportRequest
 from smartcuts.infra import ffmpeg
 from smartcuts.infra.logging import get_logger
@@ -81,7 +81,7 @@ class FFmpegExporter:
 
         if profile.subtitles.enabled or branding.handle.strip():
             words = [
-                Word(text=w.text, start=w.start - clip.start, end=w.end - clip.start, probability=w.probability)
+                w.model_copy(update={"start": w.start - clip.start, "end": w.end - clip.start})
                 for w in request.transcript.words_between(clip.start, clip.end)
             ]
             ass = build_ass(

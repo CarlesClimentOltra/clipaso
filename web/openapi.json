@@ -2102,6 +2102,160 @@
           }
         }
       }
+    },
+    "/clips/{clip_id}/exports": {
+      "get": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Clip Exports",
+        "description": "Descargas disponibles del clip: MP4 en varias calidades y el audio en MP3.",
+        "operationId": "clip_exports_clips__clip_id__exports_get",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportsOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Request Export",
+        "description": "Genera una descarga: el MP3 al momento; otra calidad de vídeo, en segundo plano.",
+        "operationId": "request_export_clips__clip_id__exports_post",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportsOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2572,6 +2726,20 @@
           "can_render": {
             "type": "boolean",
             "title": "Can Render"
+          },
+          "energy": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Energy",
+            "description": "Volumen del audio (0-1) desde window_start."
+          },
+          "energy_step": {
+            "type": "number",
+            "title": "Energy Step",
+            "description": "Segundos entre valores de `energy`.",
+            "default": 0.5
           }
         },
         "type": "object",
@@ -2610,6 +2778,22 @@
           "original": {
             "type": "string",
             "title": "Original"
+          },
+          "brk": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "split",
+                  "join"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brk",
+            "description": "Corte de línea elegido tras esta palabra."
           }
         },
         "type": "object",
@@ -2651,6 +2835,136 @@
           "error"
         ],
         "title": "ErrorResponse"
+      },
+      "ExportIn": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "mp4",
+              "mp3"
+            ],
+            "title": "Format"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "480p",
+                  "720p",
+                  "1080p",
+                  "2160p"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          }
+        },
+        "type": "object",
+        "required": [
+          "format"
+        ],
+        "title": "ExportIn"
+      },
+      "ExportOut": {
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "mp4",
+              "mp3"
+            ],
+            "title": "Format"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "480p",
+                  "720p",
+                  "1080p",
+                  "2160p"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "pending",
+              "failed",
+              "available"
+            ],
+            "title": "Status",
+            "description": "ready: se puede descargar · pending: generándose · available: se puede pedir"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "format",
+          "quality",
+          "status"
+        ],
+        "title": "ExportOut"
+      },
+      "ExportsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExportOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ExportsOut"
       },
       "HTTPValidationError": {
         "properties": {

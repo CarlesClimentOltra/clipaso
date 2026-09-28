@@ -2,11 +2,8 @@
 
 import Link from "next/link";
 import {
-  CaptionsIcon,
   CheckIcon,
-  ChevronDownIcon,
   CopyIcon,
-  DownloadIcon,
   Loader2Icon,
   PencilIcon,
   ScissorsIcon,
@@ -16,6 +13,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { ClipDownloads } from "@/components/clip-downloads";
 import { CLIP_ASPECT, ClipPlayer } from "@/components/clip-player";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -29,17 +27,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, type Clip, type Job } from "@/lib/api/client";
-import { useDownloadCaptions, useRateClip, useUpdateClip } from "@/lib/api/hooks";
+import { useRateClip, useUpdateClip } from "@/lib/api/hooks";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -151,7 +143,6 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
   const rate = useRateClip(job.id);
   const { t } = useI18n();
   const c = t.clip;
-  const captions = useDownloadCaptions();
   const [editing, setEditing] = useState(false);
   const rendering = clip.status === "rendering";
   const base = `${slug(job.title)}-${String(clip.rank).padStart(2, "0")}-${slug(clip.title)}`;
@@ -159,14 +150,6 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
 
   function vote(value: 1 | -1) {
     rate.mutate({ clipId: clip.id, value: clip.rating === value ? 0 : value });
-  }
-
-  async function downloadCaptions(format: "srt" | "vtt") {
-    try {
-      await captions.mutateAsync({ clipId: clip.id, format, filename: `${base}.${format}` });
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : c.captionsError);
-    }
   }
 
   return (
@@ -227,28 +210,8 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
         </div>
       </CardContent>
       <CardFooter className="mt-auto flex gap-2">
-        <div className="flex flex-1">
-          <a href={clip.download_url} download
-             className={buttonVariants({ variant: "outline", className: "flex-1 rounded-r-none" })}>
-            <DownloadIcon /> MP4
-          </a>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label={c.moreDownloads}
-              className={buttonVariants({ variant: "outline", size: "icon", className: "rounded-l-none border-l-0" })}
-            >
-              <ChevronDownIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => downloadCaptions("srt")}>
-                <CaptionsIcon /> {c.srt}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => downloadCaptions("vtt")}>
-                <CaptionsIcon /> {c.vtt}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <ClipDownloads key={clip.version} clipId={clip.id} downloadUrl={clip.download_url} filenameBase={base}
+                       className="flex-1" />
         {job.can_edit ? (
           <Link
             href={`/projects/${job.id}/clips/${clip.id}`}

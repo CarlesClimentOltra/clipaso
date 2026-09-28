@@ -14,6 +14,7 @@ import {
   type Job,
   type JobOptions,
   type UserStyles,
+  type ExportRequest,
 } from "@/lib/api/client";
 import { uploadFile, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useAuth } from "@/lib/auth";
@@ -320,6 +321,35 @@ export function useDownloadCaptions() {
       saveBlob(data as Blob, v.filename);
     },
   });
+}
+
+/** Descargas del clip en otras calidades y en MP3. Se consulta mientras haga falta (menú abierto o algo generándose). */
+export function useClipExports(clipId: string, active: boolean) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ["exports", clipId],
+    queryFn: () => unwrap(api.GET("/clips/{clip_id}/exports", { params: { path: { clip_id: clipId } } })),
+    enabled: active,
+    refetchInterval: (query) => (query.state.data?.items.some((i) => i.status === "pending") ? 3000 : false),
+  });
+}
+
+export function useRequestExport(clipId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ExportRequest) =>
+      unwrap(api.POST("/clips/{clip_id}/exports", { params: { path: { clip_id: clipId } }, body })),
+    onSuccess: (data) => qc.setQueryData(["exports", clipId], data),
+  });
+}
+
+/** Descarga un archivo desde una URL firmada (el servidor la sirve como adjunto). */
+export function downloadUrl(url: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener";
+  a.click();
 }
 
 function saveBlob(blob: Blob, filename: string) {

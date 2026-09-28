@@ -163,6 +163,7 @@ class EditorWordOut(BaseModel):
     end: float
     text: str
     original: str
+    brk: Literal["split", "join"] | None = Field(None, description="Corte de línea elegido tras esta palabra.")
 
 
 class EditorOut(BaseModel):
@@ -176,6 +177,8 @@ class EditorOut(BaseModel):
     words: list[EditorWordOut]
     caption_style: CaptionStyle
     can_render: bool
+    energy: list[float] = Field(default_factory=list, description="Volumen del audio (0-1) desde window_start.")
+    energy_step: float = Field(0.5, description="Segundos entre valores de `energy`.")
 
 
 class RenderIn(BaseModel):
@@ -183,6 +186,28 @@ class RenderIn(BaseModel):
     end: float = Field(gt=0)
     word_edits: dict[str, str] = Field(default_factory=dict, max_length=5000)
     caption_style: CaptionStyle | None = None
+
+
+QualityT = Literal["480p", "720p", "1080p", "2160p"]
+
+
+class ExportOut(BaseModel):
+    format: Literal["mp4", "mp3"]
+    quality: QualityT | None
+    status: Literal["ready", "pending", "failed", "available"] = Field(
+        description="ready: se puede descargar · pending: generándose · available: se puede pedir")
+    url: str | None = None
+    size_bytes: int | None = None
+    error_message: str | None = None
+
+
+class ExportsOut(BaseModel):
+    items: list[ExportOut]
+
+
+class ExportIn(BaseModel):
+    format: Literal["mp4", "mp3"]
+    quality: QualityT | None = None
 
 
 class MoreClipsIn(BaseModel):

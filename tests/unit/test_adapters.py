@@ -165,3 +165,13 @@ def test_exporter_renders_logo_handle_and_styled_subtitles(tmp_path):
     pixels = cv2.imread(str(frame))
     b, g, r = pixels[20:40, 20:40].mean(axis=(0, 1))  # esquina superior izquierda: el logo
     assert r > 200 and g < 60 and b < 60
+
+
+def test_chunk_words_respects_user_breaks():
+    from smartcuts.adapters.exporters.subtitles import chunk_words
+
+    words = make_words("uno dos tres cuatro")
+    words[0] = words[0].model_copy(update={"brk": "split"})
+    words[2] = words[2].model_copy(update={"brk": "join"})
+    chunks = chunk_words(words, max_words=3, max_seconds=10)
+    assert [[w.text.strip() for w in c] for c in chunks] == [["uno"], ["dos", "tres", "cuatro"]]

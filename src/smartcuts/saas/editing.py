@@ -14,10 +14,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from smartcuts.adapters.exporters.subtitles import build_captions
-from smartcuts.domain.models import Word
 from smartcuts.domain.ports import Storage
 from smartcuts.saas import styles
-from smartcuts.saas.artifacts import apply_edits, load_transcript, logo_key, word_keys
+from smartcuts.saas.artifacts import apply_edits, load_signals, load_transcript, logo_key, word_keys
 from smartcuts.saas.errors import AppError, NotFound
 from smartcuts.saas.models import (
     Clip,
@@ -34,6 +33,7 @@ from smartcuts.saas.models import (
 from smartcuts.saas.presets import DEFAULT_STYLE, BrandingPrefs, CaptionStyle
 
 WORD_KEY = re.compile(r"\d+(\.\d+)?")
+BREAK_KEY = re.compile(r"br:\d+(\.\d+)?")
 MIN_CLIP_SECONDS = 3.0
 MAX_CLIP_SECONDS = 180.0
 EDITOR_MARGIN_SECONDS = 30.0  # contexto que muestra el editor antes y después del clip
@@ -118,7 +118,7 @@ def clip_words(storage: Storage, job: Job, clip: Clip, start: float | None = Non
 def captions(storage: Storage, job: Job, clip: Clip, fmt: str) -> str:
     transcript, lo, hi = clip_words(storage, job, clip)
     edited = apply_edits(transcript, clip.word_edits or {})
-    words = [Word(text=w.text, start=w.start - lo, end=w.end - lo) for w in edited.words_between(lo, hi)]
+    words = [w.model_copy(update={"start": w.start - lo, "end": w.end - lo}) for w in edited.words_between(lo, hi)]
     return build_captions(words, fmt)
 
 
@@ -129,6 +129,7 @@ class EditorWord:
     end: float
     text: str
     original: str
+    brk: str | None = None
 
 
 def editor_words(storage: Storage, job: Job, clip: Clip, window: tuple[float, float]) -> list[EditorWord]:
@@ -140,8 +141,18 @@ def editor_words(storage: Storage, job: Job, clip: Clip, window: tuple[float, fl
         key = keys[id(w)]
         original = w.text.strip()
         out.append(EditorWord(key=key, start=w.start, end=w.end, text=edits.get(key, original).strip(),
-                              original=original))
+                              original=original, brk=edits.get(f"br:{key}")))
     return out
+
+
+def editor_energy(storage: Storage, job: Job, window: tuple[float, float]) -> tuple[list[float], float]:
+    """Volumen del audio en la ventana del editor (para dibujar la onda), a partir de las señales guardadas."""
+    signals = load_signals(storage, job.user_id, job.id)
+    signal = signals.signals.get("audio_energy") if signals else None
+    if signal is None or not signal.values:
+        return [], 0.5
+    i0, i1 = int(window[0] / signal.step), int(window[1] / signal.step) + 1
+    return [round(v, 3) for v in signal.values[i0:i1]], signal.step
 
 
 def editor_window(clip: Clip, source_duration: float) -> tuple[float, float]:
@@ -167,7 +178,11 @@ def request_render(
     if not MIN_CLIP_SECONDS <= end - start <= MAX_CLIP_SECONDS:
         raise AppError("validation_error", key="clip_duration",
                        params={"min": f"{MIN_CLIP_SECONDS:.0f}", "max": f"{MAX_CLIP_SECONDS:.0f}"})
-    clip.word_edits = {k: v.strip()[:60] for k, v in word_edits.items() if WORD_KEY.fullmatch(k)}
+    # Palabras corregidas y cortes de línea («br:<clave>»: split | join).
+    clip.word_edits = {
+        **{k: v.strip()[:60] for k, v in word_edits.items() if WORD_KEY.fullmatch(k)},
+        **{k: v for k, v in word_edits.items() if BREAK_KEY.fullmatch(k) and v in ("split", "join")},
+    }
     clip.caption_style = caption_style.model_dump() if caption_style else None
     clip.status, clip.render_error = ClipStatus.RENDERING, None
     task = Task(user_id=user.id, job_id=job.id, clip_id=clip.id, kind=TaskKind.RENDER_CLIP,

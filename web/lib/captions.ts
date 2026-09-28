@@ -1,7 +1,8 @@
 // Agrupa palabras en bloques de subtítulo igual que el motor (adapters/exporters/subtitles.py:
 // chunk_words), para que la vista previa del editor muestre lo mismo que tendrá el clip.
 
-export type TimedWord = { key: string; start: number; end: number; text: string };
+/** `brk`: corte elegido por el usuario tras la palabra ("split" nueva línea, "join" seguir en la misma). */
+export type TimedWord = { key: string; start: number; end: number; text: string; brk?: "split" | "join" | null };
 
 const TRIM = /^[,.;:…"'«»“”]+|[,.;:…"'«»“”]+$/g;
 
@@ -12,13 +13,14 @@ export function chunkWords(words: TimedWord[], maxWords = 3): TimedWord[][] {
   let current: TimedWord[] = [];
   for (const w of words) {
     const last = current[current.length - 1];
-    if (
-      last &&
-      (current.length >= maxWords ||
-        w.end - current[0].start > maxSeconds ||
-        /[.?!,]$/.test(last.text.trim()) ||
-        w.start - last.end > 0.6)
-    ) {
+    const cut = last?.brk
+      ? last.brk === "split"
+      : !!last &&
+        (current.length >= maxWords ||
+          w.end - current[0].start > maxSeconds ||
+          /[.?!,]$/.test(last.text.trim()) ||
+          w.start - last.end > 0.6);
+    if (cut) {
       chunks.push(current);
       current = [];
     }

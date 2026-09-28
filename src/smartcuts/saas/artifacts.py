@@ -91,9 +91,13 @@ def apply_edits(transcript: Transcript, edits: dict[str, str]) -> Transcript:
     for s in transcript.sentences:
         words: list[Word] = []
         for w in s.words:
-            text = edits.get(keys[id(w)], w.text)
+            key = keys[id(w)]
+            text = edits.get(key, w.text)
             if text.strip():
-                words.append(w.model_copy(update={"text": text if text.startswith(" ") else f" {text.strip()}"}))
+                update = {"text": text if text.startswith(" ") else f" {text.strip()}"}
+                if (brk := edits.get(f"br:{key}")) in ("split", "join"):
+                    update["brk"] = brk
+                words.append(w.model_copy(update=update))
         sentences.append(s.model_copy(update={"words": words}))
     return transcript.model_copy(update={"sentences": sentences})
 

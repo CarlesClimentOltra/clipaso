@@ -9,12 +9,23 @@ from fastapi.responses import PlainTextResponse
 
 from smartcuts.interfaces.api.deps import DispatcherDep, SessionDep, SettingsDep, StorageDep, UserDep
 from smartcuts.interfaces.api.routers.jobs import clip_filename, clip_out
-from smartcuts.interfaces.api.schemas import ClipOut, ClipUpdateIn, EditorOut, EditorWordOut, RatingIn, RenderIn
-from smartcuts.saas import editing
+from smartcuts.interfaces.api.schemas import (
+    ClipOut,
+    ClipUpdateIn,
+    EditorOut,
+    EditorWordOut,
+    ExportIn,
+    ExportOut,
+    ExportsOut,
+    RatingIn,
+    RenderIn,
+)
+from smartcuts.saas import editing, exports
 from smartcuts.saas.artifacts import preview_key
 from smartcuts.saas.db import utcnow
 from smartcuts.saas.dispatch import dispatch_job
-from smartcuts.saas.models import Upload
+from smartcuts.saas.errors import user_message
+from smartcuts.saas.models import Clip, Job, Upload
 
 router = APIRouter(prefix="/clips", tags=["clips"])
 
@@ -65,6 +76,7 @@ def clip_editor(
     can_render = editing.source_available(session, job)
     preview = preview_key(job.user_id, job.id)
     ttl = settings.api.signed_url_ttl_seconds
+    energy, energy_step = editing.editor_energy(storage, job, window)
     return EditorOut(
         clip=clip_out(clip, job, storage, ttl),
         project_title=job.title,
@@ -76,6 +88,8 @@ def clip_editor(
         words=[EditorWordOut(**w.__dict__) for w in editing.editor_words(storage, job, clip, window)],
         caption_style=editing.effective_style(job, clip),
         can_render=can_render,
+        energy=energy,
+        energy_step=energy_step,
     )
 
 
@@ -95,3 +109,46 @@ def render_clip(
     if dispatch_job(dispatcher, task, now):
         session.commit()
     return clip_out(clip, job, storage, settings.api.signed_url_ttl_seconds)
+
+
+# --------------------------------------------------------------------------- otras calidades y MP3
+
+
+def _exports_out(session, storage, job: Job, clip: Clip, ttl: int) -> ExportsOut:
+    items = []
+    for e in exports.states(session, job, clip):
+        name = clip_filename(job, clip, e.format)
+        if e.quality and e.quality != exports.BASE_QUALITY:
+            name = name.replace(".mp4", f"-{e.quality}.mp4")
+        url = storage.signed_url(e.key, expires=ttl, download_name=name) if e.status == "ready" and e.key else None
+        items.append(ExportOut(format=e.format, quality=e.quality, status=e.status, url=url, size_bytes=e.size,
+                               error_message=user_message(e.error_code)))
+    return ExportsOut(items=items)
+
+
+@router.get("/{clip_id}/exports", response_model=ExportsOut)
+def clip_exports(
+    clip_id: str, user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep,
+) -> ExportsOut:
+    """Descargas disponibles del clip: MP4 en varias calidades y el audio en MP3."""
+    clip, job = editing.get_owned_clip(session, user, clip_id)
+    return _exports_out(session, storage, job, clip, settings.api.signed_url_ttl_seconds)
+
+
+@router.post("/{clip_id}/exports", response_model=ExportsOut)
+def request_export(
+    clip_id: str, body: ExportIn, user: UserDep, session: SessionDep, storage: StorageDep,
+    settings: SettingsDep, dispatcher: DispatcherDep,
+) -> ExportsOut:
+    """Genera una descarga: el MP3 al momento; otra calidad de vídeo, en segundo plano."""
+    now = utcnow()
+    clip, job = editing.get_owned_clip(session, user, clip_id)
+    if body.format == "mp3":
+        exports.make_mp3(storage, job, clip)
+    else:
+        task = exports.request_quality(session, user, job, clip, body.quality or exports.BASE_QUALITY, now)
+        if task is not None:
+            session.commit()
+            if dispatch_job(dispatcher, task, now):
+                session.commit()
+    return _exports_out(session, storage, job, clip, settings.api.signed_url_ttl_seconds)

@@ -7,6 +7,8 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
+import { slug } from "@/components/clip-card";
+import { ClipDownloads } from "@/components/clip-downloads";
 import { CLIP_ASPECT, ClipPlayer } from "@/components/clip-player";
 import { EditorPreview } from "@/components/editor/editor-preview";
 import { TrimTimeline } from "@/components/editor/trim-timeline";
@@ -79,8 +81,12 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
   const render = useRenderClip(jobId, data.clip.id);
   const { t } = useI18n();
   const e = t.editor;
+  // Palabras corregidas ({clave: texto}) y cortes de línea elegidos ({"br:clave": "split" | "join"}).
   const initialEdits = useMemo(
-    () => Object.fromEntries(data.words.filter((w) => w.text !== w.original).map((w) => [w.key, w.text])),
+    () => ({
+      ...Object.fromEntries(data.words.filter((w) => w.text !== w.original).map((w) => [w.key, w.text])),
+      ...Object.fromEntries(data.words.filter((w) => w.brk).map((w) => [`br:${w.key}`, w.brk as string])),
+    }),
     [data.words],
   );
   const [start, setStart] = useState(data.clip.start);
@@ -92,7 +98,14 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
   const locked = rendering || !data.can_render || render.isPending;
 
   const timed: TimedWord[] = useMemo(
-    () => data.words.map((w) => ({ key: w.key, start: w.start, end: w.end, text: edits[w.key] ?? w.original })),
+    () =>
+      data.words.map((w) => ({
+        key: w.key,
+        start: w.start,
+        end: w.end,
+        text: edits[w.key] ?? w.original,
+        brk: (edits[`br:${w.key}`] as "split" | "join" | undefined) ?? null,
+      })),
     [data.words, edits],
   );
   const inRange = data.words.filter((w) => w.start >= start - 0.01 && w.end <= end + 0.01);
@@ -175,6 +188,9 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
                   end={end}
                   words={timed}
                   disabled={locked}
+                  previewUrl={data.preview_url}
+                  energy={data.energy}
+                  energyStep={data.energy_step}
                   onChange={(s, e) => {
                     setStart(s);
                     setEnd(e);
@@ -182,7 +198,8 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
                 />
               </TabsContent>
               <TabsContent value="words">
-                <WordEditor words={inRange} edits={edits} onChange={setEdits} disabled={locked} />
+                <WordEditor words={inRange} edits={edits} onChange={setEdits} maxWords={style.max_words}
+                            disabled={locked} />
               </TabsContent>
               <TabsContent value="style">
                 <StylePicker value={style} onChange={setStyle} format={format} disabled={locked} />
@@ -225,9 +242,20 @@ export default function ClipEditorPage() {
           <ArrowLeftIcon /> {t.editor.back}
         </Link>
         {data && (
-          <div>
-            <h1 className="truncate text-2xl font-semibold tracking-tight">{t.editor.title(data.clip.rank)}</h1>
-            <p className="truncate text-sm text-muted-foreground">{data.project_title}</p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-semibold tracking-tight">{t.editor.title(data.clip.rank)}</h1>
+              <p className="truncate text-sm text-muted-foreground">{data.project_title}</p>
+            </div>
+            {data.clip.status !== "rendering" && (
+              <ClipDownloads
+                key={data.clip.version}
+                clipId={data.clip.id}
+                downloadUrl={data.clip.download_url}
+                filenameBase={`${slug(data.project_title)}-${String(data.clip.rank).padStart(2, "0")}-${slug(data.clip.title)}`}
+                className="w-44"
+              />
+            )}
           </div>
         )}
       </div>

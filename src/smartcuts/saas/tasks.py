@@ -20,8 +20,10 @@ from smartcuts.bootstrap import build_pipeline
 from smartcuts.domain.errors import SmartCutsError
 from smartcuts.domain.models import ClipCandidate
 from smartcuts.domain.ports import Storage
+from smartcuts.infra import ffmpeg
 from smartcuts.infra.config import Settings
 from smartcuts.infra.logging import bind_job, clear_job, get_logger
+from smartcuts.saas import exports
 from smartcuts.saas.artifacts import SourceCache, apply_edits, load_signals, load_transcript
 from smartcuts.saas.db import session_scope, utcnow
 from smartcuts.saas.models import Clip, ClipStatus, Job, Task, TaskKind, TaskStatus, Upload, UploadStatus, User
@@ -106,6 +108,8 @@ class TaskRunner:
                 self._render_clip(task_id, tmp)
             elif kind == TaskKind.MORE_CLIPS:
                 self._more_clips(task_id, tmp)
+            elif kind == TaskKind.EXPORT_CLIP:
+                self._export_clip(task_id, tmp)
             else:
                 raise TaskError("internal_error", f"tarea desconocida: {kind}")
             with session_scope(self.sessions) as s:
@@ -129,7 +133,8 @@ class TaskRunner:
     def _finish_failed(self, s: Session, task: Task, code: str, detail: str = "") -> None:
         task.status, task.finished_at = TaskStatus.FAILED, utcnow()
         task.error_code, task.error_detail = code, (detail or code)[:8000]
-        if task.clip_id and (clip := s.get(Clip, task.clip_id)):
+        # Solo un re-render fallido deja el clip en error; una exportación fallida no toca el clip.
+        if task.kind == TaskKind.RENDER_CLIP and task.clip_id and (clip := s.get(Clip, task.clip_id)):
             clip.status, clip.render_error = ClipStatus.FAILED, code  # se traduce al mostrarlo
 
     # ------------------------------------------------------------------ piezas comunes
@@ -191,9 +196,68 @@ class TaskRunner:
             clip.start, clip.end = start, end
             clip.video_key, clip.thumb_key, clip.size_bytes = video_key, thumb_key, size
             clip.version, clip.status, clip.render_error = new_version, ClipStatus.READY, None
+            exports.drop_exports(self.storage, clip)  # las otras calidades eran de la versión anterior
         for key in old_keys:
             if key and key not in (video_key, thumb_key):
                 self.storage.delete_prefix(key)
+
+    # ------------------------------------------------------------------ otras calidades
+
+    def _export_clip(self, task_id: str, tmp: Path) -> None:
+        with session_scope(self.sessions) as s:
+            task = s.get(Task, task_id)
+            clip = s.get(Clip, task.clip_id) if task.clip_id else None
+            job = s.get(Job, task.job_id)
+            if clip is None or job is None:
+                raise TaskError("not_found")
+            quality, version = str(task.payload["quality"]), int(task.payload["version"])
+            if clip.version != version:
+                return  # el clip cambió mientras esperaba: esta exportación ya no sirve
+            upload = s.get(Upload, job.upload_id) if job.upload_id else None
+            has_source = upload is not None and upload.status == UploadStatus.READY
+            options, user_id, job_id, title = dict(job.options or {}), job.user_id, job.id, job.title
+            rank, edits, style = clip.rank, dict(clip.word_edits or {}), clip.caption_style
+            candidate = ClipCandidate(start=clip.start, end=clip.end, first_sentence=0, last_sentence=0,
+                                      score=clip.score, title=clip.title)
+            branding = None
+            if has_source:
+                branding = project_branding(self.storage, s.get(User, user_id), options, tmp / "brand")
+            upload_key, filename = (upload.storage_key, upload.filename) if upload else (None, None)
+            video_key = clip.video_key
+            key = exports.export_key(job, clip, quality, "mp4")
+
+        if has_source:
+            # Render nuevo desde el original a la resolución pedida: subtítulos y marca nítidos.
+            transcript = load_transcript(self.storage, user_id, job_id)
+            if transcript is None:
+                raise TaskError("no_transcript")
+            source = self._source(upload_key, filename)
+            self._beat(task_id)
+            profile = exports.scaled_profile(project_profile(self.settings, options, style), quality)
+            opts = PipelineOptions(profile=profile, max_clips=1, language=None, title=title, branding=branding)
+            pipeline = build_pipeline(self.settings, transcriber=self.transcriber)
+            video = pipeline.render(str(source), opts, candidate, rank, apply_edits(transcript, edits),
+                                    tmp / "out").path
+        else:
+            # Sin original: solo se puede reducir el clip ya renderizado.
+            if exports.QUALITIES[quality] >= exports.QUALITIES[exports.BASE_QUALITY]:
+                raise TaskError("source_unavailable")
+            clip_file = self.storage.local_path(video_key) or self.storage.download_to(video_key, tmp / "clip.mp4")
+            short = exports.QUALITIES[quality]
+            video = tmp / f"{quality}.mp4"
+            ffmpeg.run(["-i", str(clip_file), "-vf", f"scale='if(lt(iw,ih),{short},-2)':'if(lt(iw,ih),-2,{short})'",
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+                        "-c:a", "copy", "-movflags", "+faststart", str(video)], what=f"clip en {quality}")
+
+        self.storage.put_file(key, video, "video/mp4")
+        with session_scope(self.sessions) as s:
+            clip = s.get(Clip, task.clip_id)
+            if clip is None or clip.version != version:
+                self.storage.delete_prefix(key)
+                return
+            clip.exports = {**(clip.exports or {}),
+                            quality: {"version": version, "key": key, "size": video.stat().st_size}}
+        log.info("task.exported", quality=quality)
 
     # ------------------------------------------------------------------ más clips
 

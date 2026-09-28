@@ -348,3 +348,72 @@ def test_trim_on_the_server_bills_only_the_part_and_replaces_the_original(client
     assert 11.5 < ffmpeg.video_info(stored)[3] < 12.5  # el original guardado es ya el tramo
     job = client.get(f"/jobs/{r.json()['id']}", headers=AUTH).json()
     assert job["status"] == "done"
+
+
+def _exports(client, clip_id) -> dict:
+    items = client.get(f"/clips/{clip_id}/exports", headers=AUTH).json()["items"]
+    return {(i["format"], i["quality"]): i for i in items}
+
+
+def test_exports_other_qualities_and_mp3(client, sample_video, monkeypatch):
+    dispatcher = Dispatcher()
+    client.app.state.dispatcher = dispatcher
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch)
+    clip_id = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["id"]
+
+    items = _exports(client, clip_id)
+    assert items[("mp4", "1080p")]["status"] == "ready" and items[("mp4", "1080p")]["url"]
+    assert items[("mp4", "720p")]["status"] == "available" and ("mp4", "2160p") not in items  # el original no es 4K
+    assert client.post(f"/clips/{clip_id}/exports", json={"format": "mp4", "quality": "2160p"},
+                       headers=AUTH).status_code == 400
+
+    # MP3: al momento, en la API
+    r = client.post(f"/clips/{clip_id}/exports", json={"format": "mp3"}, headers=AUTH).json()
+    mp3 = next(i for i in r["items"] if i["format"] == "mp3")
+    assert mp3["status"] == "ready" and mp3["size_bytes"] > 0 and mp3["url"]
+
+    # 720p: tarea del worker, que renderiza desde el original a esa resolución
+    r = client.post(f"/clips/{clip_id}/exports", json={"format": "mp4", "quality": "720p"}, headers=AUTH).json()
+    assert next(i for i in r["items"] if i["quality"] == "720p")["status"] == "pending"
+    assert len(dispatcher.tasks) == 1
+    client.post(f"/clips/{clip_id}/exports", json={"format": "mp4", "quality": "720p"}, headers=AUTH)
+    assert len(dispatcher.tasks) == 1  # no se duplica mientras está en marcha
+    run_tasks(client)
+    assert (pipeline.calls[-1]["opts"].profile.width, pipeline.calls[-1]["opts"].profile.height) == (720, 1280)
+    items = _exports(client, clip_id)
+    assert items[("mp4", "720p")]["status"] == "ready" and items[("mp4", "720p")]["url"]
+    clip = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]
+    assert clip["status"] == "ready" and clip["version"] == 1  # exportar no toca el clip
+
+    # Al volver a renderizar el clip, las otras versiones se descartan
+    exported = [v["key"] for v in _clip_row(client, clip_id).exports.values()]
+    client.post(f"/clips/{clip_id}/render", json={"start": 0, "end": 3}, headers=AUTH)
+    run_tasks(client)
+    items = _exports(client, clip_id)
+    assert items[("mp4", "720p")]["status"] == "available" and items[("mp3", None)]["status"] == "available"
+    assert all(client.app.state.storage.size(k) is None for k in exported)
+
+
+def test_exports_without_source_downscale_the_clip(client, sample_video, monkeypatch):
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch, keep_source=False)
+    clip_id = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["id"]
+    client.post(f"/clips/{clip_id}/exports", json={"format": "mp4", "quality": "480p"}, headers=AUTH)
+    renders = len([c for c in pipeline.calls if c["kind"] == "render"])
+    run_tasks(client)
+    assert len([c for c in pipeline.calls if c["kind"] == "render"]) == renders  # sin original: se reduce el MP4
+    items = _exports(client, clip_id)
+    assert items[("mp4", "480p")]["status"] == "ready"
+
+
+def test_line_breaks_chosen_by_the_user(client, sample_video, monkeypatch):
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch)
+    clip_id = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["id"]
+    words = client.get(f"/clips/{clip_id}/editor", headers=AUTH).json()["words"]
+    hola, todos = words[0], words[2]  # «Hola a todos, esto…»: «todos,» corta por la coma
+    edits = {f"br:{hola['key']}": "split", f"br:{todos['key']}": "join", "br:1": "nada"}
+    client.post(f"/clips/{clip_id}/render", json={"start": 0, "end": 3, "word_edits": edits}, headers=AUTH)
+    run_tasks(client)
+    words = client.get(f"/clips/{clip_id}/editor", headers=AUTH).json()["words"]
+    assert words[0]["brk"] == "split" and words[2]["brk"] == "join" and words[1]["brk"] is None
+    srt = client.get(f"/clips/{clip_id}/captions?format=srt", headers=AUTH).text
+    assert "\nHola\n" in srt and "a todos, esto es" in srt

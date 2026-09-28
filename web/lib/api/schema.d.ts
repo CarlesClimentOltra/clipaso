@@ -448,6 +448,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clips/{clip_id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clip Exports
+         * @description Descargas disponibles del clip: MP4 en varias calidades y el audio en MP3.
+         */
+        get: operations["clip_exports_clips__clip_id__exports_get"];
+        put?: never;
+        /**
+         * Request Export
+         * @description Genera una descarga: el MP3 al momento; otra calidad de vídeo, en segundo plano.
+         */
+        post: operations["request_export_clips__clip_id__exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -673,6 +697,17 @@ export interface components {
             caption_style: components["schemas"]["CaptionStyle"];
             /** Can Render */
             can_render: boolean;
+            /**
+             * Energy
+             * @description Volumen del audio (0-1) desde window_start.
+             */
+            energy?: number[];
+            /**
+             * Energy Step
+             * @description Segundos entre valores de `energy`.
+             * @default 0.5
+             */
+            energy_step: number;
         };
         /** EditorWordOut */
         EditorWordOut: {
@@ -686,6 +721,11 @@ export interface components {
             text: string;
             /** Original */
             original: string;
+            /**
+             * Brk
+             * @description Corte de línea elegido tras esta palabra.
+             */
+            brk?: ("split" | "join") | null;
         };
         /** ErrorBody */
         ErrorBody: {
@@ -697,6 +737,43 @@ export interface components {
         /** ErrorResponse */
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
+        };
+        /** ExportIn */
+        ExportIn: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "mp4" | "mp3";
+            /** Quality */
+            quality?: ("480p" | "720p" | "1080p" | "2160p") | null;
+        };
+        /** ExportOut */
+        ExportOut: {
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "mp4" | "mp3";
+            /** Quality */
+            quality: ("480p" | "720p" | "1080p" | "2160p") | null;
+            /**
+             * Status
+             * @description ready: se puede descargar · pending: generándose · available: se puede pedir
+             * @enum {string}
+             */
+            status: "ready" | "pending" | "failed" | "available";
+            /** Url */
+            url?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Error Message */
+            error_message?: string | null;
+        };
+        /** ExportsOut */
+        ExportsOut: {
+            /** Items */
+            items: components["schemas"]["ExportOut"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2824,6 +2901,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClipOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clip_exports_clips__clip_id__exports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_export_clips__clip_id__exports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportsOut"];
                 };
             };
             /** @description Bad Request */

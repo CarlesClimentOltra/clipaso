@@ -57,6 +57,8 @@ MESSAGES: dict[str, dict[str, str]] = {
                        "en": "You have several clips being generated. Wait for one to finish."},
     "no_more_clips": {"es": "No hemos encontrado más momentos que merezcan un clip.",
                       "en": "We couldn't find any more moments worth a clip."},
+    "export_quality_unavailable": {"es": "Esa calidad no está disponible para este clip.",
+                                   "en": "That quality isn't available for this clip."},
     "render_failed": {"es": "Algo falló al generar el clip. Inténtalo de nuevo.",
                       "en": "Something went wrong generating the clip. Please try again."},
     "archive_expired": {"es": "El enlace de descarga ha caducado. Vuelve a pulsar «Descargar todos».",

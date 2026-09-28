@@ -44,14 +44,20 @@ def chunk_words(words: list[Word], max_words: int, max_seconds: float) -> list[l
     chunks: list[list[Word]] = []
     current: list[Word] = []
     for w in words:
-        if current and (
-            len(current) >= max_words
-            or w.end - current[0].start > max_seconds
-            or current[-1].text.strip().endswith((".", "?", "!", ","))
-            or w.start - current[-1].end > 0.6
-        ):
-            chunks.append(current)
-            current = []
+        if current:
+            last = current[-1]
+            if last.brk:  # el usuario manda: corta aquí o sigue en la misma línea
+                cut = last.brk == "split"
+            else:
+                cut = (
+                    len(current) >= max_words
+                    or w.end - current[0].start > max_seconds
+                    or last.text.strip().endswith((".", "?", "!", ","))
+                    or w.start - last.end > 0.6
+                )
+            if cut:
+                chunks.append(current)
+                current = []
         current.append(w)
     if current:
         chunks.append(current)
