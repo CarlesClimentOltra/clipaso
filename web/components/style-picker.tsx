@@ -1,39 +1,81 @@
 "use client";
 
-import { CheckIcon, SlidersHorizontalIcon } from "lucide-react";
+import Link from "next/link";
+import { CheckIcon, SaveIcon, Settings2Icon, SlidersHorizontalIcon } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { CaptionPreview, type ClipFormat } from "@/components/caption-preview";
-import { Segmented } from "@/components/segmented";
+import { StyleEditor } from "@/components/style-editor";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import type { CaptionPreset, CaptionStyle } from "@/lib/api/client";
-import { useClipOptions } from "@/lib/api/hooks";
+import { Input } from "@/components/ui/input";
+import { ApiError, type CaptionStyle, type UserStyle } from "@/lib/api/client";
+import { useStyleActions, useStyles } from "@/lib/api/hooks";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-function sameStyle(a: CaptionStyle, b: CaptionStyle) {
-  const keys = ["font", "text_color", "highlight_color", "size", "position", "uppercase", "box", "box_color"] as const;
-  return keys.every((k) => (a[k] ?? null) === (b[k] ?? null)) && (a.enabled ?? true) === (b.enabled ?? true);
+const KEYS = [
+  "enabled", "font", "text_color", "highlight_color", "scale", "position", "y", "uppercase", "outline",
+  "outline_color", "shadow", "box", "box_color", "box_opacity", "animation", "max_words",
+] as const;
+
+export function sameStyle(a: CaptionStyle, b: CaptionStyle) {
+  return KEYS.every((k) => (a[k] ?? null) === (b[k] ?? null));
 }
 
-function ColorField({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+/** Nombre visible de un estilo (los de serie sin renombrar, traducidos). */
+export function useStyleName() {
+  const { t } = useI18n();
+  return (s: UserStyle) => (s.builtin && !s.modified ? (t.styles.presets[s.id] ?? s.name) : s.name);
+}
+
+/** Tarjeta con la vista previa de un estilo; se anima al pasar el ratón o al estar elegida. */
+export function StyleCard({
+  style,
+  name,
+  selected,
+  badge,
+  disabled,
+  onClick,
+  format = "vertical",
+}: {
+  style: CaptionStyle;
+  name: string;
+  selected?: boolean;
+  badge?: React.ReactNode;
+  disabled?: boolean;
+  onClick?: () => void;
+  format?: ClipFormat;
+}) {
+  const [hover, setHover] = useState(false);
   return (
-    <label htmlFor={id} className="flex items-center gap-2 text-sm">
-      <input
-        id={id}
-        type="color"
-        value={`#${value}`}
-        onChange={(e) => onChange(e.target.value.slice(1).toUpperCase())}
-        className="size-8 cursor-pointer rounded-md border border-input bg-transparent p-0.5"
-      />
-      {label}
-    </label>
+    <button
+      type="button"
+      role="radio"
+      aria-checked={!!selected}
+      disabled={disabled}
+      onClick={onClick}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
+      className={cn(
+        "group flex min-w-0 flex-col gap-1.5 rounded-2xl p-1.5 text-left outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60",
+        selected ? "bg-primary/10 ring-2 ring-primary" : "hover:bg-muted",
+      )}
+    >
+      <CaptionPreview style={style} format={format === "horizontal" ? "square" : format} animate={hover || !!selected}
+                      className="rounded-xl" />
+      <span className="flex min-w-0 items-center gap-1 px-0.5 text-xs font-medium">
+        {selected && <CheckIcon className="size-3 shrink-0 text-brand-ink" />}
+        <span className="truncate">{name}</span>
+        {badge}
+      </span>
+    </button>
   );
 }
 
-/** Plantillas de subtítulos con vista previa y ajustes finos. */
+/** Elige uno de tus estilos para este proyecto o clip y, si quieres, ajústalo solo aquí. */
 export function StylePicker({
   value,
   onChange,
@@ -45,132 +87,84 @@ export function StylePicker({
   format?: ClipFormat;
   disabled?: boolean;
 }) {
-  const { data: options } = useClipOptions();
+  const { data } = useStyles();
+  const actions = useStyleActions();
+  const styleName = useStyleName();
   const [custom, setCustom] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
   const { t } = useI18n();
   const s = t.styles;
-  const presets: CaptionPreset[] = options?.presets ?? [];
-  const set = (patch: Partial<CaptionStyle>) => onChange({ ...value, ...patch });
-  const enabled = value.enabled !== false;
+  const styles = data?.styles ?? [];
+  const matched = styles.find((u) => sameStyle(value, u.style));
+  const customCount = styles.filter((u) => !u.builtin).length;
+  const canSave = !matched && !!data && customCount < data.max_custom;
 
-  if (format === "horizontal") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {s.horizontalNote}
-      </p>
-    );
+  async function saveAsNew() {
+    if (!saving?.trim()) return;
+    try {
+      await actions.create.mutateAsync({ name: saving.trim(), style: value });
+      toast.success(s.savedNew);
+      setSaving(null);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : s.saveError);
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6" role="radiogroup" aria-label={s.label}>
-        {presets.map((p) => {
-          const selected = sameStyle(value, p.style);
-          return (
-            <button
-              key={p.id}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              disabled={disabled}
-              onClick={() => onChange(p.style)}
-              className={cn(
-                "group flex flex-col gap-1.5 rounded-xl p-1 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                selected ? "ring-2 ring-primary" : "hover:bg-muted",
-              )}
-            >
-              <CaptionPreview style={p.style} format="vertical" words={s.thumbWords} activeIndex={1}
-                              className="rounded-lg" />
-              <span className="flex items-center gap-1 px-0.5 text-xs font-medium">
-                {selected && <CheckIcon className="size-3 text-brand-ink" />}
-                {s.presets[p.id] ?? p.name}
-              </span>
-            </button>
-          );
-        })}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5" role="radiogroup" aria-label={s.label}>
+        {styles.map((u) => (
+          <StyleCard
+            key={u.id}
+            style={u.style}
+            name={styleName(u)}
+            format={format}
+            selected={matched?.id === u.id}
+            disabled={disabled}
+            onClick={() => onChange(u.style)}
+          />
+        ))}
+        {!matched && data && (
+          <StyleCard style={value} name={s.customLabel} format={format} selected disabled={disabled}
+                     onClick={() => setCustom(true)} />
+        )}
       </div>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="self-start"
-        onClick={() => setCustom(!custom)}
-        aria-expanded={custom}
-      >
-        <SlidersHorizontalIcon /> {custom ? s.hide : s.customize}
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant={custom ? "secondary" : "outline"} size="sm" onClick={() => setCustom(!custom)}
+                aria-expanded={custom} disabled={disabled}>
+          <SlidersHorizontalIcon /> {custom ? s.hide : s.customize}
+        </Button>
+        {canSave && saving === null && (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setSaving("")} disabled={disabled}>
+            <SaveIcon /> {s.saveAsNew}
+          </Button>
+        )}
+        <Link href="/account#estilos"
+              className="ml-auto flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:underline">
+          <Settings2Icon className="size-3.5" /> {s.manage}
+        </Link>
+      </div>
+
+      {saving !== null && (
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveAsNew();
+          }}
+        >
+          <Input autoFocus maxLength={40} placeholder={s.namePlaceholder} value={saving} className="h-8 max-w-60"
+                 aria-label={s.name} onChange={(e) => setSaving(e.target.value)} />
+          <Button type="submit" size="sm" disabled={!saving.trim() || actions.create.isPending}>{s.save}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setSaving(null)}>{t.common.cancel}</Button>
+        </form>
+      )}
 
       {custom && (
-        <div className="grid gap-4 rounded-xl border p-4 sm:grid-cols-2">
-          <div className="flex items-center justify-between gap-3 sm:col-span-2">
-            <Label htmlFor="subs-enabled">{s.burnIn}</Label>
-            <Switch id="subs-enabled" checked={enabled} onCheckedChange={(c: boolean) => set({ enabled: c })} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="subs-font">{s.font}</Label>
-            <select
-              id="subs-font"
-              value={value.font ?? "Archivo Black"}
-              disabled={!enabled}
-              onChange={(e) => set({ font: e.target.value as CaptionStyle["font"] })}
-              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-            >
-              {(options?.fonts ?? []).map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>{s.size}</Label>
-            <Segmented
-              label={s.size}
-              value={value.size ?? "m"}
-              disabled={!enabled}
-              onChange={(size) => set({ size })}
-              options={[
-                { value: "s", label: s.sizes.s },
-                { value: "m", label: s.sizes.m },
-                { value: "l", label: s.sizes.l },
-              ]}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>{s.position}</Label>
-            <Segmented
-              label={s.position}
-              value={value.position ?? "bottom"}
-              disabled={!enabled}
-              onChange={(position) => set({ position })}
-              options={[
-                { value: "top", label: s.positions.top },
-                { value: "middle", label: s.positions.middle },
-                { value: "bottom", label: s.positions.bottom },
-              ]}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>{s.colors}</Label>
-            <div className="flex flex-wrap gap-4">
-              <ColorField id="c-text" label={s.text} value={value.text_color ?? "FFFFFF"} onChange={(v) => set({ text_color: v })} />
-              <ColorField id="c-hl" label={s.highlight} value={value.highlight_color ?? "00E5FF"}
-                          onChange={(v) => set({ highlight_color: v })} />
-              {value.box && (
-                <ColorField id="c-box" label={s.box} value={value.box_color ?? "000000"} onChange={(v) => set({ box_color: v })} />
-              )}
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="subs-upper">{s.uppercase}</Label>
-            <Switch id="subs-upper" checked={!!value.uppercase} disabled={!enabled}
-                    onCheckedChange={(c: boolean) => set({ uppercase: c })} />
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="subs-box">{s.boxToggle}</Label>
-            <Switch id="subs-box" checked={!!value.box} disabled={!enabled} onCheckedChange={(c: boolean) => set({ box: c })} />
-          </div>
+        <div className="rounded-2xl border p-4">
+          <p className="mb-4 text-xs text-muted-foreground">{s.onlyHere}</p>
+          <StyleEditor value={value} onChange={onChange} disabled={disabled} />
         </div>
       )}
     </div>

@@ -5,19 +5,10 @@ import { useEffect, useState } from "react";
 
 import { CaptionPreview } from "@/components/caption-preview";
 import type { CaptionStyle } from "@/lib/api/client";
+import { captionStyle } from "@/components/landing/sample-styles";
 import { useI18n } from "@/lib/i18n";
 
-const STYLE: CaptionStyle = {
-  enabled: true,
-  font: "Archivo Black",
-  text_color: "FFFFFF",
-  highlight_color: "B6E34A",
-  size: "m",
-  position: "bottom",
-  uppercase: true,
-  box: false,
-  box_color: "000000",
-};
+const STYLE: CaptionStyle = captionStyle({ highlight_color: "B6E34A" });
 // Fragmentos elegidos por la IA dentro del vídeo largo (en % de su duración).
 const HIGHLIGHTS = [
   { left: 9, width: 7 },

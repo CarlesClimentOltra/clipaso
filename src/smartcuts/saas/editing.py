@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -15,7 +16,8 @@ from sqlalchemy.orm import Session
 from smartcuts.adapters.exporters.subtitles import build_captions
 from smartcuts.domain.models import Word
 from smartcuts.domain.ports import Storage
-from smartcuts.saas.artifacts import apply_edits, edit_key, load_transcript, logo_key
+from smartcuts.saas import styles
+from smartcuts.saas.artifacts import apply_edits, load_transcript, logo_key, word_keys
 from smartcuts.saas.errors import AppError, NotFound
 from smartcuts.saas.models import (
     Clip,
@@ -31,6 +33,7 @@ from smartcuts.saas.models import (
 )
 from smartcuts.saas.presets import DEFAULT_STYLE, BrandingPrefs, CaptionStyle
 
+WORD_KEY = re.compile(r"\d+(\.\d+)?")
 MIN_CLIP_SECONDS = 3.0
 MAX_CLIP_SECONDS = 180.0
 EDITOR_MARGIN_SECONDS = 30.0  # contexto que muestra el editor antes y después del clip
@@ -131,9 +134,10 @@ class EditorWord:
 def editor_words(storage: Storage, job: Job, clip: Clip, window: tuple[float, float]) -> list[EditorWord]:
     transcript, lo, hi = clip_words(storage, job, clip, *window)
     edits = clip.word_edits or {}
+    keys = word_keys(transcript)
     out = []
     for w in transcript.words_between(lo, hi):
-        key = edit_key(w.start)
+        key = keys[id(w)]
         original = w.text.strip()
         out.append(EditorWord(key=key, start=w.start, end=w.end, text=edits.get(key, original).strip(),
                               original=original))
@@ -163,7 +167,7 @@ def request_render(
     if not MIN_CLIP_SECONDS <= end - start <= MAX_CLIP_SECONDS:
         raise AppError("validation_error", key="clip_duration",
                        params={"min": f"{MIN_CLIP_SECONDS:.0f}", "max": f"{MAX_CLIP_SECONDS:.0f}"})
-    clip.word_edits = {k: v.strip()[:60] for k, v in word_edits.items() if k.isdigit()}
+    clip.word_edits = {k: v.strip()[:60] for k, v in word_edits.items() if WORD_KEY.fullmatch(k)}
     clip.caption_style = caption_style.model_dump() if caption_style else None
     clip.status, clip.render_error = ClipStatus.RENDERING, None
     task = Task(user_id=user.id, job_id=job.id, clip_id=clip.id, kind=TaskKind.RENDER_CLIP,
@@ -196,16 +200,14 @@ def request_more_clips(session: Session, user: User, job: Job, *, count: int, to
 
 
 def get_preferences(user: User) -> tuple[CaptionStyle, BrandingPrefs]:
-    prefs = user.preferences or {}
-    style = CaptionStyle.model_validate(prefs["caption_style"]) if prefs.get("caption_style") else DEFAULT_STYLE
-    return style, BrandingPrefs.model_validate(prefs.get("branding", {}))
+    """Estilo por defecto (uno de los estilos del usuario) y marca personal."""
+    return styles.default_style(user), BrandingPrefs.model_validate((user.preferences or {}).get("branding", {}))
 
 
-def save_preferences(user: User, style: CaptionStyle, branding: BrandingPrefs) -> None:
+def save_branding(user: User, branding: BrandingPrefs) -> None:
     _, current = get_preferences(user)
     branding = branding.model_copy(update={"has_logo": current.has_logo, "handle": branding.handle.strip()})
-    user.preferences = {**(user.preferences or {}), "caption_style": style.model_dump(),
-                        "branding": branding.model_dump()}
+    user.preferences = {**(user.preferences or {}), "branding": branding.model_dump()}
 
 
 def save_logo(storage: Storage, user: User, data: bytes) -> None:

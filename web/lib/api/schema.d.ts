@@ -93,7 +93,7 @@ export interface paths {
         get: operations["get_preferences_me_preferences_get"];
         /**
          * Put Preferences
-         * @description Estilo de subtítulos por defecto y marca personal para los próximos vídeos.
+         * @description Marca personal para los próximos vídeos (los estilos de subtítulos van en /me/styles).
          */
         put: operations["put_preferences_me_preferences_put"];
         post?: never;
@@ -137,6 +137,68 @@ export interface paths {
          * @description Idioma de la cuenta: el de la web y el de los emails (clips listos, fallos).
          */
         put: operations["put_locale_me_locale_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/styles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Styles
+         * @description Estilos de serie (con los cambios del usuario) y estilos propios.
+         */
+        get: operations["list_styles_me_styles_get"];
+        put?: never;
+        /** Create Style */
+        post: operations["create_style_me_styles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/styles/{style_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Style
+         * @description Modifica un estilo propio o guarda tu versión de uno de serie.
+         */
+        put: operations["update_style_me_styles__style_id__put"];
+        post?: never;
+        /**
+         * Delete Style
+         * @description Borra un estilo propio o devuelve uno de serie a su versión original.
+         */
+        delete: operations["delete_style_me_styles__style_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/default-style": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Default Style */
+        put: operations["set_default_style_me_default_style_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -445,7 +507,7 @@ export interface components {
              * @default Archivo Black
              * @enum {string}
              */
-            font: "Archivo Black" | "Anton" | "Bebas Neue" | "Poppins" | "Luckiest Guy";
+            font: "Archivo Black" | "Anton" | "Bebas Neue" | "Poppins" | "Luckiest Guy" | "Montserrat" | "Oswald" | "Bangers" | "Rubik" | "Permanent Marker" | "Inter";
             /**
              * Text Color
              * @default FFFFFF
@@ -457,11 +519,11 @@ export interface components {
              */
             highlight_color: string;
             /**
-             * Size
-             * @default m
-             * @enum {string}
+             * Scale
+             * @description Tamaño del texto, en % del tamaño base del formato.
+             * @default 100
              */
-            size: "s" | "m" | "l";
+            scale: number;
             /**
              * Position
              * @default bottom
@@ -469,10 +531,32 @@ export interface components {
              */
             position: "bottom" | "middle" | "top";
             /**
+             * Y
+             * @description Altura exacta (% desde arriba); si falta, `position`.
+             */
+            y?: number | null;
+            /**
              * Uppercase
              * @default true
              */
             uppercase: boolean;
+            /**
+             * Outline
+             * @description Grosor del contorno (0 = sin contorno).
+             * @default 4
+             */
+            outline: number;
+            /**
+             * Outline Color
+             * @default 000000
+             */
+            outline_color: string;
+            /**
+             * Shadow
+             * @description Distancia de la sombra (0 = sin sombra).
+             * @default 2
+             */
+            shadow: number;
             /**
              * Box
              * @default false
@@ -483,6 +567,24 @@ export interface components {
              * @default 000000
              */
             box_color: string;
+            /**
+             * Box Opacity
+             * @default 100
+             */
+            box_opacity: number;
+            /**
+             * Animation
+             * @description Cómo se marca la palabra que se está diciendo.
+             * @default highlight
+             * @enum {string}
+             */
+            animation: "highlight" | "pop" | "karaoke" | "appear" | "none";
+            /**
+             * Max Words
+             * @description Palabras como máximo en pantalla a la vez.
+             * @default 3
+             */
+            max_words: number;
         };
         /** ClipOut */
         ClipOut: {
@@ -539,6 +641,11 @@ export interface components {
             part_number: number;
             /** Etag */
             etag: string;
+        };
+        /** DefaultStyleIn */
+        DefaultStyleIn: {
+            /** Id */
+            id: string;
         };
         /** EditorOut */
         EditorOut: {
@@ -853,11 +960,11 @@ export interface components {
         };
         /** PreferencesIn */
         PreferencesIn: {
-            caption_style: components["schemas"]["CaptionStyle"];
             branding: components["schemas"]["BrandingPrefs"];
         };
         /** PreferencesOut */
         PreferencesOut: {
+            /** @description El estilo por defecto (ver /me/styles). */
             caption_style: components["schemas"]["CaptionStyle"];
             branding: components["schemas"]["BrandingPrefs"];
             /** Logo Url */
@@ -882,6 +989,27 @@ export interface components {
                 [key: string]: string;
             };
             caption_style?: components["schemas"]["CaptionStyle"] | null;
+        };
+        /** StyleIn */
+        StyleIn: {
+            /** Name */
+            name: string;
+            style: components["schemas"]["CaptionStyle"];
+        };
+        /** StyleUpdateIn */
+        StyleUpdateIn: {
+            /** Name */
+            name?: string | null;
+            style: components["schemas"]["CaptionStyle"];
+        };
+        /** StylesOut */
+        StylesOut: {
+            /** Styles */
+            styles: components["schemas"]["UserStyle"][];
+            /** Default Id */
+            default_id: string;
+            /** Max Custom */
+            max_custom: number;
         };
         /** TaskOut */
         TaskOut: {
@@ -958,6 +1086,25 @@ export interface components {
             limit_minutes: number;
             /** Remaining Minutes */
             remaining_minutes: number;
+        };
+        /** UserStyle */
+        UserStyle: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Builtin
+             * @description Estilo de serie (se puede modificar y restablecer, no borrar).
+             */
+            builtin: boolean;
+            /**
+             * Modified
+             * @description Estilo de serie con cambios del usuario.
+             * @default false
+             */
+            modified: boolean;
+            style: components["schemas"]["CaptionStyle"];
         };
         /** ValidationError */
         ValidationError: {
@@ -1441,6 +1588,293 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_styles_me_styles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StylesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_style_me_styles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StyleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StylesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_style_me_styles__style_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                style_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StyleUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StylesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_style_me_styles__style_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                style_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StylesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_default_style_me_default_style_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefaultStyleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StylesOut"];
+                };
             };
             /** @description Bad Request */
             400: {

@@ -6,6 +6,7 @@ from sqlalchemy import select
 from smartcuts.interfaces.api.auth import delete_identity
 from smartcuts.interfaces.api.deps import SessionDep, SettingsDep, StorageDep, UserDep
 from smartcuts.interfaces.api.schemas import (
+    DefaultStyleIn,
     LocaleIn,
     MeOut,
     OptionItem,
@@ -13,9 +14,12 @@ from smartcuts.interfaces.api.schemas import (
     PlanOut,
     PreferencesIn,
     PreferencesOut,
+    StyleIn,
+    StylesOut,
+    StyleUpdateIn,
     UsageOut,
 )
-from smartcuts.saas import editing, services
+from smartcuts.saas import editing, services, styles
 from smartcuts.saas.artifacts import logo_key
 from smartcuts.saas.db import utcnow
 from smartcuts.saas.errors import AppError
@@ -78,8 +82,8 @@ def get_preferences(user: UserDep, storage: StorageDep, settings: SettingsDep) -
 
 @router.put("/me/preferences", response_model=PreferencesOut)
 def put_preferences(body: PreferencesIn, user: UserDep, storage: StorageDep, settings: SettingsDep) -> PreferencesOut:
-    """Estilo de subtítulos por defecto y marca personal para los próximos vídeos."""
-    editing.save_preferences(user, body.caption_style, body.branding)
+    """Marca personal para los próximos vídeos (los estilos de subtítulos van en /me/styles)."""
+    editing.save_branding(user, body.branding)
     return _preferences_out(user, storage, settings.api.signed_url_ttl_seconds)
 
 
@@ -108,3 +112,43 @@ def put_locale(body: LocaleIn, user: UserDep) -> Response:
     """Idioma de la cuenta: el de la web y el de los emails (clips listos, fallos)."""
     user.preferences = {**(user.preferences or {}), "locale": body.locale}
     return Response(status_code=204)
+
+
+# --------------------------------------------------------------------------- estilos de subtítulos
+
+
+def _styles_out(user: User) -> StylesOut:
+    return StylesOut(styles=styles.list_styles(user), default_id=styles.default_style_id(user),
+                     max_custom=styles.MAX_CUSTOM_STYLES)
+
+
+@router.get("/me/styles", response_model=StylesOut)
+def list_styles(user: UserDep) -> StylesOut:
+    """Estilos de serie (con los cambios del usuario) y estilos propios."""
+    return _styles_out(user)
+
+
+@router.post("/me/styles", response_model=StylesOut, status_code=201)
+def create_style(body: StyleIn, user: UserDep) -> StylesOut:
+    styles.create_style(user, body.name, body.style)
+    return _styles_out(user)
+
+
+@router.put("/me/styles/{style_id}", response_model=StylesOut)
+def update_style(style_id: str, body: StyleUpdateIn, user: UserDep) -> StylesOut:
+    """Modifica un estilo propio o guarda tu versión de uno de serie."""
+    styles.update_style(user, style_id, body.name, body.style)
+    return _styles_out(user)
+
+
+@router.delete("/me/styles/{style_id}", response_model=StylesOut)
+def delete_style(style_id: str, user: UserDep) -> StylesOut:
+    """Borra un estilo propio o devuelve uno de serie a su versión original."""
+    styles.delete_style(user, style_id)
+    return _styles_out(user)
+
+
+@router.put("/me/default-style", response_model=StylesOut)
+def set_default_style(body: DefaultStyleIn, user: UserDep) -> StylesOut:
+    styles.set_default(user, body.id)
+    return _styles_out(user)

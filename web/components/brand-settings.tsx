@@ -6,18 +6,14 @@ import { toast } from "sonner";
 
 import { CaptionPreview } from "@/components/caption-preview";
 import { Segmented } from "@/components/segmented";
-import { StylePicker } from "@/components/style-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { ApiError, type BrandingPrefs, type CaptionStyle, type Preferences } from "@/lib/api/client";
+import { ApiError, type BrandingPrefs, type Preferences } from "@/lib/api/client";
 import { useLogo, usePreferences, useSavePreferences } from "@/lib/api/hooks";
-import { ONBOARDING_FLAGS } from "@/components/onboarding-checklist";
-import { setFlag } from "@/lib/flags";
 import { useI18n } from "@/lib/i18n";
 
 const CORNERS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
@@ -28,19 +24,16 @@ function BrandForm({ prefs }: { prefs: Preferences }) {
   const b = t.brand;
   const logo = useLogo();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [style, setStyle] = useState<CaptionStyle>(prefs.caption_style);
   const [branding, setBranding] = useState<BrandingPrefs>(prefs.branding);
   const set = (patch: Partial<BrandingPrefs>) => setBranding({ ...branding, ...patch });
   const dirty =
-    JSON.stringify(style) !== JSON.stringify(prefs.caption_style) ||
     branding.handle !== prefs.branding.handle ||
     branding.position !== prefs.branding.position ||
     branding.enabled !== prefs.branding.enabled;
 
   async function onSave() {
     try {
-      await save.mutateAsync({ caption_style: style, branding });
-      setFlag(ONBOARDING_FLAGS.styled);
+      await save.mutateAsync({ branding });
       toast.success(b.saved);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : b.saveError);
@@ -67,11 +60,6 @@ function BrandForm({ prefs }: { prefs: Preferences }) {
     <CardContent className="flex flex-col gap-6">
       <div className="grid gap-6 md:grid-cols-[1fr_180px]">
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-3">
-            <Label>{b.defaultStyle}</Label>
-            <StylePicker value={style} onChange={setStyle} />
-          </div>
-          <Separator />
           <div className="flex items-center justify-between gap-3">
             <div>
               <Label htmlFor="brand-enabled">{b.personal}</Label>
@@ -118,7 +106,7 @@ function BrandForm({ prefs }: { prefs: Preferences }) {
         </div>
         <div className="flex flex-col gap-2">
           <span className="text-xs text-muted-foreground">{b.preview}</span>
-          <CaptionPreview style={style} branding={branding} logoUrl={prefs.logo_url} />
+          <CaptionPreview style={prefs.caption_style} branding={branding} logoUrl={prefs.logo_url} />
         </div>
       </div>
       <Button type="button" className="self-start" onClick={onSave} disabled={!dirty || save.isPending}>

@@ -13,6 +13,7 @@ import {
   type Clip,
   type Job,
   type JobOptions,
+  type UserStyles,
 } from "@/lib/api/client";
 import { uploadFile, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useAuth } from "@/lib/auth";
@@ -162,10 +163,48 @@ export function useSavePreferences() {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { caption_style: CaptionStyle; branding: BrandingPrefs }) =>
-      unwrap(api.PUT("/me/preferences", { body })),
+    mutationFn: (body: { branding: BrandingPrefs }) => unwrap(api.PUT("/me/preferences", { body })),
     onSuccess: (data) => qc.setQueryData(["preferences"], data),
   });
+}
+
+/** Estilos de subtítulos del usuario: los de serie (con sus cambios) y los propios. */
+export function useStyles() {
+  const api = useApi();
+  const { session } = useAuth();
+  return useQuery({
+    queryKey: ["styles"],
+    queryFn: () => unwrap(api.GET("/me/styles")),
+    enabled: !!session,
+  });
+}
+
+export function useStyleActions() {
+  const api = useApi();
+  const qc = useQueryClient();
+  const done = (data: UserStyles) => {
+    qc.setQueryData(["styles"], data);
+    qc.invalidateQueries({ queryKey: ["preferences"] });
+  };
+  return {
+    create: useMutation({
+      mutationFn: (body: { name: string; style: CaptionStyle }) => unwrap(api.POST("/me/styles", { body })),
+      onSuccess: done,
+    }),
+    update: useMutation({
+      mutationFn: ({ id, ...body }: { id: string; name?: string; style: CaptionStyle }) =>
+        unwrap(api.PUT("/me/styles/{style_id}", { params: { path: { style_id: id } }, body })),
+      onSuccess: done,
+    }),
+    remove: useMutation({
+      mutationFn: (id: string) => unwrap(api.DELETE("/me/styles/{style_id}", { params: { path: { style_id: id } } })),
+      onSuccess: done,
+    }),
+    setDefault: useMutation({
+      mutationFn: (id: string) => unwrap(api.PUT("/me/default-style", { body: { id } })),
+      onSuccess: done,
+    }),
+  };
 }
 
 export function useLogo() {

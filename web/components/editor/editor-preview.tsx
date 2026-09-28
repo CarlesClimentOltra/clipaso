@@ -33,8 +33,11 @@ export function EditorPreview({
   const tp = t.editor.preview;
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(start);
-  const chunks = useMemo(() => chunkWords(words.filter((w) => w.start >= start - 0.01 && w.end <= end + 0.01)),
-    [words, start, end]);
+  const maxWords = style.max_words;
+  const chunks = useMemo(
+    () => chunkWords(words.filter((w) => w.start >= start - 0.01 && w.end <= end + 0.01), maxWords),
+    [words, start, end, maxWords],
+  );
   const caption = captionAt(chunks, time);
 
   // Al mover el recorte, el cabezal vuelve al inicio del tramo.

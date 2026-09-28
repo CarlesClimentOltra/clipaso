@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from smartcuts.domain.models import OutputProfile
 
@@ -29,16 +29,24 @@ DURATIONS: dict[str, dict] = {
 }
 DurationT = Literal["auto", "short", "medium", "long"]
 
-# Familia de cada fuente incluida en assets/fonts (la que va en el ASS).
+# Nombre que ve el usuario → familia real de la fuente incluida en assets/fonts (la que va en el ASS).
 FONTS: dict[str, str] = {
     "Archivo Black": "Archivo Black",
     "Anton": "Anton",
     "Bebas Neue": "Bebas Neue",
     "Poppins": "Poppins ExtraBold",
     "Luckiest Guy": "Luckiest Guy",
+    "Montserrat": "Montserrat Black",
+    "Oswald": "Oswald",
+    "Bangers": "Bangers",
+    "Rubik": "Rubik Black",
+    "Permanent Marker": "Permanent Marker",
+    "Inter": "Inter ExtraBold",
 }
-FontT = Literal["Archivo Black", "Anton", "Bebas Neue", "Poppins", "Luckiest Guy"]
-SIZE_FACTOR = {"s": 0.8, "m": 1.0, "l": 1.25}
+FontT = Literal["Archivo Black", "Anton", "Bebas Neue", "Poppins", "Luckiest Guy", "Montserrat", "Oswald",
+                "Bangers", "Rubik", "Permanent Marker", "Inter"]
+SIZE_SCALE = {"s": 80, "m": 100, "l": 125}  # los tres tamaños de la primera versión, en %
+AnimationT = Literal["highlight", "pop", "karaoke", "appear", "none"]
 
 
 class CaptionStyle(BaseModel):
@@ -48,11 +56,26 @@ class CaptionStyle(BaseModel):
     font: FontT = "Archivo Black"
     text_color: HexColor = "FFFFFF"
     highlight_color: HexColor = "00E5FF"
-    size: Literal["s", "m", "l"] = "m"
+    scale: int = Field(100, ge=50, le=200, description="Tamaño del texto, en % del tamaño base del formato.")
     position: Literal["bottom", "middle", "top"] = "bottom"
+    y: int | None = Field(None, ge=5, le=95, description="Altura exacta (% desde arriba); si falta, `position`.")
     uppercase: bool = True
+    outline: int = Field(4, ge=0, le=12, description="Grosor del contorno (0 = sin contorno).")
+    outline_color: HexColor = "000000"
+    shadow: int = Field(2, ge=0, le=12, description="Distancia de la sombra (0 = sin sombra).")
     box: bool = False
     box_color: HexColor = "000000"
+    box_opacity: int = Field(100, ge=0, le=100)
+    animation: AnimationT = Field("highlight", description="Cómo se marca la palabra que se está diciendo.")
+    max_words: int = Field(3, ge=1, le=8, description="Palabras como máximo en pantalla a la vez.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _legacy_size(cls, data):
+        # Los estilos guardados antes de los deslizadores tenían «size» (s/m/l) en vez de «scale».
+        if isinstance(data, dict) and "scale" not in data and data.get("size") in SIZE_SCALE:
+            data = {**data, "scale": SIZE_SCALE[data["size"]]}
+        return data
 
 
 class CaptionPreset(BaseModel):
@@ -65,16 +88,28 @@ PRESETS: list[CaptionPreset] = [
     CaptionPreset(id="clasico", name="Clásico", style=CaptionStyle(
         font="Archivo Black", text_color="FFFFFF", highlight_color="00E5FF")),
     CaptionPreset(id="amarillo", name="Amarillo", style=CaptionStyle(
-        font="Anton", text_color="FFFFFF", highlight_color="FFE600", size="l")),
+        font="Anton", text_color="FFFFFF", highlight_color="FFE600", scale=125, animation="pop")),
     CaptionPreset(id="caja", name="Caja", style=CaptionStyle(
-        font="Poppins", text_color="FFFFFF", highlight_color="FFE600", uppercase=False, box=True)),
+        font="Poppins", text_color="FFFFFF", highlight_color="FFE600", uppercase=False, box=True,
+        box_opacity=85, outline=0, shadow=0)),
     CaptionPreset(id="titular", name="Titular", style=CaptionStyle(
-        font="Bebas Neue", text_color="FFFFFF", highlight_color="FF3B30", size="l")),
+        font="Bebas Neue", text_color="FFFFFF", highlight_color="FF3B30", scale=125)),
     CaptionPreset(id="comic", name="Cómic", style=CaptionStyle(
-        font="Luckiest Guy", text_color="FFFFFF", highlight_color="7CFC00", position="middle")),
+        font="Luckiest Guy", text_color="FFFFFF", highlight_color="7CFC00", position="middle", outline=6,
+        animation="pop")),
     CaptionPreset(id="minimal", name="Minimal", style=CaptionStyle(
-        font="Poppins", text_color="FFFFFF", highlight_color="FFFFFF", size="s", uppercase=False)),
+        font="Inter", text_color="FFFFFF", highlight_color="FFFFFF", scale=80, uppercase=False, outline=0,
+        shadow=3, animation="none", max_words=5)),
+    CaptionPreset(id="karaoke", name="Karaoke", style=CaptionStyle(
+        font="Montserrat", text_color="FFFFFF", highlight_color="FFD60A", animation="karaoke", max_words=4)),
+    CaptionPreset(id="neon", name="Neón", style=CaptionStyle(
+        font="Rubik", text_color="FFFFFF", highlight_color="FF2BD6", outline=5, outline_color="2B0A3D",
+        animation="pop")),
+    CaptionPreset(id="rotulador", name="Rotulador", style=CaptionStyle(
+        font="Permanent Marker", text_color="FFFFFF", highlight_color="FFFFFF", uppercase=False, outline=5,
+        animation="appear", max_words=4)),
 ]
+PRESETS_BY_ID = {p.id: p for p in PRESETS}
 DEFAULT_STYLE = PRESETS[0].style
 
 
@@ -93,20 +128,27 @@ def build_profile(base: OutputProfile, *, duration: str = "auto", style: Caption
     rng = DURATIONS.get(duration, DURATIONS["auto"])["range"]
     if rng:
         update |= {"min_duration": rng[0], "max_duration": rng[1], "target_duration": rng[2]}
-    if style is not None and base.subtitles.enabled:
-        base_size = base.subtitles.font_size_ratio
-        subtitles = base.subtitles.model_copy(update={
+    if style is not None:
+        subs = base.subtitles
+        update["subtitles"] = subs.model_copy(update={
             "enabled": style.enabled,
             "font": FONTS[style.font],
             "primary_color": style.text_color.upper(),
             "highlight_color": style.highlight_color.upper(),
-            "font_size_ratio": round(base_size * SIZE_FACTOR[style.size], 4),
+            "font_size_ratio": round(subs.font_size_ratio * style.scale / 100, 4),
             "position": style.position,
             # En el centro no hay margen; arriba se deja sitio para la cabecera de la app.
-            "margin_v_ratio": 0.12 if style.position == "top" else base.subtitles.margin_v_ratio,
+            "margin_v_ratio": 0.12 if style.position == "top" else subs.margin_v_ratio,
+            "pos_y": style.y / 100 if style.y is not None else None,
             "uppercase": style.uppercase,
+            "outline_ratio": style.outline / 1000,
+            "outline_color": style.outline_color.upper(),
+            "shadow_ratio": style.shadow / 1000,
             "box": style.box,
             "box_color": style.box_color.upper(),
+            "box_opacity": style.box_opacity,
+            "animation": style.animation,
+            "max_words": style.max_words,
+            "max_chunk_seconds": max(1.6, 0.55 * style.max_words),
         })
-        update["subtitles"] = subtitles
     return base.model_copy(update=update)

@@ -61,6 +61,7 @@ def test_options_reach_the_engine_and_publish_texts_are_saved(client, sample_vid
     assert opts.profile.name == "square_1x1" and (opts.profile.min_duration, opts.profile.max_duration) == (15, 30)
     subs = opts.profile.subtitles
     assert subs.font == "Poppins ExtraBold" and subs.box and subs.position == "top" and not subs.uppercase
+    assert subs.font_size_ratio == round(0.05 * 1.25, 4)  # «size: l» de los estilos antiguos = 125 %
     assert opts.topic == "dinero"
 
     job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
@@ -172,10 +173,10 @@ def test_download_all_as_zip(client, sample_video, monkeypatch):
 
 
 def test_preferences_logo_and_branding_in_new_projects(client, sample_video, monkeypatch):
-    style = {"font": "Bebas Neue", "text_color": "FFFFFF", "highlight_color": "FF3B30"}
-    r = client.put("/me/preferences", json={"caption_style": style,
-                                             "branding": {"handle": " @ana ", "position": "bottom-left"}}, headers=AUTH)
+    client.put("/me/default-style", json={"id": "titular"}, headers=AUTH)
+    r = client.put("/me/preferences", json={"branding": {"handle": " @ana ", "position": "bottom-left"}}, headers=AUTH)
     assert r.status_code == 200 and r.json()["branding"]["handle"] == "@ana"
+    assert r.json()["caption_style"]["font"] == "Bebas Neue"
 
     logo = cv2.imencode(".png", np.full((800, 1600, 4), 255, np.uint8))[1].tobytes()
     r = client.put("/me/logo", content=logo, headers={**AUTH, "Content-Type": "image/png"})
@@ -191,6 +192,59 @@ def test_preferences_logo_and_branding_in_new_projects(client, sample_video, mon
 
     assert client.delete("/me/logo", headers=AUTH).json()["branding"]["has_logo"] is False
     assert not any(f.startswith("brand/") for f in _stored_files(client))
+
+
+def test_custom_styles(client, sample_video, monkeypatch):
+    body = client.get("/me/styles", headers=AUTH).json()
+    assert body["default_id"] == "clasico" and body["max_custom"] == 10
+    assert all(s["builtin"] for s in body["styles"])
+
+    # Modificar uno de serie guarda tu versión; borrarlo la restablece.
+    neon = {**next(s for s in body["styles"] if s["id"] == "neon")["style"], "highlight_color": "00FF00"}
+    body = client.put("/me/styles/neon", json={"style": neon}, headers=AUTH).json()
+    mine = next(s for s in body["styles"] if s["id"] == "neon")
+    assert mine["modified"] and mine["style"]["highlight_color"] == "00FF00"
+
+    # Estilo propio, por defecto en los proyectos nuevos.
+    own = {"font": "Oswald", "animation": "karaoke", "y": 40, "scale": 140, "outline": 0, "box": True,
+           "box_opacity": 60}
+    r = client.post("/me/styles", json={"name": "  Mi   podcast ", "style": own}, headers=AUTH)
+    assert r.status_code == 201
+    new = r.json()["styles"][-1]
+    assert new["name"] == "Mi podcast" and not new["builtin"]
+    assert client.put("/me/default-style", json={"id": new["id"]}, headers=AUTH).json()["default_id"] == new["id"]
+
+    _, pipeline = processed_job(client, sample_video, monkeypatch)
+    subs = pipeline.calls[0]["opts"].profile.subtitles
+    assert subs.font == "Oswald" and subs.animation == "karaoke" and subs.pos_y == 0.4 and subs.box_opacity == 60
+    assert subs.font_size_ratio == round(0.045 * 1.4, 4)
+
+    # Límite de 10 estilos propios (los de serie modificados no cuentan).
+    for i in range(9):
+        assert client.post("/me/styles", json={"name": f"E{i}", "style": {}}, headers=AUTH).status_code == 201
+    r = client.post("/me/styles", json={"name": "Once", "style": {}}, headers=AUTH)
+    assert r.status_code == 409 and "10" in r.json()["error"]["message"]
+
+    # Borrar el estilo por defecto vuelve al clásico; restablecer uno de serie quita los cambios.
+    body = client.delete(f"/me/styles/{new['id']}", headers=AUTH).json()
+    assert body["default_id"] == "clasico" and all(s["id"] != new["id"] for s in body["styles"])
+    body = client.delete("/me/styles/neon", headers=AUTH).json()
+    assert not next(s for s in body["styles"] if s["id"] == "neon")["modified"]
+    assert client.delete("/me/styles/u_nada", headers=AUTH).status_code == 404
+    assert client.post("/me/styles", json={"name": "   ", "style": {}}, headers=AUTH).status_code == 400
+
+
+def test_legacy_default_style_becomes_a_custom_style(client):
+    from smartcuts.saas.models import User
+
+    client.get("/me", headers=AUTH)
+    app = client.app
+    with session_scope(app.state.sessions) as s:
+        user = s.query(User).one()
+        user.preferences = {"caption_style": {"font": "Anton", "size": "s", "highlight_color": "123456"}}
+    body = client.get("/me/styles", headers=AUTH).json()
+    legacy = next(s for s in body["styles"] if s["id"] == body["default_id"])
+    assert legacy["name"] == "Mi estilo" and legacy["style"]["scale"] == 80 and legacy["style"]["font"] == "Anton"
 
 
 def test_options_catalog(client):
@@ -243,3 +297,15 @@ def test_account_locale_drives_notification_language(client, sample_video, monke
     JobRunner(app.state.settings, app.state.sessions, app.state.storage, notifier=notifier).process(job_id)
     [email] = notifier.sent
     assert email.subject.startswith("Your clips from") and "See my clips" in email.html
+
+
+def test_words_starting_at_the_same_time_get_distinct_keys():
+    from smartcuts.domain.models import Sentence, Transcript, Word
+    from smartcuts.saas.artifacts import apply_edits, word_keys
+
+    words = [Word(text=" a", start=1.0, end=1.0), Word(text=" b", start=1.0, end=1.2), Word(text=" c", start=2, end=2.5)]
+    transcript = Transcript(language="es", duration=3, sentences=[
+        Sentence(index=0, start=1, end=2.5, text="a b c", words=words)])
+    assert sorted(word_keys(transcript).values()) == ["1000", "1000.1", "2000"]
+    edited = apply_edits(transcript, {"1000.1": "B"})
+    assert [w.text.strip() for w in edited.sentences[0].words] == ["a", "B", "c"]

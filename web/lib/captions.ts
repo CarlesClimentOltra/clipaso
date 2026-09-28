@@ -3,19 +3,19 @@
 
 export type TimedWord = { key: string; start: number; end: number; text: string };
 
-const MAX_WORDS = 3;
-const MAX_SECONDS = 1.6;
 const TRIM = /^[,.;:…"'«»“”]+|[,.;:…"'«»“”]+$/g;
 
-export function chunkWords(words: TimedWord[]): TimedWord[][] {
+/** `maxWords`: palabras por línea del estilo; el tiempo máximo por bloque crece con ellas, como en el motor. */
+export function chunkWords(words: TimedWord[], maxWords = 3): TimedWord[][] {
+  const maxSeconds = Math.max(1.6, 0.55 * maxWords);
   const chunks: TimedWord[][] = [];
   let current: TimedWord[] = [];
   for (const w of words) {
     const last = current[current.length - 1];
     if (
       last &&
-      (current.length >= MAX_WORDS ||
-        w.end - current[0].start > MAX_SECONDS ||
+      (current.length >= maxWords ||
+        w.end - current[0].start > maxSeconds ||
         /[.?!,]$/.test(last.text.trim()) ||
         w.start - last.end > 0.6)
     ) {

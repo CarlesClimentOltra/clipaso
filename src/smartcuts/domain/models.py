@@ -145,10 +145,14 @@ class SubtitleStyle(BaseModel):
     highlight_color: str = "00E5FF"
     outline_color: str = "000000"
     outline_ratio: float = 0.004
+    shadow_ratio: float = 0.002
     position: Literal["bottom", "middle", "top"] = "bottom"
     margin_v_ratio: float = Field(0.28, description="Distancia al borde (abajo o arriba; evita la UI de la app).")
+    pos_y: float | None = Field(None, description="Centro del texto, relativo a la altura; manda sobre `position`.")
     box: bool = Field(False, description="Texto sobre una caja de color en vez de con contorno.")
     box_color: str = "000000"
+    box_opacity: int = 100
+    animation: Literal["highlight", "pop", "karaoke", "appear", "none"] = "highlight"
     max_words: int = 3
     max_chunk_seconds: float = 1.6
     uppercase: bool = True

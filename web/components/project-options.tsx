@@ -24,11 +24,14 @@ export function ProjectOptions({
   value,
   onChange,
   disabled,
+  background,
 }: {
   me: Me;
   value: ProjectOptionsValue;
   onChange: (value: ProjectOptionsValue) => void;
   disabled?: boolean;
+  /** Fondo de la vista previa (p. ej. un fotograma del vídeo elegido). */
+  background?: React.ReactNode;
 }) {
   const { data: options } = useClipOptions();
   const { data: prefs } = usePreferences();
@@ -104,18 +107,23 @@ export function ProjectOptions({
 
       <div className="flex flex-col gap-3">
         <Label>{o.style}</Label>
-        <div className="grid gap-4 md:grid-cols-[1fr_160px]">
+        <div className="grid gap-5 md:grid-cols-[1fr_200px]">
           <StylePicker value={value.caption_style} onChange={(caption_style) => set({ caption_style })} format={format}
                        disabled={disabled} />
-          {format !== "horizontal" && (
-            <CaptionPreview
-              style={value.caption_style}
-              format={format}
-              branding={value.branding && prefs ? prefs.branding : null}
-              logoUrl={value.branding ? prefs?.logo_url : null}
-              className="hidden self-start md:block"
-            />
-          )}
+          <div className="hidden md:block">
+            <div className="sticky top-20 flex flex-col gap-2">
+              <span className="text-xs text-muted-foreground">{t.brand.preview}</span>
+              <CaptionPreview
+                style={value.caption_style}
+                format={format}
+                animate
+                branding={value.branding && prefs ? prefs.branding : null}
+                logoUrl={value.branding ? prefs?.logo_url : null}
+                background={background}
+                className="rounded-2xl shadow-sm"
+              />
+            </div>
+          </div>
         </div>
       </div>
 

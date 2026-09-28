@@ -70,6 +70,10 @@ MESSAGES: dict[str, dict[str, str]] = {
     "logo_unreadable": {"es": "No hemos podido leer la imagen. Prueba con un PNG o JPG.",
                         "en": "We couldn't read the image. Try a PNG or JPG."},
     "logo_unprocessable": {"es": "No hemos podido procesar la imagen.", "en": "We couldn't process the image."},
+    # estilos de subtítulos
+    "style_limit": {"es": "Puedes guardar hasta {max} estilos propios. Borra alguno para crear otro.",
+                    "en": "You can save up to {max} custom styles. Delete one to create another."},
+    "style_name": {"es": "Ponle un nombre al estilo.", "en": "Give the style a name."},
     # cuenta
     "account_busy": {"es": "Tienes vídeos procesándose. Espera a que terminen para eliminar tu cuenta.",
                      "en": "You have videos processing. Wait for them to finish before deleting your account."},

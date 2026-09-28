@@ -79,6 +79,31 @@ def test_build_ass_styles_box_position_and_handle():
     assert "Dialogue: 1,0:00:00.00,0:00:05.00,Handle,,0,0,0,,@ana" in ass
 
 
+def test_build_ass_animations_and_exact_position():
+    words = make_words("uno dos tres")
+
+    def lines(**kw):
+        ass = build_ass(words, SubtitleStyle(max_words=3, **kw), 1080, 1920)
+        return [line.split(",,0,0,0,,", 1)[1] for line in ass.splitlines() if line.startswith("Dialogue")]
+
+    hl, pr = r"{\c&H00FFE500}", r"{\c&H00FFFFFF}"
+    hidden = r"{\alpha&HFF&}"
+    assert lines(animation="karaoke")[1] == f"{hl}UNO{pr} {hl}DOS{pr} TRES"
+    assert lines(animation="appear")[0] == f"{hl}UNO{pr} {hidden}DOS {hidden}TRES"
+    assert r"\t(0,90,\fscx122\fscy122)" in lines(animation="pop")[2]
+    assert lines(animation="none") == ["UNO DOS TRES"]
+    assert lines(pos_y=0.4, animation="none")[0].startswith(r"{\an5\pos(540,768)}")
+
+
+def test_build_ass_box_opacity_and_no_outline():
+    ass = build_ass(make_words("hola"), SubtitleStyle(box=True, box_color="112233", box_opacity=60), 1080, 1920)
+    default = next(line for line in ass.splitlines() if line.startswith("Style: Default")).split(",")
+    assert default[5] == "&H66332211"  # 40 % transparente
+    ass = build_ass(make_words("hola"), SubtitleStyle(outline_ratio=0, shadow_ratio=0), 1080, 1920)
+    default = next(line for line in ass.splitlines() if line.startswith("Style: Default")).split(",")
+    assert default[7] == "0" and (default[16], default[17]) == ("0", "0")  # sin negrita falsa, sin contorno
+
+
 def test_build_captions_srt_and_vtt():
     from smartcuts.adapters.exporters.subtitles import build_captions
     from smartcuts.domain.models import Word

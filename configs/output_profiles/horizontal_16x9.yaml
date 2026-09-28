@@ -1,4 +1,4 @@
-# Highlights horizontales
+# Highlights horizontales (YouTube, web) y vídeos completos subtitulados
 width: 1920
 height: 1080
 fps: 30
@@ -7,4 +7,9 @@ max_duration: 120
 target_duration: 60
 reframe: center
 subtitles:
-  enabled: false
+  enabled: true
+  font: Arial Black
+  font_size_ratio: 0.06
+  margin_v_ratio: 0.09
+  max_words: 4
+  uppercase: true

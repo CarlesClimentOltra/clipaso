@@ -69,15 +69,29 @@ def edit_key(start: float) -> str:
     return str(int(round(start * 1000)))
 
 
+def word_keys(transcript: Transcript) -> dict[int, str]:
+    """Clave de cada palabra (por `id`): su inicio en ms; si varias empiezan a la vez, «ms.1», «ms.2»…"""
+    keys: dict[int, str] = {}
+    seen: dict[str, int] = {}
+    for s in transcript.sentences:
+        for w in s.words:
+            base = edit_key(w.start)
+            n = seen.get(base, 0)
+            seen[base] = n + 1
+            keys[id(w)] = base if n == 0 else f"{base}.{n}"
+    return keys
+
+
 def apply_edits(transcript: Transcript, edits: dict[str, str]) -> Transcript:
     """Copia de la transcripción con las palabras corregidas por el usuario (texto vacío = quitarla)."""
     if not edits:
         return transcript
+    keys = word_keys(transcript)
     sentences = []
     for s in transcript.sentences:
         words: list[Word] = []
         for w in s.words:
-            text = edits.get(edit_key(w.start), w.text)
+            text = edits.get(keys[id(w)], w.text)
             if text.strip():
                 words.append(w.model_copy(update={"text": text if text.startswith(" ") else f" {text.strip()}"}))
         sentences.append(s.model_copy(update={"words": words}))

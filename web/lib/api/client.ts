@@ -67,6 +67,8 @@ export async function unwrap<T>(
 export type JobOptions = Schemas["JobOptions"];
 export type CaptionStyle = Schemas["CaptionStyle"];
 export type CaptionPreset = Schemas["CaptionPreset"];
+export type UserStyle = Schemas["UserStyle"];
+export type UserStyles = Schemas["StylesOut"];
 export type BrandingPrefs = Schemas["BrandingPrefs"];
 export type Preferences = Schemas["PreferencesOut"];
 export type ClipOptions = Schemas["OptionsOut"];

@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from smartcuts.saas.presets import BrandingPrefs, CaptionPreset, CaptionStyle, DurationT, FormatT
+from smartcuts.saas.styles import UserStyle
 
 
 class ErrorBody(BaseModel):
@@ -209,14 +210,33 @@ class OptionsOut(BaseModel):
 
 
 class PreferencesOut(BaseModel):
-    caption_style: CaptionStyle
+    caption_style: CaptionStyle = Field(description="El estilo por defecto (ver /me/styles).")
     branding: BrandingPrefs
     logo_url: str | None
 
 
 class PreferencesIn(BaseModel):
-    caption_style: CaptionStyle
     branding: BrandingPrefs
+
+
+class StylesOut(BaseModel):
+    styles: list[UserStyle]
+    default_id: str
+    max_custom: int
+
+
+class StyleIn(BaseModel):
+    name: str = Field(max_length=40)
+    style: CaptionStyle
+
+
+class StyleUpdateIn(BaseModel):
+    name: str | None = Field(None, max_length=40)
+    style: CaptionStyle
+
+
+class DefaultStyleIn(BaseModel):
+    id: str = Field(max_length=40)
 
 
 JobStatusT = Literal["queued", "running", "done", "failed", "expired"]

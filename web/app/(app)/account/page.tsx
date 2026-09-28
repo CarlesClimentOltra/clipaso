@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { AccountSecurity } from "@/components/account-security";
 import { BrandSettings } from "@/components/brand-settings";
+import { CaptionStylesSettings } from "@/components/caption-styles-settings";
 import { PageHeader } from "@/components/page-header";
 import { UsageMeter } from "@/components/usage-meter";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex max-w-4xl flex-col gap-6">
       <PageHeader eyebrow={a.eyebrow} title={a.title} description={a.lead} />
 
       <Card>
@@ -94,6 +95,8 @@ export default function AccountPage() {
           </div>
         </CardContent>
       </Card>
+
+      <CaptionStylesSettings />
 
       <BrandSettings />
 

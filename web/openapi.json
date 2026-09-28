@@ -315,7 +315,7 @@
           "account"
         ],
         "summary": "Put Preferences",
-        "description": "Estilo de subtítulos por defecto y marca personal para los próximos vídeos.",
+        "description": "Marca personal para los próximos vídeos (los estilos de subtítulos van en /me/styles).",
         "operationId": "put_preferences_me_preferences_put",
         "requestBody": {
           "content": {
@@ -520,6 +520,352 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/styles": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "List Styles",
+        "description": "Estilos de serie (con los cambios del usuario) y estilos propios.",
+        "operationId": "list_styles_me_styles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StylesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Create Style",
+        "operationId": "create_style_me_styles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StyleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StylesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/styles/{style_id}": {
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Update Style",
+        "description": "Modifica un estilo propio o guarda tu versión de uno de serie.",
+        "operationId": "update_style_me_styles__style_id__put",
+        "parameters": [
+          {
+            "name": "style_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StyleUpdateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StylesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Delete Style",
+        "description": "Borra un estilo propio o devuelve uno de serie a su versión original.",
+        "operationId": "delete_style_me_styles__style_id__delete",
+        "parameters": [
+          {
+            "name": "style_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Style Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StylesOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/default-style": {
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Set Default Style",
+        "operationId": "set_default_style_me_default_style_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefaultStyleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StylesOut"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1843,7 +2189,13 @@
               "Anton",
               "Bebas Neue",
               "Poppins",
-              "Luckiest Guy"
+              "Luckiest Guy",
+              "Montserrat",
+              "Oswald",
+              "Bangers",
+              "Rubik",
+              "Permanent Marker",
+              "Inter"
             ],
             "title": "Font",
             "default": "Archivo Black"
@@ -1860,15 +2212,13 @@
             "title": "Highlight Color",
             "default": "00E5FF"
           },
-          "size": {
-            "type": "string",
-            "enum": [
-              "s",
-              "m",
-              "l"
-            ],
-            "title": "Size",
-            "default": "m"
+          "scale": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 50.0,
+            "title": "Scale",
+            "description": "Tamaño del texto, en % del tamaño base del formato.",
+            "default": 100
           },
           "position": {
             "type": "string",
@@ -1880,10 +2230,46 @@
             "title": "Position",
             "default": "bottom"
           },
+          "y": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 95.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y",
+            "description": "Altura exacta (% desde arriba); si falta, `position`."
+          },
           "uppercase": {
             "type": "boolean",
             "title": "Uppercase",
             "default": true
+          },
+          "outline": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 0.0,
+            "title": "Outline",
+            "description": "Grosor del contorno (0 = sin contorno).",
+            "default": 4
+          },
+          "outline_color": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Outline Color",
+            "default": "000000"
+          },
+          "shadow": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 0.0,
+            "title": "Shadow",
+            "description": "Distancia de la sombra (0 = sin sombra).",
+            "default": 2
           },
           "box": {
             "type": "boolean",
@@ -1895,6 +2281,34 @@
             "pattern": "^[0-9A-Fa-f]{6}$",
             "title": "Box Color",
             "default": "000000"
+          },
+          "box_opacity": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Box Opacity",
+            "default": 100
+          },
+          "animation": {
+            "type": "string",
+            "enum": [
+              "highlight",
+              "pop",
+              "karaoke",
+              "appear",
+              "none"
+            ],
+            "title": "Animation",
+            "description": "Cómo se marca la palabra que se está diciendo.",
+            "default": "highlight"
+          },
+          "max_words": {
+            "type": "integer",
+            "maximum": 8.0,
+            "minimum": 1.0,
+            "title": "Max Words",
+            "description": "Palabras como máximo en pantalla a la vez.",
+            "default": 3
           }
         },
         "type": "object",
@@ -2088,6 +2502,20 @@
           "etag"
         ],
         "title": "CompletedPart"
+      },
+      "DefaultStyleIn": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "DefaultStyleIn"
       },
       "EditorOut": {
         "properties": {
@@ -2881,16 +3309,12 @@
       },
       "PreferencesIn": {
         "properties": {
-          "caption_style": {
-            "$ref": "#/components/schemas/CaptionStyle"
-          },
           "branding": {
             "$ref": "#/components/schemas/BrandingPrefs"
           }
         },
         "type": "object",
         "required": [
-          "caption_style",
           "branding"
         ],
         "title": "PreferencesIn"
@@ -2898,7 +3322,8 @@
       "PreferencesOut": {
         "properties": {
           "caption_style": {
-            "$ref": "#/components/schemas/CaptionStyle"
+            "$ref": "#/components/schemas/CaptionStyle",
+            "description": "El estilo por defecto (ver /me/styles)."
           },
           "branding": {
             "$ref": "#/components/schemas/BrandingPrefs"
@@ -2978,6 +3403,74 @@
           "end"
         ],
         "title": "RenderIn"
+      },
+      "StyleIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Name"
+          },
+          "style": {
+            "$ref": "#/components/schemas/CaptionStyle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "style"
+        ],
+        "title": "StyleIn"
+      },
+      "StyleUpdateIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "style": {
+            "$ref": "#/components/schemas/CaptionStyle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "style"
+        ],
+        "title": "StyleUpdateIn"
+      },
+      "StylesOut": {
+        "properties": {
+          "styles": {
+            "items": {
+              "$ref": "#/components/schemas/UserStyle"
+            },
+            "type": "array",
+            "title": "Styles"
+          },
+          "default_id": {
+            "type": "string",
+            "title": "Default Id"
+          },
+          "max_custom": {
+            "type": "integer",
+            "title": "Max Custom"
+          }
+        },
+        "type": "object",
+        "required": [
+          "styles",
+          "default_id",
+          "max_custom"
+        ],
+        "title": "StylesOut"
       },
       "TaskOut": {
         "properties": {
@@ -3195,6 +3688,41 @@
           "remaining_minutes"
         ],
         "title": "UsageOut"
+      },
+      "UserStyle": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Name"
+          },
+          "builtin": {
+            "type": "boolean",
+            "title": "Builtin",
+            "description": "Estilo de serie (se puede modificar y restablecer, no borrar)."
+          },
+          "modified": {
+            "type": "boolean",
+            "title": "Modified",
+            "description": "Estilo de serie con cambios del usuario.",
+            "default": false
+          },
+          "style": {
+            "$ref": "#/components/schemas/CaptionStyle"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "builtin",
+          "style"
+        ],
+        "title": "UserStyle"
       },
       "ValidationError": {
         "properties": {
