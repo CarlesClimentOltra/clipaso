@@ -82,7 +82,7 @@ def create_job(
         options["caption_style"] = editing.get_preferences(user)[0].model_dump()
     job = services.create_job(
         session, user, upload_id=body.upload_id, max_clips=body.max_clips, language=body.language, now=now,
-        options=options,
+        options=options, trim=(body.trim_start or 0.0, body.trim_end) if body.trim_end else None,
     )
     session.commit()  # el job debe existir antes de que un worker lo busque
     if dispatch_job(dispatcher, job, now):

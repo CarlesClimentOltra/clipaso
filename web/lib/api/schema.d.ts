@@ -749,6 +749,13 @@ export interface components {
              * @default es
              */
             language: string;
+            /**
+             * Trim Start
+             * @description Usar solo un tramo del vídeo (si no se recortó ya en el navegador): inicio en segundos.
+             */
+            trim_start?: number | null;
+            /** Trim End */
+            trim_end?: number | null;
         };
         /**
          * JobOptions

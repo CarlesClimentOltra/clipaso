@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
+import { TrimSelector, type TrimRange } from "@/components/trim-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -15,12 +16,13 @@ import { ApiError, type Me } from "@/lib/api/client";
 import { useApi, useClipOptions, useCreateProject, usePreferences } from "@/lib/api/hooks";
 import { discardUpload, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useI18n } from "@/lib/i18n";
+import { MAX_CLIENT_TRIM_BYTES, preloadTrimmer, trimVideo } from "@/lib/trim";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = [".mp4", ".mov", ".mkv", ".webm", ".m4v"];
 const LANGUAGES = ["es", "en", "pt", "fr", "it", "de", "auto"];
 
-type Phase = "idle" | "uploading" | "checking" | "starting";
+type Phase = "idle" | "trimming" | "uploading" | "checking" | "starting";
 
 const LARGE_FILE = 1024 ** 3; // a partir de 1 GB avisamos de que la subida puede tardar
 
@@ -46,6 +48,11 @@ export function UploadForm({ me }: { me: Me }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [duration, setDuration] = useState<number | null>(null);
+  const [trim, setTrim] = useState<TrimRange | null>(null);
+  const [trimProgress, setTrimProgress] = useState(0);
+  const uploadingRef = useRef<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [maxClips, setMaxClips] = useState(Math.min(3, me.plan.max_clips_per_job));
@@ -74,6 +81,23 @@ export function UploadForm({ me }: { me: Me }) {
   const busy = phase !== "idle";
   const outOfMinutes = me.usage.remaining_minutes <= 0;
   const maxBytes = me.plan.max_upload_mb * 1024 * 1024;
+  const maxSeconds = me.plan.max_video_minutes * 60;
+  const partial = !!(file && duration && trim && (trim.start > 0.5 || trim.end < duration - 0.5));
+  const selectedSeconds = duration ? (partial ? trim!.end - trim!.start : duration) : 0;
+  // Lo que ocupará lo que se sube: el tramo (si se recorta en el navegador) o el archivo entero.
+  const estimatedBytes = file && duration ? (file.size * selectedSeconds) / duration : file?.size ?? 0;
+  const tooLong = !!duration && selectedSeconds > maxSeconds + 0.5;
+  const tooBig = !!file && (partial ? estimatedBytes > maxBytes : file.size > maxBytes);
+
+  // El vídeo elegido se previsualiza en local (sin subir nada); la URL se libera al cambiarlo o al salir.
+  useEffect(() => () => {
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+  }, [fileUrl]);
+
+  // En cuanto se elige un tramo, se descarga el recortador para que al pulsar «Crear» sea inmediato.
+  useEffect(() => {
+    if (partial) preloadTrimmer();
+  }, [partial]);
 
   function pick(candidate: File | undefined) {
     setFileError(null);
@@ -83,11 +107,11 @@ export function UploadForm({ me }: { me: Me }) {
       setFileError(u.formatError);
       return;
     }
-    if (candidate.size > maxBytes) {
-      setFileError(u.tooBig(formatBytes(candidate.size), formatBytes(maxBytes)));
-      return;
-    }
+    // Un archivo más grande que el máximo se admite si luego se elige un tramo que sí quepa.
     setFile(candidate);
+    setFileUrl(URL.createObjectURL(candidate));
+    setDuration(null);
+    setTrim(null);
   }
 
   function onDrop(e: DragEvent) {
@@ -96,14 +120,41 @@ export function UploadForm({ me }: { me: Me }) {
     if (!busy) pick(e.dataTransfer.files?.[0]);
   }
 
+  /** El archivo a subir: el tramo recortado en el navegador o, si no se puede, el original + tramo para el servidor. */
+  async function prepare(): Promise<{ upload: File; serverTrim: TrimRange | null } | null> {
+    if (!file) return null;
+    if (!partial || !trim) return { upload: file, serverTrim: null };
+    if (estimatedBytes <= MAX_CLIENT_TRIM_BYTES) {
+      setPhase("trimming");
+      setTrimProgress(0);
+      try {
+        return { upload: await trimVideo(file, trim.start, trim.end, setTrimProgress), serverTrim: null };
+      } catch (err) {
+        console.warn("No se pudo recortar en el navegador; se recortará en el servidor.", err);
+      }
+    }
+    if (file.size > maxBytes) {
+      toast.error(u.trimFailedBig);
+      return null;
+    }
+    return { upload: file, serverTrim: trim };
+  }
+
   async function submit() {
     if (!file) return;
     abortRef.current = new AbortController();
     cancelledRef.current = false;
     setProgress(null);
     try {
+      const prepared = await prepare();
+      if (!prepared) {
+        setPhase("idle");
+        return;
+      }
+      uploadingRef.current = prepared.upload;
       const job = await create.mutateAsync({
-        file,
+        file: prepared.upload,
+        trim: prepared.serverTrim,
         maxClips,
         language,
         options: options ?? { ...optionsDraft, caption_style: null },
@@ -130,7 +181,7 @@ export function UploadForm({ me }: { me: Me }) {
   async function cancel() {
     cancelledRef.current = true;
     abortRef.current?.abort();
-    if (file) await discardUpload(api, file);
+    if (uploadingRef.current) await discardUpload(api, uploadingRef.current);
     setPhase("idle");
     setProgress(null);
   }
@@ -178,7 +229,10 @@ export function UploadForm({ me }: { me: Me }) {
             </span>
             <div>
               <p className="font-medium break-all">{file.name}</p>
-              <p className="text-sm text-muted-foreground">{formatBytes(file.size)}</p>
+              <p className="text-sm text-muted-foreground">
+                {formatBytes(file.size)}
+                {duration ? ` · ${formatDuration(duration, u.lessThanMinute)}` : ""}
+              </p>
             </div>
             {!busy && (
               <Button
@@ -187,6 +241,9 @@ export function UploadForm({ me }: { me: Me }) {
                 onClick={(e) => {
                   e.stopPropagation();
                   setFile(null);
+                  setFileUrl(null);
+                  setTrim(null);
+                  setDuration(null);
                   if (inputRef.current) inputRef.current.value = "";
                 }}
               >
@@ -209,6 +266,25 @@ export function UploadForm({ me }: { me: Me }) {
         )}
       </div>
       {fileError && <p className="-mt-3 text-sm text-destructive" role="alert">{fileError}</p>}
+
+      {file && fileUrl && (
+        <TrimSelector
+          src={fileUrl}
+          duration={duration}
+          value={trim}
+          onChange={setTrim}
+          onDuration={setDuration}
+          maxSeconds={maxSeconds}
+          disabled={busy}
+        />
+      )}
+      {tooBig && (
+        <p className="-mt-3 text-sm text-destructive" role="alert">
+          {partial
+            ? u.tooBigPart(formatBytes(estimatedBytes), formatBytes(maxBytes))
+            : u.tooBigWhole(formatBytes(file!.size), formatBytes(maxBytes))}
+        </p>
+      )}
 
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
@@ -249,11 +325,31 @@ export function UploadForm({ me }: { me: Me }) {
         </div>
       </div>
 
-      {options && <ProjectOptions me={me} value={options} onChange={setOptionsDraft} disabled={busy} />}
+      {options && (
+        <ProjectOptions
+          me={me}
+          value={options}
+          onChange={setOptionsDraft}
+          disabled={busy}
+          background={
+            fileUrl ? (
+              // Un fotograma del propio vídeo (del inicio del tramo) de fondo en la vista previa.
+              <video
+                key={`${fileUrl}-${Math.round(trim?.start ?? 0)}`}
+                src={`${fileUrl}#t=${Math.max(0.5, trim?.start ?? 0.5)}`}
+                muted
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 size-full object-cover"
+              />
+            ) : undefined
+          }
+        />
+      )}
 
-      {file && !busy && file.size >= LARGE_FILE && (
+      {file && !busy && estimatedBytes >= LARGE_FILE && !tooBig && (
         <Alert>
-          <AlertTitle>{u.largeTitle(formatBytes(file.size))}</AlertTitle>
+          <AlertTitle>{u.largeTitle(formatBytes(estimatedBytes))}</AlertTitle>
           <AlertDescription>
             {u.largeText}
           </AlertDescription>
@@ -269,9 +365,18 @@ export function UploadForm({ me }: { me: Me }) {
                 {Math.floor((progress.sentBytes / progress.totalBytes) * 100)}%
               </span>
             )}
+            {phase === "trimming" && (
+              <span className="tabular-nums text-muted-foreground">{Math.floor(trimProgress * 100)}%</span>
+            )}
           </div>
           <Progress
-            value={phase === "uploading" && progress ? (progress.sentBytes / progress.totalBytes) * 100 : 100}
+            value={
+              phase === "uploading" && progress
+                ? (progress.sentBytes / progress.totalBytes) * 100
+                : phase === "trimming"
+                  ? trimProgress * 100
+                  : 100
+            }
             aria-label={u.progressLabel}
           />
           {phase === "uploading" && progress && (
@@ -289,7 +394,8 @@ export function UploadForm({ me }: { me: Me }) {
           )}
         </div>
       ) : (
-        <Button size="lg" className="h-12 rounded-full text-base" disabled={!file || outOfMinutes} onClick={submit}>
+        <Button size="lg" className="h-12 rounded-full text-base"
+                disabled={!file || !duration || outOfMinutes || tooLong || tooBig} onClick={submit}>
           {u.create}
         </Button>
       )}

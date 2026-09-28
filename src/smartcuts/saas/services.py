@@ -46,6 +46,9 @@ def period_of(moment: datetime) -> str:
     return moment.strftime("%Y-%m")
 
 
+MIN_TRIM_SECONDS = 5.0
+
+
 def billable_minutes(seconds: float) -> float:
     """Minutos facturables, redondeados hacia arriba a la décima."""
     return math.ceil(seconds / 6) / 10
@@ -252,9 +255,11 @@ def _reject(storage: Storage, upload: Upload) -> None:
 
 def create_job(
     session: Session, user: User, *, upload_id: str, max_clips: int, language: str, now: datetime,
-    options: dict | None = None,
+    options: dict | None = None, trim: tuple[float, float] | None = None,
 ) -> Job:
-    """`options`: formato, duración, tema, estilo de subtítulos, marca y si conservar el original."""
+    """`options`: formato, duración, tema, estilo de subtítulos, marca y si conservar el original.
+    `trim`: tramo (inicio, fin) en segundos si solo se quiere una parte; el worker recorta el original
+    antes de procesarlo y solo se cobran los minutos del tramo."""
     # Bloquea la fila del usuario (Postgres) para que dos peticiones simultáneas no se salten la cuota.
     session.execute(select(User.id).where(User.id == user.id).with_for_update())
     plan: Plan = user.plan
@@ -269,7 +274,16 @@ def create_job(
     if running_jobs(session, user) >= plan.max_concurrent_jobs:
         raise AppError("too_many_jobs", 429)
 
-    minutes = billable_minutes(upload.duration_seconds)
+    options = dict(options or {})
+    seconds = upload.duration_seconds
+    if trim is not None:
+        start, end = round(max(0.0, trim[0]), 3), round(min(trim[1], upload.duration_seconds), 3)
+        if end - start < MIN_TRIM_SECONDS:
+            raise AppError("validation_error", key="trim_too_short", params={"min": f"{MIN_TRIM_SECONDS:.0f}"})
+        if start > 0.5 or end < upload.duration_seconds - 0.5:  # si es casi todo, no merece la pena recortar
+            options["trim"] = [start, end]
+            seconds = end - start
+    minutes = billable_minutes(seconds)
     usage = usage_for(session, user, now)
     if minutes > usage.remaining_minutes:
         raise AppError(
@@ -285,7 +299,7 @@ def create_job(
         stage="queued",
         video_minutes=minutes,
         max_clips=max_clips,
-        options={**(options or {}), "language": language},
+        options={**options, "language": language},
         created_at=now,
         expires_at=now + timedelta(days=plan.retention_days),
     )

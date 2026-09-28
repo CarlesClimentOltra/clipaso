@@ -309,3 +309,40 @@ def test_words_starting_at_the_same_time_get_distinct_keys():
     assert sorted(word_keys(transcript).values()) == ["1000", "1000.1", "2000"]
     edited = apply_edits(transcript, {"1000.1": "B"})
     assert [w.text.strip() for w in edited.sentences[0].words] == ["a", "B", "c"]
+
+
+def test_trim_on_the_server_bills_only_the_part_and_replaces_the_original(client, tmp_path, monkeypatch):
+    import subprocess
+
+    from smartcuts.infra import ffmpeg
+    from smartcuts.saas.models import Upload
+    from tests.saas.test_api_flow import put_parts
+
+    video = tmp_path / "larga.mp4"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=25:duration=30",
+                    "-f", "lavfi", "-i", "sine=duration=30", "-shortest", "-g", "25", "-c:v", "libx264", "-c:a", "aac",
+                    str(video)], check=True)
+    data = video.read_bytes()
+    r = client.post("/uploads", json={"filename": video.name, "size_bytes": len(data)}, headers=AUTH).json()
+    etags = put_parts(client, r["upload_id"], data, r["part_size"], list(range(1, r["part_count"] + 1)))
+    parts = [{"part_number": n, "etag": e} for n, e in etags.items()]
+    upload_id = client.post(f"/uploads/{r['upload_id']}/complete", json={"parts": parts}, headers=AUTH).json()["id"]
+
+    r = client.post("/jobs", json={"upload_id": upload_id, "trim_start": 10, "trim_end": 12}, headers=AUTH)
+    assert r.status_code == 400 and "5" in r.json()["error"]["message"]  # tramo demasiado corto
+
+    pipeline = FakePipeline()
+    monkeypatch.setattr(worker_mod, "build_pipeline", lambda *a, **k: pipeline)
+    r = client.post("/jobs", json={"upload_id": upload_id, "trim_start": 10, "trim_end": 22}, headers=AUTH)
+    assert r.status_code == 201, r.text
+    assert client.get("/me", headers=AUTH).json()["usage"]["used_minutes"] == 0.2  # 12 s, no 30 s
+    app = client.app
+    assert JobRunner(app.state.settings, app.state.sessions, app.state.storage).process(r.json()["id"])
+
+    with session_scope(app.state.sessions) as s:
+        upload = s.get(Upload, upload_id)
+        assert 11.5 < upload.duration_seconds < 12.5
+        stored = app.state.storage.local_path(upload.storage_key)
+    assert 11.5 < ffmpeg.video_info(stored)[3] < 12.5  # el original guardado es ya el tramo
+    job = client.get(f"/jobs/{r.json()['id']}", headers=AUTH).json()
+    assert job["status"] == "done"

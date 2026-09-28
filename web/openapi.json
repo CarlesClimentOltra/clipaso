@@ -2734,6 +2734,31 @@
             "pattern": "^(auto|[a-z]{2})$",
             "title": "Language",
             "default": "es"
+          },
+          "trim_start": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trim Start",
+            "description": "Usar solo un tramo del vídeo (si no se recortó ya en el navegador): inicio en segundos."
+          },
+          "trim_end": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trim End"
           }
         },
         "type": "object",

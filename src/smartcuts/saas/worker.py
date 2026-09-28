@@ -23,7 +23,7 @@ from smartcuts.application.pipeline import PipelineOptions
 from smartcuts.bootstrap import build_pipeline
 from smartcuts.domain.errors import ConfigurationError, SelectionError, SmartCutsError, SourceUnavailableError
 from smartcuts.domain.ports import Storage, Transcriber
-from smartcuts.infra import registry
+from smartcuts.infra import ffmpeg, registry
 from smartcuts.infra.config import Settings
 from smartcuts.infra.logging import bind_job, clear_job, get_logger
 from smartcuts.saas.artifacts import make_preview, preview_key, save_analysis
@@ -140,12 +140,15 @@ class JobRunner:
                 options = dict(job.options or {})
                 language = options.get("language", self.settings.language)
                 upload_key, upload_ext = upload.storage_key, PurePath(upload.filename).suffix.lower() or ".mp4"
+                upload_type = upload.content_type
                 branding = project_branding(self.storage, s.get(User, user_id), options, tmp / "brand")
 
             self._write_progress(job_id, "ingest", 0.0, state, force=True)
             source = self.storage.local_path(upload_key)
             if source is None:
                 source = self.storage.download_to(upload_key, tmp / f"source{upload_ext}")
+            if options.get("trim") and not options.get("trim_applied"):
+                source = self._apply_trim(job_id, Path(source), options, upload_key, upload_type, tmp)
 
             pipeline = build_pipeline(self.settings, transcriber=self.transcriber)
             opts = PipelineOptions(
@@ -224,6 +227,30 @@ class JobRunner:
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
             clear_job()
+
+    def _apply_trim(
+        self, job_id: str, source: Path, options: dict, upload_key: str, content_type: str, tmp: Path,
+    ) -> Path:
+        """Recorta el tramo elegido (si no se hizo ya en el navegador) y sustituye con él el original
+        guardado: así el editor, los re-renders y «más clips» trabajan sobre lo mismo que se procesó."""
+        start, end = options["trim"]
+        cut = tmp / f"tramo{source.suffix or '.mp4'}"
+        faststart = ["-movflags", "+faststart"] if cut.suffix in (".mp4", ".mov", ".m4v") else []
+        ffmpeg.run([
+            "-ss", f"{start:.3f}", "-i", str(source), "-t", f"{end - start:.3f}",
+            "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy", "-avoid_negative_ts", "make_zero", *faststart,
+            str(cut),
+        ], what="recorte del tramo elegido")
+        width, height, _, duration = ffmpeg.video_info(cut)
+        self.storage.put_file(upload_key, cut, content_type)
+        with session_scope(self.sessions) as s:
+            job = s.get(Job, job_id)
+            job.options = {**(job.options or {}), "trim_applied": True}
+            if upload := s.get(Upload, job.upload_id):
+                upload.size_bytes, upload.duration_seconds = cut.stat().st_size, duration
+                upload.width, upload.height = width, height
+        log.info("job.trimmed", start=start, end=end, duration=round(duration, 1))
+        return cut
 
     def _mark_failed(self, s: Session, job: Job, code: str, detail: str) -> None:
         now = utcnow()

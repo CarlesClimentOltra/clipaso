@@ -119,6 +119,9 @@ class JobCreateIn(JobOptions):
     upload_id: str
     max_clips: int = Field(3, ge=1, le=50)
     language: str = Field("es", pattern=r"^(auto|[a-z]{2})$")
+    trim_start: float | None = Field(None, ge=0, description="Usar solo un tramo del vídeo (si no se recortó "
+                                                             "ya en el navegador): inicio en segundos.")
+    trim_end: float | None = Field(None, gt=0)
 
 
 ClipStatusT = Literal["ready", "rendering", "failed"]

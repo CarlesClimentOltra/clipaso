@@ -78,6 +78,8 @@ MESSAGES: dict[str, dict[str, str]] = {
     "account_busy": {"es": "Tienes vídeos procesándose. Espera a que terminen para eliminar tu cuenta.",
                      "en": "You have videos processing. Wait for them to finish before deleting your account."},
     # subidas
+    "trim_too_short": {"es": "El tramo elegido debe durar al menos {min} segundos.",
+                       "en": "The selected part must be at least {min} seconds long."},
     "upload_too_large": {"es": "El archivo supera el tamaño máximo de tu plan.",
                          "en": "The file exceeds your plan's maximum size."},
     "unsupported_format": {"es": "Formato no compatible. Sube un vídeo MP4, MOV, MKV o WEBM.",

@@ -335,9 +335,16 @@ export const en: Dict = {
       es: "Spanish", en: "English", pt: "Portuguese", fr: "French", it: "Italian", de: "German",
       auto: "Detect automatically",
     },
-    phases: { idle: "", uploading: "Uploading video…", checking: "Checking the video…", starting: "Starting processing…" },
+    phases: {
+      idle: "", trimming: "Cutting the part…", uploading: "Uploading video…", checking: "Checking the video…",
+      starting: "Starting processing…",
+    },
     formatError: "Unsupported format. Upload an MP4, MOV, MKV or WEBM video.",
-    tooBig: (size: string, max: string) => `The file is ${size} and your plan allows up to ${max}.`,
+    tooBigWhole: (size: string, max: string) =>
+      `The file is ${size} and your plan allows uploads up to ${max}. Choose a shorter part.`,
+    tooBigPart: (size: string, max: string) =>
+      `The part will be about ${size} and your plan allows uploads up to ${max}. Choose a shorter part.`,
+    trimFailedBig: "We couldn't cut the video in your browser and the whole file exceeds your plan's maximum. Try another browser (Chrome or Edge) or a shorter part.",
     received: "Video received! We're preparing your clips.",
     interrupted: "The upload was interrupted. Click “Create clips” again and it will resume where it left off.",
     outOfMinutesTitle: "You've used up this month's minutes",
@@ -345,7 +352,8 @@ export const en: Dict = {
     selectVideo: "Select video",
     changeVideo: "Change video",
     drop: "Drag your video here or click to choose it",
-    dropHint: (size: string, minutes: number) => `MP4, MOV, MKV or WEBM · up to ${size} and ${minutes} min long`,
+    dropHint: (size: string, minutes: number) =>
+      `MP4, MOV, MKV or WEBM · up to ${size} and ${minutes} min (you can pick just a part)`,
     clipCount: "Number of clips",
     videoLanguage: "Video language",
     largeTitle: (size: string) => `Large file (${size})`,
@@ -365,6 +373,22 @@ export const en: Dict = {
     keepNote: (days: number) =>
       `The original video is kept for ${days} days so you can edit the clips, then it's deleted.`,
     purgeNote: "The original video is deleted once processing finishes.",
+  },
+  trim: {
+    title: "Part of the video",
+    lead: "Only need part of it? Choose where it starts and ends: only that part is uploaded and processed.",
+    playPart: "Play part",
+    pause: "Pause",
+    start: "Start",
+    end: "End",
+    markHere: "Mark here",
+    length: (time: string) => `${time} selected`,
+    minutes: (m: string) => `${m} min of your quota`,
+    tooLong: (max: number) => `Your plan allows up to ${max} min per video: shorten the part.`,
+    partialNote: "It's cut in your browser before uploading (no quality loss). It may start up to 1-2 s earlier.",
+    wholeNote: "The whole video will be used. Drag the ends of the bar to keep just a part.",
+    useWhole: "Use the whole video",
+    loading: "Reading the video…",
   },
   options: {
     format: "Format",

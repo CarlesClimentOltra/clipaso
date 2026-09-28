@@ -335,9 +335,16 @@ export const es = {
       es: "Español", en: "Inglés", pt: "Portugués", fr: "Francés", it: "Italiano", de: "Alemán",
       auto: "Detectar automáticamente",
     } as Record<string, string>,
-    phases: { idle: "", uploading: "Subiendo vídeo…", checking: "Comprobando el vídeo…", starting: "Iniciando el procesamiento…" },
+    phases: {
+      idle: "", trimming: "Recortando el tramo…", uploading: "Subiendo vídeo…", checking: "Comprobando el vídeo…",
+      starting: "Iniciando el procesamiento…",
+    },
     formatError: "Formato no compatible. Sube un vídeo MP4, MOV, MKV o WEBM.",
-    tooBig: (size: string, max: string) => `El archivo pesa ${size} y tu plan permite hasta ${max}.`,
+    tooBigWhole: (size: string, max: string) =>
+      `El archivo pesa ${size} y tu plan permite subir hasta ${max}. Elige un tramo más corto.`,
+    tooBigPart: (size: string, max: string) =>
+      `El tramo ocupará unos ${size} y tu plan permite subir hasta ${max}. Elige un tramo más corto.`,
+    trimFailedBig: "No hemos podido recortar el vídeo en tu navegador y el archivo entero supera el máximo de tu plan. Prueba con otro navegador (Chrome o Edge) o un tramo más corto.",
     received: "¡Vídeo recibido! Estamos preparando tus clips.",
     interrupted: "La subida se interrumpió. Pulsa «Crear clips» de nuevo y continuará donde se quedó.",
     outOfMinutesTitle: "Has agotado los minutos de este mes",
@@ -345,7 +352,8 @@ export const es = {
     selectVideo: "Seleccionar vídeo",
     changeVideo: "Cambiar vídeo",
     drop: "Arrastra tu vídeo aquí o haz clic para elegirlo",
-    dropHint: (size: string, minutes: number) => `MP4, MOV, MKV o WEBM · hasta ${size} y ${minutes} min de duración`,
+    dropHint: (size: string, minutes: number) =>
+      `MP4, MOV, MKV o WEBM · hasta ${size} y ${minutes} min (podrás elegir solo una parte)`,
     clipCount: "Número de clips",
     videoLanguage: "Idioma del vídeo",
     largeTitle: (size: string) => `Archivo grande (${size})`,
@@ -365,6 +373,22 @@ export const es = {
     keepNote: (days: number) =>
       `El vídeo original se guarda ${days} días para que puedas editar los clips y después se borra.`,
     purgeNote: "El vídeo original se borra al terminar de procesarlo.",
+  },
+  trim: {
+    title: "Tramo del vídeo",
+    lead: "¿Solo te interesa una parte? Elige desde dónde hasta dónde: solo se sube y se procesa ese tramo.",
+    playPart: "Ver tramo",
+    pause: "Pausa",
+    start: "Inicio",
+    end: "Fin",
+    markHere: "Marcar aquí",
+    length: (time: string) => `Tramo de ${time}`,
+    minutes: (m: string) => `${m} min de tu cuota`,
+    tooLong: (max: number) => `Tu plan permite hasta ${max} min por vídeo: acorta el tramo.`,
+    partialNote: "Se recorta en tu navegador antes de subirlo (sin perder calidad). Puede empezar hasta 1-2 s antes.",
+    wholeNote: "Se usará el vídeo entero. Mueve los extremos de la barra para quedarte con una parte.",
+    useWhole: "Usar el vídeo entero",
+    loading: "Leyendo el vídeo…",
   },
   options: {
     format: "Formato",

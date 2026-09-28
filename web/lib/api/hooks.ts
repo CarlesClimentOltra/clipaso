@@ -97,6 +97,8 @@ export type CreateProjectInput = {
   maxClips: number;
   language: string;
   options: JobOptions;
+  /** Tramo a recortar en el servidor (si no se pudo recortar en el navegador). */
+  trim?: { start: number; end: number } | null;
   onUploadProgress: (progress: UploadProgress) => void;
   onPhase: (phase: "uploading" | "checking" | "starting") => void;
   signal?: AbortSignal;
@@ -121,7 +123,13 @@ export function useCreateProject() {
       input.onPhase("starting");
       return unwrap(
         api.POST("/jobs", {
-          body: { upload_id: uploadId, max_clips: input.maxClips, language: input.language, ...input.options },
+          body: {
+            upload_id: uploadId,
+            max_clips: input.maxClips,
+            language: input.language,
+            ...input.options,
+            ...(input.trim ? { trim_start: input.trim.start, trim_end: input.trim.end } : {}),
+          },
         }),
       );
     },
