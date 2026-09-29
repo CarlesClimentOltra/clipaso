@@ -560,6 +560,9 @@ export const en: Dict = {
     error: "Couldn't request more clips.",
   },
   cover: {
+    button: "Cover",
+    title: "Clip cover",
+    frameInEditor: "To change the frame, open «Edit clip» → Cover tab.",
     lead: "The AI picks the best frame and writes a hook. Upload the 9:16 cover on TikTok, Reels or Shorts and the 16:9 one as your YouTube thumbnail.",
     vertical: "9:16 cover",
     horizontal: "16:9 thumbnail",

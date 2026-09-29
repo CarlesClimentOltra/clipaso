@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   CheckIcon,
   CopyIcon,
+  ImageIcon,
   Loader2Icon,
   PencilIcon,
   ScissorsIcon,
@@ -14,6 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { ClipDownloads } from "@/components/clip-downloads";
+import { CoverEditor } from "@/components/editor/cover-editor";
 import { CLIP_ASPECT, ClipPlayer } from "@/components/clip-player";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -144,6 +146,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
   const { t } = useI18n();
   const c = t.clip;
   const [editing, setEditing] = useState(false);
+  const [coverOpen, setCoverOpen] = useState(false);
   const rendering = clip.status === "rendering";
   const base = `${slug(job.title)}-${String(clip.rank).padStart(2, "0")}-${slug(clip.title)}`;
   const publishText = [clip.description, hashtagLine(clip)].filter(Boolean).join("\n\n");
@@ -158,7 +161,12 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
         <ClipPlayer
           key={clip.version}
           src={clip.video_url}
-          poster={clip.thumbnail_url ?? undefined}
+          // La portada (si encaja con el formato del clip) es lo primero que se ve, como en TikTok o YouTube.
+          poster={
+            (job.frame === "vertical" ? clip.cover?.vertical_url
+              : job.frame === "horizontal" ? clip.cover?.horizontal_url : null)
+            ?? clip.thumbnail_url ?? undefined
+          }
           title={clip.title}
           rank={clip.rank}
           aspect={CLIP_ASPECT[job.frame]}
@@ -197,7 +205,12 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
           <span>
             {c.range(Math.round(clip.duration), formatTimestamp(clip.start), formatTimestamp(clip.end))}
           </span>
-          <span className="flex gap-0.5" aria-label={c.rate}>
+          <span className="flex items-center gap-0.5" aria-label={c.rate}>
+            {clip.cover && (
+              <Button variant="ghost" size="sm" onClick={() => setCoverOpen(true)} className="mr-1 h-7 px-2 text-xs">
+                <ImageIcon /> {t.cover.button}
+              </Button>
+            )}
             <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === 1} aria-label={c.like}
                     onClick={() => vote(1)} className={cn(clip.rating === 1 && "text-brand-ink")}>
               <ThumbsUpIcon className={cn(clip.rating === 1 && "fill-current")} />
@@ -228,6 +241,18 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
         )}
       </CardFooter>
       {editing && <EditTextsDialog clip={clip} jobId={job.id} open={editing} onOpenChange={setEditing} />}
+      {coverOpen && clip.cover && (
+        <Dialog open={coverOpen} onOpenChange={setCoverOpen}>
+          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{t.cover.title}</DialogTitle>
+              <DialogDescription>{clip.title}</DialogDescription>
+            </DialogHeader>
+            <CoverEditor clip={clip} jobId={job.id} previewUrl={null} canChangeFrame={false}
+                         frameMessage={job.can_edit ? t.cover.frameInEditor : t.cover.noSource} />
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }

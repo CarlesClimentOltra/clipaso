@@ -362,8 +362,9 @@ def _system(language: str, with_images: bool, avoid_text: str | None) -> str:
     avoid = f' Write something clearly different from the previous cover text: "{avoid_text}".' if avoid_text else ""
     return (
         "You design thumbnails for short vertical videos (TikTok, Reels, Shorts) and YouTube. " + frames +
-        f"Write the cover text in {lang}: 2 to 5 punchy words that create curiosity about what is said in "
-        "the clip (a hook, not a summary), no emojis, no hashtags, no quotes, no final period. Choose the "
+        f"Write the cover text in {lang}: 2 to 5 punchy words (never more than 5) that create curiosity about "
+        "what is said in the clip (a hook, not a summary), no emojis, no hashtags, no quotes, no final period. "
+        "Choose the "
         f"single most important word to highlight in color (its index in the text).{avoid}"
     )
 

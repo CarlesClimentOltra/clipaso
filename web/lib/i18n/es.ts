@@ -560,6 +560,9 @@ export const es = {
     error: "No se pudo pedir más clips.",
   },
   cover: {
+    button: "Portada",
+    title: "Portada del clip",
+    frameInEditor: "Para cambiar el fotograma, abre «Editar clip» → pestaña Portada.",
     lead: "La IA elige el mejor fotograma y escribe un texto con gancho. Sube la portada 9:16 en TikTok, Reels o Shorts y la 16:9 como miniatura de YouTube.",
     vertical: "Portada 9:16",
     horizontal: "Miniatura 16:9",

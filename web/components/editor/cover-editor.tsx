@@ -89,11 +89,14 @@ export function CoverEditor({
   jobId,
   previewUrl,
   canChangeFrame,
+  frameMessage,
 }: {
   clip: Clip;
   jobId: string;
   previewUrl: string | null;
   canChangeFrame: boolean;
+  /** Qué decir cuando aquí no se puede cambiar el fotograma. */
+  frameMessage?: string;
 }) {
   const { t } = useI18n();
   const c = t.cover;
@@ -268,7 +271,7 @@ export function CoverEditor({
             </div>
           </>
         ) : (
-          <p className="text-xs text-muted-foreground">{c.noSource}</p>
+          <p className="text-xs text-muted-foreground">{frameMessage ?? c.noSource}</p>
         )}
       </div>
 
