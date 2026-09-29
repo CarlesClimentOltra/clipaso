@@ -97,8 +97,9 @@ class FakePipeline:
                    for i in range(self.clips)]
         return FakeResult(exports)
 
-    def subtitle(self, uri, opts, *, out_dir, translate_to=None, on_progress=None):
-        self.calls.append({"kind": "subtitle", "opts": opts, "translate_to": translate_to})
+    def subtitle(self, uri, opts, *, out_dir, translate_to=None, on_progress=None, allow_silent=False):
+        self.calls.append({"kind": "subtitle", "opts": opts, "translate_to": translate_to,
+                           "allow_silent": allow_silent})
         if self.fail:
             raise self.fail
         return FakeResult([self._clip(uri, out_dir, 1, 0.0, 3.0, opts.title or "Vídeo", opts.profile)])

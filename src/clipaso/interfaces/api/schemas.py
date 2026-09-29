@@ -15,6 +15,7 @@ from clipaso.saas.presets import (
     DurationT,
     FormatT,
     ModeT,
+    ReframeFitT,
 )
 from clipaso.saas.styles import UserStyle
 
@@ -117,12 +118,15 @@ class JobOptions(BaseModel):
 
     mode: ModeT = Field("clips", description="clips: la IA elige los mejores momentos · subtitle: el vídeo "
                                              "entero con subtítulos · clean: el vídeo entero sin silencios ni "
-                                             "muletillas.")
+                                             "muletillas · reframe: el vídeo entero en otro formato.")
     subtitle_language: str | None = Field(None, pattern=r"^[a-z]{2}$",
                                           description="Vídeo entero: traducir los subtítulos a este idioma.")
     clean_pace: CleanPaceT = Field("normal", description="Sin silencios: natural (solo pausas largas), normal "
                                                           "o fast (ritmo rápido, estilo YouTube).")
     clean_fillers: bool = Field(True, description="Sin silencios: quitar también «eh», «em», «mmm»…")
+    reframe_fit: ReframeFitT = Field("auto", description="Cambiar formato: auto (sigue a quien habla), blur_pad "
+                                                          "(imagen completa con fondo desenfocado) o center "
+                                                          "(rellenar recortando).")
     format: FormatT = "vertical"
     duration: DurationT = "auto"
     topic: str = Field("", max_length=200, description="Tema opcional: «momentos donde hablo de dinero».")

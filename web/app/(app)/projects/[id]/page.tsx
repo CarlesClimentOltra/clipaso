@@ -82,8 +82,10 @@ export default function ProjectPage() {
 
   const active = job.status === "queued" || job.status === "running";
   const clean = job.options.mode === "clean";
-  // El resultado es el vídeo entero (solo subtitular o sin silencios), no varios clips.
-  const subtitle = job.options.mode === "subtitle" || clean;
+  // Textos propios de los modos de vídeo entero con nombre propio (sin silencios, cambiar formato).
+  const whole = clean ? t.clean : job.options.mode === "reframe" ? t.reframe : null;
+  // El resultado es el vídeo entero (subtitulado, sin silencios o en otro formato), no varios clips.
+  const subtitle = job.options.mode === "subtitle" || !!whole;
   const thumbnail = job.options.mode === "thumbnail";
   const moreTask = job.more_clips_task;
   const searchingMore = !!moreTask && (moreTask.status === "queued" || moreTask.status === "running");
@@ -135,8 +137,8 @@ export default function ProjectPage() {
               {job.status === "done" && !thumbnail && (
                 <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
                   <ScissorsIcon className="size-3.5 text-brand-ink" />
-                  {clean
-                    ? t.clean.badge
+                  {whole
+                    ? whole.badge
                     : subtitle ? p.subtitledBadge(job.options.subtitle_language) : t.common.clips(job.clips.length)}
                 </span>
               )}
@@ -242,7 +244,7 @@ export default function ProjectPage() {
       {job.status === "done" && !thumbnail && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
           <h2 id="clips-title" className="text-xl font-semibold tracking-tight">
-            {clean ? t.clean.title : subtitle ? p.subtitledTitle : p.clipsTitle(job.clips.length)}
+            {whole ? whole.title : subtitle ? p.subtitledTitle : p.clipsTitle(job.clips.length)}
           </h2>
           <div className={cn("grid gap-5", subtitle
             ? job.frame === "horizontal" ? "max-w-3xl" : "max-w-sm"

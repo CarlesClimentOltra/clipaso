@@ -38,7 +38,7 @@ export default function NewProjectPage() {
         )}
       />
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {MODES.map((mode) => {
           const m = n.modes[mode.id];
           return (

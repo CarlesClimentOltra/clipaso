@@ -6,7 +6,7 @@ export const en: Dict = {
   meta: {
     title: "Clipaso · AI vertical clips",
     description:
-      "Clipaso turns your long videos into captioned clips for TikTok, Reels and Shorts, and also captions whole videos, removes silences and fillers and creates thumbnails with AI.",
+      "Clipaso turns your long videos into captioned clips for TikTok, Reels and Shorts, and also captions whole videos, removes silences and fillers, changes the format and creates thumbnails with AI.",
   },
   common: {
     cancel: "Cancel",
@@ -69,7 +69,7 @@ export const en: Dict = {
     titleStart: "Turn your long videos into",
     titleAccent: "viral clips",
     lead:
-      "Clipaso finds the best moments in your videos and turns them into clips ready for TikTok, Instagram Reels and YouTube Shorts. It also captions whole videos, removes silences and fillers and creates thumbnails. No manual editing.",
+      "Clipaso finds the best moments in your videos and turns them into clips ready for TikTok, Instagram Reels and YouTube Shorts. It also captions whole videos, removes silences and fillers, changes the format and creates thumbnails. No manual editing.",
     howButton: "How it works",
     trust: ["30 free minutes a month", "No card required", "Data in the EU"],
     marqueeLabel: "Clipaso benefits",
@@ -189,7 +189,7 @@ export const en: Dict = {
       lead: "If you can't find the answer, write to us and we'll help.",
       items: [
         ["Which videos work best?", "The ones with conversation: podcasts, interviews, talks, classes or streams. Clipaso picks moments based on what's said, so it needs dialogue."],
-        ["What else can I do besides clips?", "Caption a whole video (translated too), remove its silences and fillers like \"um\" or \"uh\", and generate a YouTube thumbnail and a TikTok cover. The thumbnail doesn't need the video to be uploaded and doesn't use minutes."],
+        ["What else can I do besides clips?", "Caption a whole video (translated too), remove its silences and fillers like \"um\" or \"uh\", convert it to another format (TikTok to YouTube, for example) and generate a YouTube thumbnail and a TikTok cover. The thumbnail doesn't need the video to be uploaded and doesn't use minutes."],
         ["How long does it take?", "A few minutes for a half-hour video. We email you when it's ready, so you can close the tab."],
         ["Can I edit the clips?", "Yes. In the editor you can move the start and end, fix caption words, add or remove captions, change the style and the cover, and generate the clip again. You can also ask for more clips from the same video without using minutes."],
         ["Which languages does it support?", "Spanish, English, Portuguese, French, Italian and German, among others, and it can detect the language automatically. Captions can be translated into Spanish, English, Portuguese, French, Italian, German or Catalan."],
@@ -282,7 +282,7 @@ export const en: Dict = {
     done: "Done",
     steps: [
       ["Choose your style and brand", "Your default caption style, your logo and your @handle.", "Customize"],
-      ["Create your first project", "Choose what to do: clips, captions, removing silences or a thumbnail.", "Start"],
+      ["Create your first project", "Choose what to do: clips, captions, removing silences, changing the format or a thumbnail.", "Start"],
       ["Review and tweak the result", "Adjust the cut, fix a word or change the cover in the editor.", "See projects"],
     ],
     complete: "All set! You've got the basics down.",
@@ -290,7 +290,7 @@ export const en: Dict = {
   dashboard: {
     eyebrow: "My projects",
     hello: (name: string) => (name ? `Hi, ${name}` : "Hi"),
-    lead: "Here are your projects: clips, captioned or silence-free videos, and thumbnails.",
+    lead: "Here are your projects: clips, captioned, silence-free or reformatted videos, and thumbnails.",
     statMinutes: "Minutes available",
     statMinutesHint: (used: string, limit: string) => `${used} of ${limit} used`,
     statProjects: "Projects",
@@ -309,10 +309,10 @@ export const en: Dict = {
     failed: "Couldn't be processed",
     expired: "Project expired",
     newTitle: "New project",
-    newText: "AI clips, captions, no silences or a thumbnail",
+    newText: "Clips, captions, no silences, new format or thumbnail",
     emptyTitle: "Create your first project",
     emptyText:
-      "Choose what to do with your video: turn its best moments into clips, caption it whole, remove its silences or create its thumbnail. It'll be ready in a few minutes.",
+      "Choose what to do with your video: turn its best moments into clips, caption it whole, remove its silences, convert its format or create its thumbnail. It'll be ready in a few minutes.",
     emptyButton: "Start",
     emptySteps: ["Choose what to do", "Upload your video", "Tweak and download"],
   },
@@ -366,6 +366,19 @@ export const en: Dict = {
           ["Great for", "Tutorials, talking-head videos, classes and commentary."],
           ["Music is kept", "Only silences are shortened: parts with music or sound stay."],
           ["See what was removed", "When it's done we tell you how much time, how many pauses and how many fillers."],
+          ["Feel free to leave", "We'll email you when it's ready."],
+        ],
+      },
+      reframe: {
+        title: "Change format",
+        card: "Turn your TikTok video into a YouTube one, YouTube into Reels or the Instagram feed, without manual editing.",
+        gets: ["Vertical, square or horizontal", "Follows the speaker or keeps the whole picture",
+               "Captions if you want them"],
+        lead: "Upload your video and choose the new format. We fit the picture so nothing important is lost.",
+        tips: [
+          ["Horizontal → vertical", "With \"Automatic\" we follow the speaker's face, like a camera operator."],
+          ["Vertical → horizontal", "The whole picture on a blurred background: nothing is cut."],
+          ["No speech needed", "It also works with music videos, landscapes or videos without dialogue."],
           ["Feel free to leave", "We'll email you when it's ready."],
         ],
       },
@@ -628,6 +641,22 @@ export const en: Dict = {
     pauses: (n: number) => (n === 1 ? "1 pause shortened" : `${n} pauses shortened`),
     fillers: (n: number) => (n === 1 ? "1 filler removed" : `${n} fillers removed`),
     nothing: "Your video was already to the point: no long pauses or fillers to remove.",
+  },
+  reframe: {
+    badge: "New format",
+    title: "Your video in its new format",
+    create: "Change format",
+    preparing: "We're changing your video's format",
+    steps: ["Preparing the video", "Listening to the audio", "Preparing the framing", "Generating your video"],
+    to: "Convert to",
+    same: "It's already in this format",
+    fit: "How to fit the picture",
+    fits: {
+      auto: ["Automatic", "Follows the speaker. If there's nothing to crop, uses the blurred background."],
+      blur_pad: ["Whole picture", "Nothing is cut: your whole video on a blurred background."],
+      center: ["Fill", "Fills the whole screen by cropping the edges from the center."],
+    } as Record<string, [string, string]>,
+    previewNote: "Approximate preview with a frame from your video.",
   },
   thumbnail: {
     badge: "Thumbnail",

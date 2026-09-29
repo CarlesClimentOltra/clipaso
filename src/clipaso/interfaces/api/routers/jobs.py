@@ -113,6 +113,8 @@ def create_job(
     now = utcnow()
     if body.mode == "thumbnail":  # las miniaturas no suben vídeo: van por POST /thumbnails
         raise AppError("validation_error")
+    if body.mode == "reframe" and body.format == "original":  # cambiar de formato exige un formato de destino
+        raise AppError("validation_error")
     options = body.model_dump(include=set(JobOptions.model_fields))
     if options["caption_style"] is None:  # el estilo por defecto del usuario, sin subtítulos salvo que se pidan
         options["caption_style"] = {**editing.get_preferences(user)[0].model_dump(), "enabled": False}

@@ -162,10 +162,12 @@ class JobRunner:
             )
             on_progress = lambda stage, overall: self._write_progress(job_id, stage, overall, state)  # noqa: E731
             clean_plan = None
-            if options.get("mode") == "subtitle":
-                # Solo subtitular: el vídeo entero (traducido si se pidió), sin que la IA elija momentos.
+            if options.get("mode") in ("subtitle", "reframe"):
+                # El vídeo entero (subtitulado o en otro formato), sin que la IA elija momentos. Al cambiar de
+                # formato no hace falta que se hable (vídeos de música, paisajes…).
                 result = pipeline.subtitle(str(source), opts, out_dir=tmp / "out", on_progress=on_progress,
-                                           translate_to=options.get("subtitle_language"))
+                                           translate_to=options.get("subtitle_language"),
+                                           allow_silent=options.get("mode") == "reframe")
             elif options.get("mode") == "clean":
                 # Sin silencios ni muletillas: a partir de aquí, el vídeo de trabajo es el ya limpio.
                 result, clean_plan = pipeline.clean(

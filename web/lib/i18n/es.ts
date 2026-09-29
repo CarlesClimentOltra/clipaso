@@ -6,7 +6,7 @@ export const es = {
   meta: {
     title: "Clipaso · Clips verticales con IA",
     description:
-      "Clipaso convierte tus vídeos largos en clips con subtítulos para TikTok, Reels y Shorts, y además subtitula vídeos enteros, quita silencios y muletillas y crea miniaturas con IA.",
+      "Clipaso convierte tus vídeos largos en clips con subtítulos para TikTok, Reels y Shorts, y además subtitula vídeos enteros, quita silencios y muletillas, cambia el formato y crea miniaturas con IA.",
   },
   common: {
     cancel: "Cancelar",
@@ -69,7 +69,7 @@ export const es = {
     titleStart: "Convierte tus vídeos largos en",
     titleAccent: "clips virales",
     lead:
-      "Clipaso encuentra los mejores momentos de tus vídeos y los convierte en clips listos para TikTok, Instagram Reels y YouTube Shorts. Y también subtitula vídeos enteros, quita silencios y muletillas y crea miniaturas. Sin editar a mano.",
+      "Clipaso encuentra los mejores momentos de tus vídeos y los convierte en clips listos para TikTok, Instagram Reels y YouTube Shorts. Y también subtitula vídeos enteros, quita silencios y muletillas, cambia el formato y crea miniaturas. Sin editar a mano.",
     howButton: "Cómo funciona",
     trust: ["30 min gratis al mes", "Sin tarjeta", "Datos en la UE"],
     marqueeLabel: "Ventajas de Clipaso",
@@ -189,7 +189,7 @@ export const es = {
       lead: "Si no encuentras la respuesta, escríbenos y te ayudamos.",
       items: [
         ["¿Qué vídeos funcionan mejor?", "Los que tienen conversación: podcasts, entrevistas, charlas, clases o directos. Clipaso elige los momentos a partir de lo que se dice, así que necesita diálogo."],
-        ["¿Qué más puedo hacer, además de clips?", "Subtitular un vídeo entero (también traducido), quitarle los silencios y las muletillas como «eh» o «mmm», y generar una miniatura para YouTube y una portada para TikTok. La miniatura no necesita subir el vídeo y no gasta minutos."],
+        ["¿Qué más puedo hacer, además de clips?", "Subtitular un vídeo entero (también traducido), quitarle los silencios y las muletillas como «eh» o «mmm», pasarlo a otro formato (de TikTok a YouTube, por ejemplo) y generar una miniatura para YouTube y una portada para TikTok. La miniatura no necesita subir el vídeo y no gasta minutos."],
         ["¿Cuánto tarda?", "Unos pocos minutos para un vídeo de media hora. Te avisamos por email cuando está listo, así que puedes cerrar la pestaña."],
         ["¿Puedo editar los clips?", "Sí. Desde el editor puedes mover el inicio y el final, corregir palabras de los subtítulos, añadir o quitar subtítulos, cambiar el estilo y la portada, y volver a generar el clip. También puedes pedir más clips del mismo vídeo sin gastar minutos."],
         ["¿En qué idiomas funciona?", "En español, inglés, portugués, francés, italiano y alemán, entre otros, y puede detectar el idioma automáticamente. Los subtítulos se pueden traducir a español, inglés, portugués, francés, italiano, alemán o catalán."],
@@ -282,7 +282,7 @@ export const es = {
     done: "Hecho",
     steps: [
       ["Elige tu estilo y tu marca", "Tu estilo de subtítulos por defecto, tu logo y tu @usuario.", "Personalizar"],
-      ["Crea tu primer proyecto", "Elige qué hacer: clips, subtítulos, quitar silencios o una miniatura.", "Empezar"],
+      ["Crea tu primer proyecto", "Elige qué hacer: clips, subtítulos, quitar silencios, cambiar el formato o una miniatura.", "Empezar"],
       ["Revisa y retoca el resultado", "Ajusta el corte, corrige una palabra o cambia la portada en el editor.", "Ver proyectos"],
     ],
     complete: "¡Todo listo! Ya dominas lo básico.",
@@ -290,7 +290,7 @@ export const es = {
   dashboard: {
     eyebrow: "Mis proyectos",
     hello: (name: string) => (name ? `Hola, ${name}` : "Hola"),
-    lead: "Aquí tienes tus proyectos: clips, vídeos subtitulados o sin silencios y miniaturas.",
+    lead: "Aquí tienes tus proyectos: clips, vídeos subtitulados, sin silencios o en otro formato, y miniaturas.",
     statMinutes: "Minutos disponibles",
     statMinutesHint: (used: string, limit: string) => `${used} de ${limit} usados`,
     statProjects: "Proyectos",
@@ -309,10 +309,10 @@ export const es = {
     failed: "No se pudo procesar",
     expired: "Proyecto caducado",
     newTitle: "Nuevo proyecto",
-    newText: "Clips con IA, subtítulos, sin silencios o miniatura",
+    newText: "Clips, subtítulos, sin silencios, otro formato o miniatura",
     emptyTitle: "Crea tu primer proyecto",
     emptyText:
-      "Elige qué quieres hacer con tu vídeo: sacar los mejores momentos en clips, subtitularlo entero, quitarle los silencios o crear su miniatura. En unos minutos lo tendrás listo.",
+      "Elige qué quieres hacer con tu vídeo: sacar los mejores momentos en clips, subtitularlo entero, quitarle los silencios, pasarlo a otro formato o crear su miniatura. En unos minutos lo tendrás listo.",
     emptyButton: "Empezar",
     emptySteps: ["Elige qué hacer", "Sube tu vídeo", "Retoca y descarga"],
   },
@@ -367,6 +367,19 @@ export const es = {
           ["Ideal para", "Tutoriales, vídeos a cámara, clases y opiniones."],
           ["La música se respeta", "Solo se acortan los silencios: los tramos con música o sonido se quedan."],
           ["Ves lo que se quitó", "Al terminar te decimos cuánto tiempo, cuántas pausas y cuántas muletillas."],
+          ["Puedes irte", "Te avisamos por email cuando esté listo."],
+        ],
+      },
+      reframe: {
+        title: "Cambiar formato",
+        card: "Pasa tu vídeo de TikTok a YouTube, de YouTube a Reels o al feed de Instagram, sin editar a mano.",
+        gets: ["Vertical, cuadrado u horizontal", "Sigue a quien habla o conserva la imagen entera",
+               "Subtítulos si los quieres"],
+        lead: "Sube tu vídeo y elige el formato nuevo. Nosotros encajamos la imagen para que no se pierda lo importante.",
+        tips: [
+          ["Horizontal → vertical", "Con «Automático» seguimos la cara de quien habla, como un cámara."],
+          ["Vertical → horizontal", "La imagen entera sobre un fondo desenfocado: no se corta nada."],
+          ["No hace falta voz", "Funciona también con vídeos de música, paisajes o sin diálogo."],
           ["Puedes irte", "Te avisamos por email cuando esté listo."],
         ],
       },
@@ -629,6 +642,22 @@ export const es = {
     pauses: (n: number) => (n === 1 ? "1 pausa acortada" : `${n} pausas acortadas`),
     fillers: (n: number) => (n === 1 ? "1 muletilla fuera" : `${n} muletillas fuera`),
     nothing: "Tu vídeo ya iba al grano: no había pausas largas ni muletillas que quitar.",
+  },
+  reframe: {
+    badge: "Nuevo formato",
+    title: "Tu vídeo en el nuevo formato",
+    create: "Cambiar formato",
+    preparing: "Estamos cambiando el formato de tu vídeo",
+    steps: ["Preparando el vídeo", "Escuchando el audio", "Preparando el encuadre", "Generando tu vídeo"],
+    to: "Pasarlo a",
+    same: "Ya está en este formato",
+    fit: "Cómo encajar la imagen",
+    fits: {
+      auto: ["Automático", "Sigue a quien habla. Si no hay nada que recortar, usa el fondo desenfocado."],
+      blur_pad: ["Imagen completa", "No se corta nada: tu vídeo entero sobre un fondo desenfocado."],
+      center: ["Rellenar", "Ocupa toda la pantalla recortando los bordes por el centro."],
+    } as Record<string, [string, string]>,
+    previewNote: "Vista aproximada con un fotograma de tu vídeo.",
   },
   thumbnail: {
     badge: "Miniatura",

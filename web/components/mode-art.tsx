@@ -43,6 +43,24 @@ export function ModeArt({ mode, className }: { mode: Mode; className?: string })
           ))}
         </div>
       )}
+      {mode === "reframe" && (
+        <div className="flex items-center gap-4">
+          <div className="aspect-9/16 w-14 rounded-lg border border-white/15 bg-white/10 p-1.5">
+            <div className="mx-auto mt-6 size-5 rounded-full bg-lime-300/80" />
+          </div>
+          <span className="flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="size-1.5 rounded-full bg-white/40 transition-colors duration-300 group-hover:bg-lime-300"
+                    style={{ transitionDelay: `${i * 80}ms` }} />
+            ))}
+          </span>
+          <div className="relative flex aspect-video w-36 items-center justify-center rounded-lg border border-white/15 bg-white/5">
+            <div className="flex aspect-9/16 h-full items-start justify-center bg-white/10 pt-3">
+              <div className="size-5 rounded-full bg-lime-300/80" />
+            </div>
+          </div>
+        </div>
+      )}
       {mode === "thumbnail" && (
         <div className="relative flex aspect-video w-44 flex-col justify-center gap-1.5 rounded-lg border border-white/15 bg-linear-to-br from-sky-500/60 to-fuchsia-500/50 p-3">
           <span className="h-4 w-24 rounded-sm bg-white shadow-[0_2px_0_#000]" />

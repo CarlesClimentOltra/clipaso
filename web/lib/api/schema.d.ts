@@ -923,11 +923,11 @@ export interface components {
         JobCreateIn: {
             /**
              * Mode
-             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
             /**
              * Subtitle Language
              * @description Vídeo entero: traducir los subtítulos a este idioma.
@@ -946,6 +946,13 @@ export interface components {
              * @default true
              */
             clean_fillers: boolean;
+            /**
+             * Reframe Fit
+             * @description Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).
+             * @default auto
+             * @enum {string}
+             */
+            reframe_fit: "auto" | "blur_pad" | "center";
             /**
              * Format
              * @default vertical
@@ -1005,11 +1012,11 @@ export interface components {
         JobOptions: {
             /**
              * Mode
-             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
             /**
              * Subtitle Language
              * @description Vídeo entero: traducir los subtítulos a este idioma.
@@ -1028,6 +1035,13 @@ export interface components {
              * @default true
              */
             clean_fillers: boolean;
+            /**
+             * Reframe Fit
+             * @description Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).
+             * @default auto
+             * @enum {string}
+             */
+            reframe_fit: "auto" | "blur_pad" | "center";
             /**
              * Format
              * @default vertical
@@ -1072,7 +1086,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
             /**
              * Status
              * @enum {string}
@@ -1131,7 +1145,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
             /**
              * Status
              * @enum {string}

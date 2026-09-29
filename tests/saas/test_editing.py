@@ -496,6 +496,21 @@ def test_subtitle_mode_video_gets_a_cover(client, sample_video, monkeypatch):
     assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"] is not None
 
 
+def test_reframe_mode_uses_the_chosen_format_and_fit(client, sample_video, monkeypatch):
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch, mode="reframe", format="vertical",
+                                     reframe_fit="blur_pad")
+    call = pipeline.calls[0]
+    assert call["kind"] == "subtitle" and call["allow_silent"]
+    profile = call["opts"].profile
+    assert (profile.width, profile.height, profile.reframe.value) == (1080, 1920, "blur_pad")
+    assert not profile.subtitles.enabled
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["options"]["reframe_fit"] == "blur_pad" and job["more_clips_available"] == 0
+    upload_id = upload_video(client, sample_video)
+    r = client.post("/jobs", json={"upload_id": upload_id, "mode": "reframe", "format": "original"}, headers=AUTH)
+    assert r.status_code == 400
+
+
 def test_subtitles_are_off_by_default_except_in_subtitle_mode(client, sample_video, monkeypatch):
     _, pipeline = processed_job(client, sample_video, monkeypatch)
     assert not pipeline.calls[0]["opts"].profile.subtitles.enabled

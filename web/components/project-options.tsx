@@ -27,6 +27,8 @@ export function ProjectOptions({
   background,
   sourceFrame = "horizontal",
   subtitlesExtra,
+  sameFormat,
+  fitPicker,
 }: {
   me: Me;
   value: ProjectOptionsValue;
@@ -38,18 +40,24 @@ export function ProjectOptions({
   sourceFrame?: ClipFormat;
   /** Ajustes que solo tienen sentido con subtítulos (p. ej. traducirlos); se muestran bajo los estilos. */
   subtitlesExtra?: React.ReactNode;
+  /** Cambiar formato: el formato que ya tiene el vídeo (no se puede elegir). */
+  sameFormat?: ClipFormat | null;
+  /** Cambiar formato: cómo encajar la imagen (va justo debajo del formato). */
+  fitPicker?: React.ReactNode;
 }) {
   const { data: options } = useClipOptions();
   const { data: prefs } = usePreferences();
   const { t } = useI18n();
   const o = t.options;
   const set = (patch: Partial<ProjectOptionsValue>) => onChange({ ...value, ...patch });
-  // Vídeo entero (solo subtitular o sin silencios): sin duración ni tema, y con el formato «original».
-  const subtitleMode = value.mode === "subtitle" || value.mode === "clean";
+  // Vídeo entero (subtitular, sin silencios o cambiar formato): sin duración ni tema.
+  const reframeMode = value.mode === "reframe";
+  const subtitleMode = value.mode === "subtitle" || value.mode === "clean" || reframeMode;
   const format: ClipFormat = value.format === "original" ? sourceFrame : (value.format as ClipFormat);
-  // «Original» solo tiene sentido al subtitular el vídeo entero (los clips se reencuadran siempre).
+  // «Original» solo tiene sentido con el vídeo entero y sin cambiar de formato (los clips se reencuadran siempre).
+  const withOriginal = subtitleMode && !reframeMode;
   const formats = (options?.formats ?? [])
-    .filter((f) => subtitleMode || f.id !== "original")
+    .filter((f) => withOriginal || f.id !== "original")
     .sort((a, b) => (subtitleMode ? Number(b.id === "original") - Number(a.id === "original") : 0));
   const hasBrand = !!prefs && (!!prefs.branding.handle || prefs.branding.has_logo);
   const durationHint = o.durations[value.duration]?.[1];
@@ -58,34 +66,41 @@ export function ProjectOptions({
   return (
     <div className="flex flex-col gap-6">
       <fieldset className="flex flex-col gap-2" disabled={disabled}>
-        <legend className="mb-2 text-sm font-medium">{o.format}</legend>
-        <div className={cn("grid gap-2", subtitleMode ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}
+        <legend className="mb-2 text-sm font-medium">{reframeMode ? t.reframe.to : o.format}</legend>
+        <div className={cn("grid gap-2", withOriginal ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}
              role="radiogroup" aria-label={o.format}>
           {formats.map((f) => {
             const Icon = FORMAT_ICON[f.id as ClipFormat] ?? SmartphoneIcon;
             const selected = value.format === f.id;
+            // Al cambiar de formato, el del propio vídeo no es una opción.
+            const same = reframeMode && f.id === sameFormat;
             return (
               <button
                 key={f.id}
                 type="button"
                 role="radio"
                 aria-checked={selected}
+                disabled={same}
                 onClick={() => set({ format: f.id as ProjectOptionsValue["format"] })}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl border p-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "flex items-center gap-3 rounded-xl border p-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-45",
                   selected ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:bg-muted/50",
                 )}
               >
                 <Icon className={cn("size-5 shrink-0", selected ? "text-brand-ink" : "text-muted-foreground")} />
                 <span>
                   <span className="block text-sm font-medium">{o.formats[f.id]?.[0] ?? f.label}</span>
-                  <span className="block text-xs text-muted-foreground">{o.formats[f.id]?.[1] ?? f.hint}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {same ? t.reframe.same : o.formats[f.id]?.[1] ?? f.hint}
+                  </span>
                 </span>
               </button>
             );
           })}
         </div>
       </fieldset>
+
+      {fitPicker}
 
       {!subtitleMode && (
         <>

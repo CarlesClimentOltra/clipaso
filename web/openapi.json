@@ -3411,10 +3411,11 @@
               "clips",
               "subtitle",
               "thumbnail",
-              "clean"
+              "clean",
+              "reframe"
             ],
             "title": "Mode",
-            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.",
             "default": "clips"
           },
           "subtitle_language": {
@@ -3446,6 +3447,17 @@
             "title": "Clean Fillers",
             "description": "Sin silencios: quitar también «eh», «em», «mmm»…",
             "default": true
+          },
+          "reframe_fit": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "blur_pad",
+              "center"
+            ],
+            "title": "Reframe Fit",
+            "description": "Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).",
+            "default": "auto"
           },
           "format": {
             "type": "string",
@@ -3556,10 +3568,11 @@
               "clips",
               "subtitle",
               "thumbnail",
-              "clean"
+              "clean",
+              "reframe"
             ],
             "title": "Mode",
-            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.",
             "default": "clips"
           },
           "subtitle_language": {
@@ -3591,6 +3604,17 @@
             "title": "Clean Fillers",
             "description": "Sin silencios: quitar también «eh», «em», «mmm»…",
             "default": true
+          },
+          "reframe_fit": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "blur_pad",
+              "center"
+            ],
+            "title": "Reframe Fit",
+            "description": "Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).",
+            "default": "auto"
           },
           "format": {
             "type": "string",
@@ -3665,7 +3689,8 @@
               "clips",
               "subtitle",
               "thumbnail",
-              "clean"
+              "clean",
+              "reframe"
             ],
             "title": "Mode",
             "default": "clips"
@@ -3856,7 +3881,8 @@
               "clips",
               "subtitle",
               "thumbnail",
-              "clean"
+              "clean",
+              "reframe"
             ],
             "title": "Mode",
             "default": "clips"

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
+import { ReframeFitPicker } from "@/components/reframe-fit-picker";
 import { Segmented } from "@/components/segmented";
 import { TrimSelector, type TrimRange } from "@/components/trim-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -69,12 +70,14 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
     caption_style: ProjectOptionsValue["caption_style"] | null;
   }>({
     // Con el vídeo entero, por defecto se respeta su formato; los clips, en vertical.
-    mode, subtitle_language: null, format: mode === "clips" ? "vertical" : "original", duration: "auto", topic: "",
+    mode, subtitle_language: null, format: mode === "clips" || mode === "reframe" ? "vertical" : "original", duration: "auto", topic: "",
     keep_source: true, branding: true, caption_style: null, clean_pace: "normal", clean_fillers: true,
+    reframe_fit: "auto",
   });
   const cleanMode = mode === "clean";
   // El resultado es el vídeo entero (solo subtitular o sin silencios).
-  const subtitleMode = mode === "subtitle" || cleanMode;
+  const reframeMode = mode === "reframe";
+  const subtitleMode = mode === "subtitle" || cleanMode || reframeMode;
   const { data: prefs } = usePreferences();
   const { data: catalog } = useClipOptions();
   // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo). Los subtítulos
@@ -314,7 +317,14 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
           onChange={setTrim}
           onDuration={(d, w, h) => {
             setDuration(d);
-            if (w && h) setSourceFrame(w / h < 0.8 ? "vertical" : w / h < 1.25 ? "square" : "horizontal");
+            if (!w || !h) return;
+            const frame: ClipFormat = w / h < 0.8 ? "vertical" : w / h < 1.25 ? "square" : "horizontal";
+            setSourceFrame(frame);
+            // Al cambiar de formato, el destino por defecto es el contrario al del vídeo.
+            if (reframeMode) {
+              setOptionsDraft((o) => (o.format === frame
+                ? { ...o, format: frame === "vertical" ? "horizontal" : "vertical" } : o));
+            }
           }}
           maxSeconds={maxSeconds}
           disabled={busy}
@@ -403,6 +413,12 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
           disabled={busy}
           sourceFrame={sourceFrame}
           subtitlesExtra={subtitleMode ? translateField : undefined}
+          sameFormat={reframeMode && duration ? sourceFrame : null}
+          fitPicker={reframeMode && (
+            <ReframeFitPicker value={optionsDraft.reframe_fit} disabled={busy} src={fileUrl}
+                              format={(options.format === "original" ? sourceFrame : options.format) as ClipFormat}
+                              onChange={(reframe_fit) => setOptionsDraft((o) => ({ ...o, reframe_fit }))} />
+          )}
           background={
             fileUrl ? (
               // Un fotograma del propio vídeo (del inicio del tramo) de fondo en la vista previa.
@@ -468,7 +484,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
       ) : (
         <Button size="lg" className="h-12 rounded-full text-base"
                 disabled={!file || !duration || outOfMinutes || tooLong || tooBig} onClick={submit}>
-          {cleanMode ? c.create : subtitleMode ? u.createSubtitle : u.create}
+          {cleanMode ? c.create : reframeMode ? t.reframe.create : subtitleMode ? u.createSubtitle : u.create}
         </Button>
       )}
       <p className="text-xs text-muted-foreground">

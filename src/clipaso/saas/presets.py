@@ -22,9 +22,12 @@ FORMATS: dict[str, dict] = {
     "original": {"label": "Original", "hint": "El mismo formato que tu vídeo", "profile": None},
 }
 FormatT = Literal["vertical", "square", "horizontal", "original"]
-ModeT = Literal["clips", "subtitle", "thumbnail", "clean"]
-WHOLE_VIDEO_MODES = ("subtitle", "clean")  # el resultado es el vídeo entero, no clips elegidos por la IA
+ModeT = Literal["clips", "subtitle", "thumbnail", "clean", "reframe"]
+WHOLE_VIDEO_MODES = ("subtitle", "clean", "reframe")  # el resultado es el vídeo entero, no clips de la IA
 CleanPaceT = Literal["natural", "normal", "fast"]
+# Cambiar formato: auto = sigue a quien habla (o fondo desenfocado si no hay nada que recortar),
+# blur_pad = la imagen completa sobre un fondo desenfocado, center = rellenar recortando por el centro.
+ReframeFitT = Literal["auto", "blur_pad", "center"]
 MAX_ORIGINAL_SHORT_SIDE = 1080  # el vídeo subtitulado sale como mucho en 1080p (4K se pide aparte)
 
 DURATIONS: dict[str, dict] = {

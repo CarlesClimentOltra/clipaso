@@ -11,6 +11,7 @@ import {
   ImageIcon,
   LoaderCircleIcon,
   PlusIcon,
+  RatioIcon,
   ScissorsIcon,
   SearchIcon,
   SparklesIcon,
@@ -134,6 +135,8 @@ function ProjectCard({ job }: { job: JobSummary }) {
               <><CaptionsIcon className="size-3" /> {t.project.subtitledBadge(null)}</>
             ) : job.mode === "clean" ? (
               <><AudioLinesIcon className="size-3" /> {t.clean.badge}</>
+            ) : job.mode === "reframe" ? (
+              <><RatioIcon className="size-3" /> {t.reframe.badge}</>
             ) : (
               <><ScissorsIcon className="size-3" /> {job.clip_count}</>
             )}

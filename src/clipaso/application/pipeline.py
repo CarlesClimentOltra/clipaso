@@ -341,8 +341,10 @@ class Pipeline:
         out_dir: Path,
         translate_to: str | None = None,
         on_progress: ProgressCallback | None = None,
+        allow_silent: bool = False,
     ) -> JobResult:
-        """Modo «solo subtitular»: el vídeo entero con subtítulos (traducidos si se pide), sin elegir momentos."""
+        """Modo «solo subtitular»: el vídeo entero con subtítulos (traducidos si se pide), sin elegir momentos.
+        También sirve para cambiar de formato; con `allow_silent`, un vídeo sin voz no es un error."""
         progress = ProgressReporter(on_progress, SUBTITLE_WEIGHTS)
         try:
             progress.report("ingest")
@@ -351,9 +353,10 @@ class Pipeline:
             audio = self._audio(source, ws)
             progress.report("transcribe")
             transcript = self._transcribe(audio, ws, opts, progress)
-            if not transcript.sentences:
+            if not transcript.sentences and not allow_silent:
                 raise ClipasoError("La transcripción está vacía")
-            return self._whole_video(source, ws, audio, transcript, opts, out_dir, progress, translate_to, "subtitle")
+            return self._whole_video(source, ws, audio, transcript, opts, out_dir, progress,
+                                     translate_to if transcript.sentences else None, "subtitle")
         finally:
             clear_job()
 
