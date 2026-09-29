@@ -29,6 +29,23 @@ SUBTITLE_WEIGHTS: dict[str, float] = {
     "translate": 0.12,
     "export": 0.35,
 }
+# Audiograma: se transcribe el audio, se dibuja la onda y se genera el vídeo (subtítulos opcionales).
+AUDIOGRAM_WEIGHTS: dict[str, float] = {
+    "ingest": 0.02,
+    "audio": 0.02,
+    "transcribe": 0.36,
+    "cut": 0.25,
+    "signals": 0.02,
+    "translate": 0.05,
+    "export": 0.28,
+}
+# Del vídeo al texto: casi todo es transcribir; después la IA escribe los textos ("write").
+TEXT_WEIGHTS: dict[str, float] = {
+    "ingest": 0.03,
+    "audio": 0.04,
+    "transcribe": 0.73,
+    "write": 0.2,
+}
 # Tráiler: se transcribe entero, la IA elige los momentos y se montan (el render final es corto).
 TRAILER_WEIGHTS: dict[str, float] = {
     "ingest": 0.03,

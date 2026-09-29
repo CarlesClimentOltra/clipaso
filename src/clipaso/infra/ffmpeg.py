@@ -71,6 +71,15 @@ def video_info(path: Path | str) -> tuple[int, int, float, float]:
     return width, height, fps or 30.0, duration
 
 
+def audio_duration(path: Path | str) -> float:
+    """Duración de un archivo de audio (o del audio de un vídeo). Error si no tiene audio."""
+    data = probe(path)
+    stream = next((s for s in data["streams"] if s.get("codec_type") == "audio"), None)
+    if stream is None:
+        raise RenderError(f"{_label(path)} no contiene audio")
+    return float(stream.get("duration") or data["format"].get("duration") or 0.0)
+
+
 def extract_audio(video: Path, dest: Path, sample_rate: int = 16000) -> Path:
     """WAV mono PCM16: lo que necesitan tanto Whisper como el análisis de energía."""
     run(

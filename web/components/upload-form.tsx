@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
+import { CheckIcon, FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
+import { AudiogramOptions } from "@/components/audiogram-options";
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
 import { ReframeFitPicker } from "@/components/reframe-fit-picker";
 import { Segmented } from "@/components/segmented";
@@ -21,11 +22,13 @@ import { ApiError, type Me } from "@/lib/api/client";
 import { useApi, useClipOptions, useCreateProject, usePreferences } from "@/lib/api/hooks";
 import { discardUpload, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useI18n } from "@/lib/i18n";
-import type { VideoMode } from "@/lib/modes";
+import { AUDIO_MODES, type VideoMode } from "@/lib/modes";
 import { MAX_CLIENT_TRIM_BYTES, preloadTrimmer, trimVideo } from "@/lib/trim";
 import { cn } from "@/lib/utils";
 
 const ACCEPT = [".mp4", ".mov", ".mkv", ".webm", ".m4v"];
+// Audiograma y «del vídeo al texto» también aceptan audio suelto.
+const AUDIO_ACCEPT = [".mp3", ".m4a", ".wav", ".ogg", ".opus", ".aac", ".flac"];
 const LANGUAGES = ["es", "en", "pt", "fr", "it", "de", "auto"];
 const SUBTITLE_LANGUAGES = ["es", "en", "pt", "fr", "it", "de", "ca"];
 
@@ -73,13 +76,18 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
     // Con el vídeo entero, por defecto se respeta su formato; los clips, en vertical.
     mode, subtitle_language: null, format: ["clips", "reframe", "trailer"].includes(mode) ? "vertical" : "original", duration: "auto", topic: "",
     keep_source: true, branding: true, caption_style: null, clean_pace: "normal", clean_fillers: true,
-    reframe_fit: "auto", trailer_seconds: 60,
+    reframe_fit: "auto", trailer_seconds: 60, audiogram_title: "", audiogram_color: "0F172A",
+    audiogram_accent: "B6E34A",
   });
   const cleanMode = mode === "clean";
   // El resultado es el vídeo entero (solo subtitular o sin silencios).
   const reframeMode = mode === "reframe";
   const trailerMode = mode === "trailer";
-  const subtitleMode = mode === "subtitle" || cleanMode || reframeMode || trailerMode;
+  const audiogramMode = mode === "audiogram";
+  const textMode = mode === "text";
+  const accept = AUDIO_MODES.includes(mode) ? [...ACCEPT, ...AUDIO_ACCEPT] : ACCEPT;
+  const [audiogramImage, setAudiogramImage] = useState<string | null>(null);
+  const subtitleMode = mode === "subtitle" || cleanMode || reframeMode || trailerMode || audiogramMode || textMode;
   const { data: prefs } = usePreferences();
   const { data: catalog } = useClipOptions();
   // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo). Los subtítulos
@@ -127,8 +135,8 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
     setFileError(null);
     if (!candidate) return;
     const ext = candidate.name.slice(candidate.name.lastIndexOf(".")).toLowerCase();
-    if (!ACCEPT.includes(ext)) {
-      setFileError(u.formatError);
+    if (!accept.includes(ext)) {
+      setFileError(AUDIO_MODES.includes(mode) ? u.formatErrorAudio : u.formatError);
       return;
     }
     // Un archivo más grande que el máximo se admite si luego se elige un tramo que sí quepa.
@@ -182,6 +190,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
         maxClips: subtitleMode ? 1 : maxClips,
         language,
         options: toSend ?? { ...optionsDraft, caption_style: null },
+        audiogramImage: audiogramMode ? audiogramImage : null,
         onUploadProgress: setProgress,
         onPhase: setPhase,
         signal: abortRef.current.signal,
@@ -263,7 +272,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
         <input
           ref={inputRef}
           type="file"
-          accept={ACCEPT.join(",") + ",video/*"}
+          accept={accept.join(",") + (AUDIO_MODES.includes(mode) ? ",video/*,audio/*" : ",video/*")}
           className="hidden"
           onChange={(e) => pick(e.target.files?.[0])}
         />
@@ -304,7 +313,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
             <div>
               <p className="font-medium">{u.drop}</p>
               <p className="text-sm text-muted-foreground">
-                {u.dropHint(formatBytes(maxBytes), me.plan.max_video_minutes)}
+                {(AUDIO_MODES.includes(mode) ? u.dropHintAudio : u.dropHint)(formatBytes(maxBytes), me.plan.max_video_minutes)}
               </p>
             </div>
           </>
@@ -437,7 +446,49 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
         </div>
       )}
 
-      {options && (
+      {audiogramMode && (
+        <AudiogramOptions
+          look={optionsDraft}
+          onChange={(look) => setOptionsDraft((o) => ({ ...o, ...look }))}
+          image={audiogramImage}
+          onImage={setAudiogramImage}
+          logoUrl={optionsDraft.branding && prefs?.branding.has_logo ? prefs.logo_url : null}
+          format={(optionsDraft.format === "original" ? "vertical" : optionsDraft.format) as ClipFormat}
+          disabled={busy}
+        />
+      )}
+
+      {textMode && (
+        <div className="grid gap-5 rounded-2xl border bg-muted/30 p-4 sm:grid-cols-2 sm:p-5">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="text-language">{t.text.language}</Label>
+            <select
+              id="text-language"
+              value={optionsDraft.subtitle_language ?? ""}
+              disabled={busy}
+              onChange={(e) => setOptionsDraft((d) => ({ ...d, subtitle_language: e.target.value || null }))}
+              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            >
+              <option value="">{t.text.sameLanguage}</option>
+              {SUBTITLE_LANGUAGES.map((l) => (
+                <option key={l} value={l}>{u.languages[l] ?? l}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{t.text.youGet}</span>
+            <ul className="flex flex-col gap-1 text-sm">
+              {t.text.items.map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckIcon className="mt-0.5 size-4 shrink-0 text-brand-ink" /> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {options && !textMode && (
         <ProjectOptions
           me={me}
           value={options}
@@ -516,7 +567,8 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
       ) : (
         <Button size="lg" className="h-12 rounded-full text-base"
                 disabled={!file || !duration || outOfMinutes || tooLong || tooBig} onClick={submit}>
-          {cleanMode ? c.create : reframeMode ? t.reframe.create : trailerMode ? tr.create : subtitleMode ? u.createSubtitle : u.create}
+          {cleanMode ? c.create : reframeMode ? t.reframe.create : trailerMode ? tr.create
+            : audiogramMode ? t.audiogram.create : textMode ? t.text.create : subtitleMode ? u.createSubtitle : u.create}
         </Button>
       )}
       <p className="text-xs text-muted-foreground">
@@ -525,7 +577,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
           {u.rightsTerms}
         </Link>
         ).{" "}
-        {optionsDraft.keep_source
+        {optionsDraft.keep_source && !textMode
           ? u.keepNote(me.plan.retention_days)
           : u.purgeNote}
       </p>

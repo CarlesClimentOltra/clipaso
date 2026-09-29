@@ -61,6 +61,8 @@ MESSAGES: dict[str, dict[str, str]] = {
                                    "en": "That quality isn't available for this clip."},
     "cover_busy": {"es": "Ya estamos preparando otra portada para este clip.",
                    "en": "We're already preparing another cover for this clip."},
+    "bad_image": {"es": "No hemos podido leer la imagen. Prueba con un JPG o PNG.",
+                  "en": "We couldn't read the image. Try a JPG or PNG."},
     "cover_frame": {"es": "No hemos podido sacar ese fotograma del vídeo. Prueba con otro momento.",
                     "en": "We couldn't get that frame from the video. Try another moment."},
     "thumbnail_frames": {"es": "No hemos podido leer los fotogramas del vídeo. Prueba con otro archivo.",
@@ -88,6 +90,8 @@ MESSAGES: dict[str, dict[str, str]] = {
     "account_busy": {"es": "Tienes vídeos procesándose. Espera a que terminen para eliminar tu cuenta.",
                      "en": "You have videos processing. Wait for them to finish before deleting your account."},
     # subidas
+    "audio_needs_audio_mode": {"es": "Con un archivo de audio puedes crear un audiograma o pasarlo a texto.",
+                               "en": "With an audio file you can create an audiogram or turn it into text."},
     "trim_too_short": {"es": "El tramo elegido debe durar al menos {min} segundos.",
                        "en": "The selected part must be at least {min} seconds long."},
     "upload_too_large": {"es": "El archivo supera el tamaño máximo de tu plan.",

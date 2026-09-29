@@ -19,6 +19,7 @@ import sentry_sdk
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
+from clipaso.application.audiogram import AudiogramStyle
 from clipaso.application.pipeline import PipelineOptions
 from clipaso.bootstrap import build_pipeline
 from clipaso.domain.errors import ClipasoError, ConfigurationError, SelectionError, SourceUnavailableError
@@ -161,9 +162,23 @@ class JobRunner:
                 branding=branding,
             )
             on_progress = lambda stage, overall: self._write_progress(job_id, stage, overall, state)  # noqa: E731
-            # Modos que montan un vídeo nuevo (sin silencios, tráiler): a partir de ahí es el vídeo de trabajo.
+            if options.get("mode") == "text":
+                self._run_text(job_id, pipeline, Path(source), opts, options, user_id, title, state, on_progress)
+                return
+            # Modos que montan un vídeo nuevo (sin silencios, tráiler, audiograma): a partir de ahí es el vídeo de
+            # trabajo (el editor y los re-renders parten de él).
             edited: tuple[str, dict, float] | None = None  # (clave de estadísticas, estadísticas, duración)
-            if options.get("mode") in ("subtitle", "reframe"):
+            if options.get("mode") == "audiogram":
+                style = AudiogramStyle(
+                    width=opts.profile.width, height=opts.profile.height, title=options.get("audiogram_title", ""),
+                    color=options.get("audiogram_color", "0F172A"), accent=options.get("audiogram_accent", "B6E34A"),
+                    image=self._audiogram_image(options, branding, tmp),
+                )
+                result = pipeline.audiogram(str(source), opts, out_dir=tmp / "out", style=style,
+                                            translate_to=options.get("subtitle_language"), on_progress=on_progress)
+                source = result.source.path
+                edited = ("", {}, result.source.duration)
+            elif options.get("mode") in ("subtitle", "reframe"):
                 # El vídeo entero (subtitulado o en otro formato), sin que la IA elija momentos. Al cambiar de
                 # formato no hace falta que se hable (vídeos de música, paisajes…).
                 result = pipeline.subtitle(str(source), opts, out_dir=tmp / "out", on_progress=on_progress,
@@ -228,7 +243,8 @@ class JobRunner:
                 job = s.get(Job, job_id)
                 if edited is not None:
                     stats_key, stats, new_duration = edited
-                    job.options = {**(job.options or {}), stats_key: stats}
+                    if stats_key:
+                        job.options = {**(job.options or {}), stats_key: stats}
                     if keep_source and job.upload_id and (upload := s.get(Upload, job.upload_id)):
                         upload.size_bytes = Path(source).stat().st_size
                         upload.duration_seconds = round(new_duration, 3)
@@ -270,6 +286,46 @@ class JobRunner:
             shutil.rmtree(tmp, ignore_errors=True)
             clear_job()
 
+    def _audiogram_image(self, options: dict, branding, tmp: Path) -> Path | None:
+        """Imagen de fondo del audiograma: la que subió el usuario o, si no, su logo."""
+        key = options.get("audiogram_image_key")
+        if key and (data := self.storage.read_bytes(key)):
+            path = tmp / "audiograma-fondo.jpg"
+            path.write_bytes(data)
+            return path
+        return branding.logo_path if branding and branding.logo_path else None
+
+    def _run_text(
+        self, job_id: str, pipeline, source: Path, opts: PipelineOptions, options: dict, user_id: str, title: str,
+        state: dict, on_progress,
+    ) -> None:
+        """Del vídeo al texto: transcripción + textos escritos por la IA. No hay vídeo que generar."""
+        from clipaso.application.writer import TextWriter
+        from clipaso.bootstrap import build_cost_tracker, build_fast_llm
+        from clipaso.domain.models import SignalSet
+
+        transcript, duration = pipeline.transcribe_only(str(source), opts, on_progress=on_progress)
+        self._write_progress(job_id, "write", 0.8, state, force=True)
+        cost = build_cost_tracker(self.settings)
+        language = options.get("subtitle_language") or transcript.language
+        texts = TextWriter(build_fast_llm(self.settings), cost).write(
+            transcript, duration=duration, language=language, title=title)
+        save_analysis(self.storage, user_id, job_id, transcript, SignalSet())
+        with session_scope(self.sessions) as s:
+            job = s.get(Job, job_id)
+            job.options = {**(job.options or {}), "text_results": texts}
+            job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0
+            job.finished_at = utcnow()
+            job.llm_cost_usd = round(cost.spent, 5)
+            if job.upload_id and (upload := s.get(Upload, job.upload_id)):
+                purge_upload(self.storage, upload)  # la transcripción ya está guardada: el original sobra
+            user = s.get(User, user_id)
+            email = clips_ready(user.email, title, 0, user.plan.retention_days,
+                                f"{self.settings.notifications.web_url}/projects/{job_id}",
+                                lang=(user.preferences or {}).get("locale", "es"), mode="text")
+        log.info("job.done", mode="text", chapters=len(texts["chapters"]), cost_usd=round(cost.spent, 4))
+        deliver(self.notifier, email)
+
     def _apply_trim(
         self, job_id: str, source: Path, options: dict, upload_key: str, content_type: str, tmp: Path,
     ) -> Path:
@@ -280,10 +336,13 @@ class JobRunner:
         faststart = ["-movflags", "+faststart"] if cut.suffix in (".mp4", ".mov", ".m4v") else []
         ffmpeg.run([
             "-ss", f"{start:.3f}", "-i", str(source), "-t", f"{end - start:.3f}",
-            "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy", "-avoid_negative_ts", "make_zero", *faststart,
+            "-map", "0:v:0?", "-map", "0:a:0?", "-c", "copy", "-avoid_negative_ts", "make_zero", *faststart,
             str(cut),
         ], what="recorte del tramo elegido")
-        width, height, _, duration = ffmpeg.video_info(cut)
+        if content_type.startswith("audio/"):
+            width, height, duration = None, None, ffmpeg.audio_duration(cut)
+        else:
+            width, height, _, duration = ffmpeg.video_info(cut)
         self.storage.put_file(upload_key, cut, content_type)
         with session_scope(self.sessions) as s:
             job = s.get(Job, job_id)

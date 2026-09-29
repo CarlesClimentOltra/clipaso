@@ -25,7 +25,15 @@ from clipaso.saas.plans import DEFAULT_PLAN
 log = get_logger(__name__)
 
 ALLOWED_EXTENSIONS = {".mp4": "video/mp4", ".mov": "video/quicktime", ".mkv": "video/x-matroska",
-                      ".webm": "video/webm", ".m4v": "video/mp4"}
+                      ".webm": "video/webm", ".m4v": "video/mp4",
+                      # Audio (audiograma y «del vídeo al texto»).
+                      ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".wav": "audio/wav", ".ogg": "audio/ogg",
+                      ".opus": "audio/ogg", ".aac": "audio/aac", ".flac": "audio/flac"}
+AUDIO_MODES = ("audiogram", "text")  # los únicos modos que aceptan un archivo de solo audio
+
+
+def is_audio(upload: Upload) -> bool:
+    return (upload.content_type or "").startswith("audio/")
 
 
 def user_folder(user_id: str) -> str:
@@ -216,7 +224,10 @@ def complete_upload(
 
     target = storage.local_path(upload.storage_key) or storage.signed_url(upload.storage_key, expires=signed_ttl)
     try:
-        width, height, _, duration = ffmpeg.video_info(target)
+        if is_audio(upload):
+            width, height, duration = None, None, ffmpeg.audio_duration(target)
+        else:
+            width, height, _, duration = ffmpeg.video_info(target)
     except ClipasoError as exc:
         _reject(storage, upload)
         raise AppError("invalid_video", detail=exc.detail) from exc
@@ -275,6 +286,8 @@ def create_job(
         raise AppError("too_many_jobs", 429)
 
     options = dict(options or {})
+    if is_audio(upload) and options.get("mode") not in AUDIO_MODES:
+        raise AppError("validation_error", key="audio_needs_audio_mode")
     if options.get("format") == "original":
         if not (upload.width and upload.height):
             raise AppError("upload_not_ready", 409)

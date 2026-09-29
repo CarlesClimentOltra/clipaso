@@ -10,6 +10,7 @@ implementación concreta: recibe los componentes ya construidos (ver
 
 from __future__ import annotations
 
+import hashlib
 import re
 import time
 import unicodedata
@@ -18,13 +19,16 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from clipaso.application import audiogram as audiogram_mod
 from clipaso.application import cleanup
 from clipaso.application import trailer as trailer_mod
 from clipaso.application.cleanup import CutPlan, PaceT
 from clipaso.application.cost import CostTracker
 from clipaso.application.progress import (
+    AUDIOGRAM_WEIGHTS,
     CLEAN_WEIGHTS,
     SUBTITLE_WEIGHTS,
+    TEXT_WEIGHTS,
     TRAILER_WEIGHTS,
     ProgressCallback,
     ProgressReporter,
@@ -454,6 +458,67 @@ class Pipeline:
                                        opts, out_dir, progress, translate_to, "trailer",
                                        texts=(plan.title, plan.description, plan.hashtags))
             return result, plan
+        finally:
+            clear_job()
+
+    def _audio_workspace(self, uri: str) -> tuple[Workspace, Path, float]:
+        """Workspace, WAV y duración de cualquier archivo con audio (también audio suelto, sin vídeo)."""
+        path = Path(uri)
+        size = path.stat().st_size
+        h = hashlib.sha256(str(size).encode())
+        with path.open("rb") as f:
+            h.update(f.read(4 * 1024 * 1024))
+        ws = Workspace(self.jobs_dir / f"audio-{h.hexdigest()[:20]}")
+        bind_job(job=ws.root.name)
+        duration = ffmpeg.audio_duration(path)
+        audio = ws.path("audio.wav")
+        if not audio.exists():
+            with stage("audio"):
+                ffmpeg.extract_audio(path, audio.with_suffix(".tmp.wav"))
+                audio.with_suffix(".tmp.wav").replace(audio)
+        return ws, audio, duration
+
+    def transcribe_only(
+        self, uri: str, opts: PipelineOptions, *, on_progress: ProgressCallback | None = None,
+    ) -> tuple[Transcript, float]:
+        """«Del vídeo al texto»: solo la transcripción (y la duración), de un vídeo o de un audio."""
+        progress = ProgressReporter(on_progress, TEXT_WEIGHTS)
+        try:
+            progress.report("ingest")
+            ws, audio, duration = self._audio_workspace(uri)
+            progress.report("transcribe")
+            transcript = self._transcribe(audio, ws, opts, progress)
+            if not transcript.sentences:
+                raise SelectionError("La transcripción está vacía")
+            return transcript, duration
+        finally:
+            clear_job()
+
+    def audiogram(
+        self,
+        uri: str,
+        opts: PipelineOptions,
+        *,
+        out_dir: Path,
+        style: audiogram_mod.AudiogramStyle,
+        translate_to: str | None = None,
+        on_progress: ProgressCallback | None = None,
+    ) -> JobResult:
+        """Audiograma: el audio con onda animada sobre un fondo, y después subtítulos, marca y portada como
+        cualquier otro vídeo. `result.source` es el vídeo del audiograma."""
+        progress = ProgressReporter(on_progress, AUDIOGRAM_WEIGHTS)
+        try:
+            progress.report("ingest")
+            ws, audio, _ = self._audio_workspace(uri)
+            progress.report("transcribe")
+            transcript = self._transcribe(audio, ws, opts, progress)  # sin voz (música) también vale
+            progress.report("cut")
+            with stage("audiogram"):
+                base = audiogram_mod.render(Path(uri), out_dir / "audiograma.mp4", ws.subdir("audiogram"), style)
+            video, video_ws = self._open(str(base), opts)
+            video_audio = self._audio(video, video_ws)
+            return self._whole_video(video, video_ws, video_audio, transcript, opts, out_dir, progress,
+                                     translate_to if transcript.sentences else None, "audiogram")
         finally:
             clear_job()
 

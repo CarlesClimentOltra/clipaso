@@ -52,10 +52,11 @@ export function ProjectOptions({
   const set = (patch: Partial<ProjectOptionsValue>) => onChange({ ...value, ...patch });
   // Vídeo entero (subtitular, sin silencios o cambiar formato): sin duración ni tema.
   const reframeMode = value.mode === "reframe";
-  const subtitleMode = ["subtitle", "clean", "trailer"].includes(value.mode ?? "") || reframeMode;
+  const subtitleMode = ["subtitle", "clean", "trailer", "audiogram"].includes(value.mode ?? "") || reframeMode;
   const format: ClipFormat = value.format === "original" ? sourceFrame : (value.format as ClipFormat);
   // «Original» solo tiene sentido con el vídeo entero y sin cambiar de formato (los clips se reencuadran siempre).
-  const withOriginal = subtitleMode && !reframeMode;
+  // Un audiograma no tiene formato propio (sale de un audio).
+  const withOriginal = subtitleMode && !reframeMode && value.mode !== "audiogram";
   const formats = (options?.formats ?? [])
     .filter((f) => withOriginal || f.id !== "original")
     .sort((a, b) => (subtitleMode ? Number(b.id === "original") - Number(a.id === "original") : 0));

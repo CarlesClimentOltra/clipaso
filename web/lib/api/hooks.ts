@@ -103,6 +103,8 @@ export type CreateProjectInput = {
   options: JobOptions;
   /** Tramo a recortar en el servidor (si no se pudo recortar en el navegador). */
   trim?: { start: number; end: number } | null;
+  /** Audiograma: imagen de fondo (JPEG en base64). */
+  audiogramImage?: string | null;
   onUploadProgress: (progress: UploadProgress) => void;
   onPhase: (phase: "uploading" | "checking" | "starting") => void;
   signal?: AbortSignal;
@@ -133,6 +135,7 @@ export function useCreateProject() {
             language: input.language,
             ...input.options,
             ...(input.trim ? { trim_start: input.trim.start, trim_end: input.trim.end } : {}),
+            ...(input.audiogramImage ? { audiogram_image: input.audiogramImage } : {}),
           },
         }),
       );
@@ -360,6 +363,23 @@ export function useDownloadCaptions() {
   });
 }
 
+/** Transcripción completa de un proyecto (texto por párrafos, SRT o VTT). */
+export function useDownloadTranscript() {
+  const api = useApi();
+  return useMutation({
+    mutationFn: async (v: { jobId: string; format: "txt" | "srt" | "vtt"; filename: string }) => {
+      const { data, response } = await api.GET("/jobs/{job_id}/transcript", {
+        params: { path: { job_id: v.jobId }, query: { format: v.format } },
+        parseAs: "blob",
+      });
+      if (!response.ok || !data) {
+        throw new ApiError("captions", dictionary().errors.captions, response.status);
+      }
+      saveBlob(data as Blob, v.filename);
+    },
+  });
+}
+
 /** Descargas del clip en otras calidades y en MP3. Se consulta mientras haga falta (menú abierto o algo generándose). */
 export function useClipExports(clipId: string, active: boolean) {
   const api = useApi();
@@ -389,7 +409,7 @@ export function downloadUrl(url: string) {
   a.click();
 }
 
-function saveBlob(blob: Blob, filename: string) {
+export function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

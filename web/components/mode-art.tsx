@@ -74,6 +74,34 @@ export function ModeArt({ mode, className }: { mode: Mode; className?: string })
           </div>
         </div>
       )}
+      {mode === "audiogram" && (
+        <div className="flex aspect-9/16 h-32 flex-col items-center justify-center gap-2 rounded-lg border border-white/15 bg-linear-to-b from-violet-500/40 to-slate-900 p-2">
+          <div className="size-10 rounded-md bg-white/25" />
+          <div className="flex h-6 items-center gap-0.5">
+            {[3, 6, 10, 5, 12, 7, 4, 9, 6, 3].map((v, i) => (
+              <span key={i} style={{ height: `${v * 2}px` }}
+                    className="w-1 rounded-full bg-lime-300 transition-transform duration-300 group-hover:scale-y-125" />
+            ))}
+          </div>
+          <span className="h-1.5 w-12 rounded-full bg-white/70" />
+        </div>
+      )}
+      {mode === "text" && (
+        <div className="flex items-center gap-4">
+          <div className="flex h-9 items-center gap-0.5">
+            {[4, 8, 14, 7, 16, 10, 5, 12, 6].map((v, i) => (
+              <span key={i} style={{ height: `${v * 2}px` }} className="w-1 rounded-full bg-white/30" />
+            ))}
+          </div>
+          <span className="text-lg text-white/40">→</span>
+          <div className="flex w-24 flex-col gap-1.5 rounded-lg border border-white/15 bg-white/10 p-3 transition-transform duration-300 group-hover:-translate-y-1">
+            <span className="h-2 w-14 rounded-full bg-lime-300" />
+            {[100, 80, 90, 60].map((w, i) => (
+              <span key={i} className="h-1.5 rounded-full bg-white/60" style={{ width: `${w}%` }} />
+            ))}
+          </div>
+        </div>
+      )}
       {mode === "thumbnail" && (
         <div className="relative flex aspect-video w-44 flex-col justify-center gap-1.5 rounded-lg border border-white/15 bg-linear-to-br from-sky-500/60 to-fuchsia-500/50 p-3">
           <span className="h-4 w-24 rounded-sm bg-white shadow-[0_2px_0_#000]" />

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import zipfile
 from collections.abc import Callable, Iterator
+from typing import Literal
 
 from fastapi import APIRouter, Query, Response
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
+from clipaso.adapters.exporters.subtitles import build_captions
 from clipaso.application.pipeline import slugify
 from clipaso.domain.ports import Storage
 from clipaso.interfaces.api.deps import DispatcherDep, SessionDep, SettingsDep, StorageDep, UserDep
@@ -23,6 +25,7 @@ from clipaso.interfaces.api.schemas import (
     ThumbnailIn,
 )
 from clipaso.saas import editing, services, thumbnails
+from clipaso.saas.artifacts import load_transcript
 from clipaso.saas.db import utcnow
 from clipaso.saas.dispatch import dispatch_job
 from clipaso.saas.errors import AppError, NotFound, translate, user_message
@@ -103,12 +106,60 @@ def job_out(session: Session, job: Job, user: User, storage: Storage, ttl: int) 
         options=JobOptions.model_validate(options),
         clean_stats=(job.options or {}).get("clean_stats"),
         trailer_stats=(job.options or {}).get("trailer_stats"),
+        text_results=(job.options or {}).get("text_results"),
         frame=result_frame(options),
         can_edit=can_edit,
         more_clips_available=editing.more_clips_available(job, user) if can_edit else 0,
         more_clips_task=TaskOut(status=task.status, error_message=user_message(task.error_code)) if task else None,
         clips=[clip_out(c, job, storage, ttl) for c in job.clips],
     )
+
+
+def audiogram_image(data: str) -> bytes:
+    """La imagen que manda el navegador, validada y reducida a JPEG (como mucho 1600 px)."""
+    import base64
+    import io
+
+    from PIL import Image, ImageOps, UnidentifiedImageError
+
+    try:
+        raw = base64.b64decode(data.split(",", 1)[-1], validate=False)
+        img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
+    except (ValueError, UnidentifiedImageError, OSError) as exc:
+        raise AppError("validation_error", key="bad_image") from exc
+    img.thumbnail((1600, 1600))
+    out = io.BytesIO()
+    img.save(out, "JPEG", quality=88)
+    return out.getvalue()
+
+
+@router.get("/{job_id}/transcript", response_class=PlainTextResponse)
+def job_transcript(
+    job_id: str, user: UserDep, session: SessionDep, storage: StorageDep,
+    format: Literal["txt", "srt", "vtt"] = Query("txt"),
+) -> Response:
+    """La transcripción completa del proyecto (texto por párrafos, SRT o VTT)."""
+    job = session.get(Job, job_id)
+    if job is None or job.user_id != user.id:
+        raise NotFound()
+    transcript = load_transcript(storage, user.id, job.id)
+    if transcript is None:
+        raise AppError("not_found", 404, key="no_transcript")
+    if format == "txt":
+        paragraphs: list[list[str]] = [[]]
+        last_end = None
+        for s in transcript.sentences:
+            if last_end is not None and s.start - last_end > 2.0 and paragraphs[-1]:
+                paragraphs.append([])
+            paragraphs[-1].append(s.text.strip())
+            last_end = s.end
+        text = "\n\n".join(" ".join(p) for p in paragraphs if p) + "\n"
+    else:
+        words = [w for s in transcript.sentences for w in s.words]
+        text = build_captions(words, format)
+    name = f"{slugify(job.title)}-transcripcion.{format}"
+    return Response(text, media_type="text/plain; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 @router.post("", response_model=JobOut, status_code=201)
@@ -126,10 +177,19 @@ def create_job(
         options["caption_style"] = {**editing.get_preferences(user)[0].model_dump(), "enabled": False}
     if body.mode == "subtitle":  # en «Solo subtitular» los subtítulos son el propio modo
         options["caption_style"]["enabled"] = True
+    if body.mode == "text":  # no hay vídeo que editar: el original se borra al terminar
+        options["keep_source"] = False
+    if body.mode in ("audiogram", "text") and options.get("format") == "original":
+        options["format"] = "vertical"  # un audio no tiene formato propio
+    image = audiogram_image(body.audiogram_image) if body.mode == "audiogram" and body.audiogram_image else None
     job = services.create_job(
         session, user, upload_id=body.upload_id, max_clips=body.max_clips, language=body.language, now=now,
         options=options, trim=(body.trim_start or 0.0, body.trim_end) if body.trim_end else None,
     )
+    if image is not None:  # la imagen de fondo del audiograma se guarda con el proyecto
+        key = f"{services.clips_prefix(user.id, job.id).rstrip('/')}/audiograma-fondo.jpg"
+        storage.put_bytes(key, image, "image/jpeg")
+        job.options = {**job.options, "audiogram_image_key": key}
     session.commit()  # el job debe existir antes de que un worker lo busque
     if dispatch_job(dispatcher, job, now):
         session.commit()

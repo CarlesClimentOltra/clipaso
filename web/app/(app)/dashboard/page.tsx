@@ -4,9 +4,11 @@ import Link from "next/link";
 import {
   AlertCircleIcon,
   AudioLinesIcon,
+  AudioWaveformIcon,
   CaptionsIcon,
   ClapperboardIcon,
   ClockIcon,
+  FileTextIcon,
   FilmIcon,
   FolderIcon,
   ImageIcon,
@@ -117,6 +119,8 @@ function ProjectCard({ job }: { job: JobSummary }) {
               <AlertCircleIcon className="size-8 text-destructive" />
             ) : active ? (
               <LoaderCircleIcon className="size-8 animate-spin text-brand-ink" />
+            ) : job.mode === "text" ? (
+              <FileTextIcon className="size-8 text-muted-foreground" />
             ) : (
               <FilmIcon className="size-8 text-muted-foreground" />
             )}
@@ -140,6 +144,10 @@ function ProjectCard({ job }: { job: JobSummary }) {
               <><RatioIcon className="size-3" /> {t.reframe.badge}</>
             ) : job.mode === "trailer" ? (
               <><ClapperboardIcon className="size-3" /> {t.trailer.badge}</>
+            ) : job.mode === "audiogram" ? (
+              <><AudioWaveformIcon className="size-3" /> {t.audiogram.badge}</>
+            ) : job.mode === "text" ? (
+              <><FileTextIcon className="size-3" /> {t.text.badge}</>
             ) : (
               <><ScissorsIcon className="size-3" /> {job.clip_count}</>
             )}

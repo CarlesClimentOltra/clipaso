@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const STEPS = [
   { key: "prepare", stages: ["queued", "starting", "ingest", "audio"] },
   { key: "transcribe", stages: ["transcribe"] },
-  { key: "analyze", stages: ["cut", "signals", "select", "translate"] },
+  { key: "analyze", stages: ["cut", "signals", "select", "translate", "write"] },
   { key: "render", stages: ["export", "preview"] },
 ] as const;
 
@@ -26,8 +26,9 @@ export function JobProgress({ job }: { job: Job }) {
   const queued = job.status === "queued";
   const { t } = useI18n();
   // Modos de vídeo entero con sus propios pasos (sin silencios, cambiar formato).
-  const whole = job.options.mode === "clean" ? t.clean : job.options.mode === "reframe" ? t.reframe
-    : job.options.mode === "trailer" ? t.trailer : null;
+  const whole = ({ clean: t.clean, reframe: t.reframe, trailer: t.trailer, audiogram: t.audiogram,
+                   text: t.text } as Record<string, { badge: string; title: string; preparing: string;
+                                                      steps: readonly string[] }>)[job.options.mode ?? ""] ?? null;
   const subtitle = job.options.mode === "subtitle" || !!whole;
   const labels = whole
     ? whole.steps

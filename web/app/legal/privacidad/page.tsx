@@ -36,9 +36,11 @@ export default function PrivacyPage() {
           añadas tú; Google trata tus datos según su propia política de privacidad.
         </li>
         <li>
-          <strong>Los vídeos que subes</strong> y lo que generamos a partir de ellos: el audio, su transcripción (y su
+          <strong>Los vídeos y audios que subes</strong> y lo que generamos a partir de ellos: el audio, su transcripción (y su
           traducción, si la pides), una versión ligera del vídeo para el editor, los clips o el vídeo completo ya
-          procesado (subtitulado o sin silencios), las portadas y miniaturas, los títulos, descripciones y hashtags, y
+          procesado (subtitulado, sin silencios, en otro formato, tráileres o audiogramas, con la imagen de fondo que
+          elijas), los textos escritos a partir de la transcripción (resumen, capítulos, artículos y posts), las portadas y
+          miniaturas, los títulos, descripciones y hashtags, y
           las correcciones que hagas. Si en tus vídeos aparecen o hablan otras personas, también tratamos su imagen y
           su voz por cuenta tuya (ver apartado 8).
         </li>

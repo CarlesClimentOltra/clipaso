@@ -516,6 +516,66 @@ def test_subtitle_mode_video_gets_a_cover(client, sample_video, monkeypatch):
     assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"] is not None
 
 
+def test_audio_uploads_only_for_audio_modes(client, sample_audio, sample_video, monkeypatch):
+    import base64
+    import io
+
+    from PIL import Image
+
+    upload_id = upload_video(client, sample_audio)  # un MP3 se sube y se mide como cualquier vídeo
+    r = client.post("/jobs", json={"upload_id": upload_id, "mode": "clips"}, headers=AUTH)
+    assert r.status_code == 400 and "audiograma" in r.json()["error"]["message"]
+
+    buf = io.BytesIO()
+    Image.new("RGB", (300, 300), (10, 120, 200)).save(buf, "PNG")
+    image = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+    pipeline = FakePipeline(video=sample_video)
+    job_id, _ = processed_job(client, sample_audio, monkeypatch, pipeline=pipeline, mode="audiogram",
+                              format="vertical", audiogram_title="Episodio 1", audiogram_accent="FF0055",
+                              audiogram_image=image)
+    call = pipeline.calls[0]
+    assert call["kind"] == "audiogram" and call["style"].title == "Episodio 1" and call["style"].accent == "FF0055"
+    assert (call["style"].width, call["style"].height) == (1080, 1920)
+    assert call["style"].image.name == "audiograma-fondo.jpg"
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["status"] == "done" and len(job["clips"]) == 1 and job["clips"][0]["video_url"]
+    assert "audiogram_image" not in job["options"]
+    with session_scope(client.app.state.sessions) as s:
+        row = s.get(Job, job_id)
+        upload = s.get(Upload, row.upload_id)
+        assert upload.content_type == "video/mp4"  # el editor parte del vídeo del audiograma
+        stored = client.app.state.storage.read_bytes(row.options["audiogram_image_key"])
+        assert stored and stored[:2] == b"\xff\xd8"  # guardada como JPEG
+    bad = client.post("/jobs", json={"upload_id": upload_video(client, sample_audio), "mode": "audiogram",
+                                     "audiogram_image": "no-es-una-imagen"}, headers=AUTH)
+    assert bad.status_code == 400
+
+
+def test_text_mode_writes_texts_and_offers_the_transcript(client, sample_audio, monkeypatch):
+    from clipaso.application import writer
+
+    written = {}
+
+    def fake_write(self, transcript, *, duration, language, title=""):
+        written.update(duration=duration, language=language, title=title)
+        return {"language": language, "summary": "Resumen", "key_points": ["Idea"], "chapters": [],
+                "chapters_text": "", "blog_title": "Blog", "blog_markdown": "Texto", "linkedin": "Post",
+                "thread": ["1/"], "seo_title": "SEO", "seo_description": "Desc", "seo_tags": ["ia"]}
+
+    monkeypatch.setattr(writer.TextWriter, "write", fake_write)
+    job_id, pipeline = processed_job(client, sample_audio, monkeypatch, mode="text", subtitle_language="en")
+    assert pipeline.calls[0]["kind"] == "transcribe_only"
+    assert written == {"duration": 6.0, "language": "en", "title": "podcast"}
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["status"] == "done" and job["clips"] == [] and job["text_results"]["summary"] == "Resumen"
+    assert job["can_edit"] is False  # el original se borra al terminar
+    txt = client.get(f"/jobs/{job_id}/transcript", headers=AUTH)
+    assert txt.status_code == 200 and txt.text.startswith("Hola a todos, esto es SmartCus.")
+    assert "attachment" in txt.headers["content-disposition"]
+    srt = client.get(f"/jobs/{job_id}/transcript?format=srt", headers=AUTH).text
+    assert srt.startswith("1\n00:00:00,200 --> ")
+
+
 def test_trailer_mode_replaces_the_source_and_reports_the_moments(client, sample_video, monkeypatch):
     job_id, pipeline = processed_job(client, sample_video, monkeypatch, mode="trailer", format="vertical",
                                      trailer_seconds=30, topic="dinero")

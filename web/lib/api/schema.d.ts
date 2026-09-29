@@ -275,6 +275,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs/{job_id}/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Job Transcript
+         * @description La transcripción completa del proyecto (texto por párrafos, SRT o VTT).
+         */
+        get: operations["job_transcript_jobs__job_id__transcript_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jobs": {
         parameters: {
             query?: never;
@@ -670,6 +690,13 @@ export interface components {
              */
             max_words: number;
         };
+        /** ChapterOut */
+        ChapterOut: {
+            /** Start */
+            start: number;
+            /** Title */
+            title: string;
+        };
         /**
          * CleanStatsOut
          * @description Lo que se quitó en el modo «sin silencios».
@@ -927,7 +954,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer" | "audiogram" | "text";
             /**
              * Subtitle Language
              * @description Vídeo entero: traducir los subtítulos a este idioma.
@@ -953,6 +980,24 @@ export interface components {
              * @enum {integer}
              */
             trailer_seconds: 30 | 60 | 90;
+            /**
+             * Audiogram Title
+             * @description Audiograma: título que se ve arriba (opcional).
+             * @default
+             */
+            audiogram_title: string;
+            /**
+             * Audiogram Color
+             * @description Audiograma: color del fondo si no hay imagen.
+             * @default 0F172A
+             */
+            audiogram_color: string;
+            /**
+             * Audiogram Accent
+             * @description Audiograma: color de la onda.
+             * @default B6E34A
+             */
+            audiogram_accent: string;
             /**
              * Reframe Fit
              * @description Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).
@@ -1011,6 +1056,11 @@ export interface components {
             trim_start?: number | null;
             /** Trim End */
             trim_end?: number | null;
+            /**
+             * Audiogram Image
+             * @description Audiograma: imagen de fondo (JPEG o PNG en base64).
+             */
+            audiogram_image?: string | null;
         };
         /**
          * JobOptions
@@ -1023,7 +1073,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer" | "audiogram" | "text";
             /**
              * Subtitle Language
              * @description Vídeo entero: traducir los subtítulos a este idioma.
@@ -1049,6 +1099,24 @@ export interface components {
              * @enum {integer}
              */
             trailer_seconds: 30 | 60 | 90;
+            /**
+             * Audiogram Title
+             * @description Audiograma: título que se ve arriba (opcional).
+             * @default
+             */
+            audiogram_title: string;
+            /**
+             * Audiogram Color
+             * @description Audiograma: color del fondo si no hay imagen.
+             * @default 0F172A
+             */
+            audiogram_color: string;
+            /**
+             * Audiogram Accent
+             * @description Audiograma: color de la onda.
+             * @default B6E34A
+             */
+            audiogram_accent: string;
             /**
              * Reframe Fit
              * @description Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).
@@ -1100,7 +1168,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer" | "audiogram" | "text";
             /**
              * Status
              * @enum {string}
@@ -1132,6 +1200,7 @@ export interface components {
             options: components["schemas"]["JobOptions"];
             clean_stats?: components["schemas"]["CleanStatsOut"] | null;
             trailer_stats?: components["schemas"]["TrailerStatsOut"] | null;
+            text_results?: components["schemas"]["TextResultsOut"] | null;
             /**
              * Frame
              * @description Encuadre de los clips (en el formato «original», el del vídeo).
@@ -1160,7 +1229,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer" | "audiogram" | "text";
             /**
              * Status
              * @enum {string}
@@ -1341,6 +1410,39 @@ export interface components {
             status: "queued" | "running" | "done" | "failed";
             /** Error Message */
             error_message: string | null;
+        };
+        /**
+         * TextResultsOut
+         * @description Del vídeo al texto: lo que escribió la IA a partir de la transcripción.
+         */
+        TextResultsOut: {
+            /** Language */
+            language: string;
+            /** Summary */
+            summary: string;
+            /** Key Points */
+            key_points: string[];
+            /** Chapters */
+            chapters: components["schemas"]["ChapterOut"][];
+            /**
+             * Chapters Text
+             * @description Los capítulos listos para pegar en la descripción de YouTube.
+             */
+            chapters_text: string;
+            /** Blog Title */
+            blog_title: string;
+            /** Blog Markdown */
+            blog_markdown: string;
+            /** Linkedin */
+            linkedin: string;
+            /** Thread */
+            thread: string[];
+            /** Seo Title */
+            seo_title: string;
+            /** Seo Description */
+            seo_description: string;
+            /** Seo Tags */
+            seo_tags: string[];
         };
         /** ThumbnailFrameIn */
         ThumbnailFrameIn: {
@@ -2571,6 +2673,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_transcript_jobs__job_id__transcript_get: {
+        parameters: {
+            query?: {
+                format?: "txt" | "srt" | "vtt";
+            };
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */

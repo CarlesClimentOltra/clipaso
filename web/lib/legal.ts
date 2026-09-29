@@ -26,16 +26,16 @@ export const legal = {
     },
     {
       name: "Modal",
-      role: "Procesamiento de los vídeos (transcripción, reencuadre, subtítulos y eliminación de silencios) en " +
-        "servidores con GPU",
+      role: "Procesamiento de los vídeos y audios (transcripción, reencuadre, subtítulos, eliminación de " +
+        "silencios, tráileres y audiogramas) en servidores con GPU",
       location: "Servidores en la UE",
       company: "Modal Labs, Inc. (EE. UU.)",
     },
     {
       name: "Anthropic",
-      role: "IA (Claude): elegir los mejores momentos para clips y tráileres, escribir títulos y textos, " +
-        "traducir subtítulos y proponer portadas y miniaturas. Recibe el texto transcrito y, para las portadas y miniaturas, unos pocos fotogramas; " +
-        "nunca el vídeo completo ni tu email",
+      role: "IA (Claude): elegir los mejores momentos para clips y tráileres, escribir títulos, resúmenes, " +
+        "artículos y posts, traducir subtítulos y proponer portadas y miniaturas. Recibe el texto transcrito y, " +
+        "para las portadas y miniaturas, unos pocos fotogramas; nunca el vídeo ni el audio completos, ni tu email",
       location: "EE. UU.",
       company: "Anthropic, PBC (EE. UU.)",
     },

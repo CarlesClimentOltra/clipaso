@@ -23,6 +23,7 @@ import { formatTime } from "@/lib/captions";
 import { ClipCard } from "@/components/clip-card";
 import { CoverEditor } from "@/components/editor/cover-editor";
 import { JobProgress } from "@/components/job-progress";
+import { TextResults } from "@/components/text-results";
 import { MoreClipsDialog } from "@/components/more-clips-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -85,8 +86,10 @@ export default function ProjectPage() {
   const active = job.status === "queued" || job.status === "running";
   const clean = job.options.mode === "clean";
   // Textos propios de los modos de vídeo entero con nombre propio (sin silencios, cambiar formato).
-  const whole = clean ? t.clean : job.options.mode === "reframe" ? t.reframe
-    : job.options.mode === "trailer" ? t.trailer : null;
+  const whole = ({ clean: t.clean, reframe: t.reframe, trailer: t.trailer, audiogram: t.audiogram,
+                   text: t.text } as Record<string, { badge: string; title: string; preparing: string;
+                                                      steps: readonly string[] }>)[job.options.mode ?? ""] ?? null;
+  const text = job.options.mode === "text";
   // El resultado es el vídeo entero (subtitulado, sin silencios o en otro formato), no varios clips.
   const subtitle = job.options.mode === "subtitle" || !!whole;
   const thumbnail = job.options.mode === "thumbnail";
@@ -131,10 +134,12 @@ export default function ProjectPage() {
                   <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
                     <ClockIcon className="size-3.5 text-brand-ink" /> {p.ofVideo(t.common.minutes(job.video_minutes))}
                   </span>
-                  <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
-                    <SmartphoneIcon className="size-3.5 text-brand-ink" />
-                    {t.options.formats[job.options.format ?? "vertical"]?.[0]}
-                  </span>
+                  {!text && (
+                    <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                      <SmartphoneIcon className="size-3.5 text-brand-ink" />
+                      {t.options.formats[job.options.format ?? "vertical"]?.[0]}
+                    </span>
+                  )}
                 </>
               )}
               {job.status === "done" && !thumbnail && (
@@ -230,7 +235,7 @@ export default function ProjectPage() {
           <AlertDescription>{moreTask.error_message}</AlertDescription>
         </Alert>
       )}
-      {job.status === "done" && !job.can_edit && !thumbnail && (
+      {job.status === "done" && !job.can_edit && !thumbnail && !text && (
         <p className="text-sm text-muted-foreground">
           {p.notEditable}
         </p>
@@ -251,7 +256,9 @@ export default function ProjectPage() {
         </p>
       )}
 
-      {job.status === "done" && !thumbnail && (
+      {job.status === "done" && text && job.text_results && <TextResults job={job} />}
+
+      {job.status === "done" && !thumbnail && !text && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
           <h2 id="clips-title" className="text-xl font-semibold tracking-tight">
             {whole ? whole.title : subtitle ? p.subtitledTitle : p.clipsTitle(job.clips.length)}

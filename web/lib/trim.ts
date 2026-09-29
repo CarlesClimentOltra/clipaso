@@ -83,7 +83,7 @@ export async function trimVideo(
       "-ss", start.toFixed(3),
       "-i", `${dir}/${file.name}`,
       "-t", duration.toFixed(3),
-      "-map", "0:v:0", "-map", "0:a:0?",
+      "-map", "0:v:0?", "-map", "0:a:0?",
       "-c", "copy",
       "-avoid_negative_ts", "make_zero",
       ...(ext === ".mp4" || ext === ".mov" || ext === ".m4v" ? ["-movflags", "+faststart"] : []),

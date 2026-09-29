@@ -73,9 +73,10 @@ class FakeResult:
 class FakePipeline:
     """Sustituye al pipeline real: genera "clips" copiando el vídeo de entrada."""
 
-    def __init__(self, fail: Exception | None = None, clips: int = 1):
+    def __init__(self, fail: Exception | None = None, clips: int = 1, video: Path | None = None):
         self.fail = fail
         self.clips = clips
+        self.video = video  # vídeo que «genera» el audiograma
         self.calls: list[dict] = []
 
     def _clip(self, uri, out_dir, rank, start, end, title, profile) -> ExportedClip:
@@ -128,6 +129,23 @@ class FakePipeline:
         result = FakeResult([exp])
         result.source = SimpleNamespace(path=cut)
         return result, TrailerPlan(segments=[(10.0, 12.0), (1.0, 2.0)], original=120.0)
+
+    def audiogram(self, uri, opts, *, out_dir, style, translate_to=None, on_progress=None):
+        self.calls.append({"kind": "audiogram", "opts": opts, "style": style, "uri": uri})
+        if self.fail:
+            raise self.fail
+        out_dir.mkdir(parents=True, exist_ok=True)
+        video = out_dir / "audiograma.mp4"
+        shutil.copyfile(self.video, video)  # un vídeo de verdad, como el que saldría del render
+        result = FakeResult([self._clip(str(video), out_dir, 1, 0.0, 3.0, opts.title or "Audio", opts.profile)])
+        result.source = SimpleNamespace(path=video, duration=3.0)
+        return result
+
+    def transcribe_only(self, uri, opts, *, on_progress=None):
+        self.calls.append({"kind": "transcribe_only", "opts": opts, "uri": uri})
+        if self.fail:
+            raise self.fail
+        return TRANSCRIPT, 6.0
 
     def render(self, uri, opts, clip, rank, transcript, out_dir):
         self.calls.append({"kind": "render", "opts": opts, "clip": clip, "transcript": transcript})

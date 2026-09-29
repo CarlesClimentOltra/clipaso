@@ -54,6 +54,8 @@ def project_profile(settings: Settings, options: dict, style_override: dict | No
         base = settings.load_profile(FORMATS.get(fmt, FORMATS["vertical"])["profile"] or "horizontal_16x9")
     if options.get("mode") == "reframe":  # cómo encaja la imagen en el nuevo formato lo elige el usuario
         base = base.model_copy(update={"reframe": ReframeMode(options.get("reframe_fit") or "auto")})
+    elif options.get("mode") == "audiogram":  # el audiograma ya se dibuja al tamaño exacto: nada que reencuadrar
+        base = base.model_copy(update={"reframe": ReframeMode.CENTER})
     return build_profile(base, duration=options.get("duration", "auto"), style=caption_style(options, style_override))
 
 

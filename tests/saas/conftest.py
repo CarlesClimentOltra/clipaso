@@ -25,6 +25,15 @@ def sample_video(tmp_path_factory) -> Path:
     return path
 
 
+@pytest.fixture(scope="session")
+def sample_audio(tmp_path_factory) -> Path:
+    """Audio real de 3 s (podcast o nota de voz)."""
+    path = tmp_path_factory.mktemp("media") / "podcast.mp3"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=330:duration=3",
+                    str(path)], check=True)
+    return path
+
+
 @pytest.fixture
 def settings(tmp_path) -> Settings:
     return Settings(data_dir=tmp_path / "data", output_dir=tmp_path / "out", _env_file=None)

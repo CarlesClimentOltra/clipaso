@@ -14,6 +14,7 @@ from clipaso.saas.presets import (
     CleanPaceT,
     DurationT,
     FormatT,
+    HexColor,
     ModeT,
     ReframeFitT,
     TrailerSecondsT,
@@ -127,6 +128,9 @@ class JobOptions(BaseModel):
                                                           "o fast (ritmo rápido, estilo YouTube).")
     clean_fillers: bool = Field(True, description="Sin silencios: quitar también «eh», «em», «mmm»…")
     trailer_seconds: TrailerSecondsT = Field(60, description="Tráiler: duración aproximada en segundos.")
+    audiogram_title: str = Field("", max_length=90, description="Audiograma: título que se ve arriba (opcional).")
+    audiogram_color: HexColor = Field("0F172A", description="Audiograma: color del fondo si no hay imagen.")
+    audiogram_accent: HexColor = Field("B6E34A", description="Audiograma: color de la onda.")
     reframe_fit: ReframeFitT = Field("auto", description="Cambiar formato: auto (sigue a quien habla), blur_pad "
                                                           "(imagen completa con fondo desenfocado) o center "
                                                           "(rellenar recortando).")
@@ -160,6 +164,8 @@ class JobCreateIn(JobOptions):
     trim_start: float | None = Field(None, ge=0, description="Usar solo un tramo del vídeo (si no se recortó "
                                                              "ya en el navegador): inicio en segundos.")
     trim_end: float | None = Field(None, gt=0)
+    audiogram_image: str | None = Field(None, max_length=4_000_000,
+                                        description="Audiograma: imagen de fondo (JPEG o PNG en base64).")
 
 
 ClipStatusT = Literal["ready", "rendering", "failed"]
@@ -370,12 +376,35 @@ class TrailerStatsOut(BaseModel):
     moments: int
 
 
+class ChapterOut(BaseModel):
+    start: float
+    title: str
+
+
+class TextResultsOut(BaseModel):
+    """Del vídeo al texto: lo que escribió la IA a partir de la transcripción."""
+
+    language: str
+    summary: str
+    key_points: list[str]
+    chapters: list[ChapterOut]
+    chapters_text: str = Field(description="Los capítulos listos para pegar en la descripción de YouTube.")
+    blog_title: str
+    blog_markdown: str
+    linkedin: str
+    thread: list[str]
+    seo_title: str
+    seo_description: str
+    seo_tags: list[str]
+
+
 class JobOut(JobSummary):
     error_code: str | None
     error_message: str | None
     options: JobOptions
     clean_stats: CleanStatsOut | None = None
     trailer_stats: TrailerStatsOut | None = None
+    text_results: TextResultsOut | None = None
     frame: Literal["vertical", "square", "horizontal"] = Field(
         description="Encuadre de los clips (en el formato «original», el del vídeo).")
     can_edit: bool = Field(description="Se conserva el original: se puede editar y pedir más clips.")

@@ -1280,6 +1280,94 @@
         }
       }
     },
+    "/jobs/{job_id}/transcript": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Job Transcript",
+        "description": "La transcripción completa del proyecto (texto por párrafos, SRT o VTT).",
+        "operationId": "job_transcript_jobs__job_id__transcript_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "txt",
+                "srt",
+                "vtt"
+              ],
+              "type": "string",
+              "default": "txt",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobs": {
       "get": {
         "tags": [
@@ -2697,6 +2785,24 @@
         "title": "CaptionStyle",
         "description": "Estilo de subtítulos tal como lo elige el usuario."
       },
+      "ChapterOut": {
+        "properties": {
+          "start": {
+            "type": "number",
+            "title": "Start"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "title"
+        ],
+        "title": "ChapterOut"
+      },
       "CleanStatsOut": {
         "properties": {
           "original_seconds": {
@@ -3437,7 +3543,9 @@
               "thumbnail",
               "clean",
               "reframe",
-              "trailer"
+              "trailer",
+              "audiogram",
+              "text"
             ],
             "title": "Mode",
             "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato · trailer: un resumen corto con los mejores momentos.",
@@ -3483,6 +3591,27 @@
             "title": "Trailer Seconds",
             "description": "Tráiler: duración aproximada en segundos.",
             "default": 60
+          },
+          "audiogram_title": {
+            "type": "string",
+            "maxLength": 90,
+            "title": "Audiogram Title",
+            "description": "Audiograma: título que se ve arriba (opcional).",
+            "default": ""
+          },
+          "audiogram_color": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Audiogram Color",
+            "description": "Audiograma: color del fondo si no hay imagen.",
+            "default": "0F172A"
+          },
+          "audiogram_accent": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Audiogram Accent",
+            "description": "Audiograma: color de la onda.",
+            "default": "B6E34A"
           },
           "reframe_fit": {
             "type": "string",
@@ -3588,6 +3717,19 @@
               }
             ],
             "title": "Trim End"
+          },
+          "audiogram_image": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audiogram Image",
+            "description": "Audiograma: imagen de fondo (JPEG o PNG en base64)."
           }
         },
         "type": "object",
@@ -3606,7 +3748,9 @@
               "thumbnail",
               "clean",
               "reframe",
-              "trailer"
+              "trailer",
+              "audiogram",
+              "text"
             ],
             "title": "Mode",
             "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato · trailer: un resumen corto con los mejores momentos.",
@@ -3652,6 +3796,27 @@
             "title": "Trailer Seconds",
             "description": "Tráiler: duración aproximada en segundos.",
             "default": 60
+          },
+          "audiogram_title": {
+            "type": "string",
+            "maxLength": 90,
+            "title": "Audiogram Title",
+            "description": "Audiograma: título que se ve arriba (opcional).",
+            "default": ""
+          },
+          "audiogram_color": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Audiogram Color",
+            "description": "Audiograma: color del fondo si no hay imagen.",
+            "default": "0F172A"
+          },
+          "audiogram_accent": {
+            "type": "string",
+            "pattern": "^[0-9A-Fa-f]{6}$",
+            "title": "Audiogram Accent",
+            "description": "Audiograma: color de la onda.",
+            "default": "B6E34A"
           },
           "reframe_fit": {
             "type": "string",
@@ -3739,7 +3904,9 @@
               "thumbnail",
               "clean",
               "reframe",
-              "trailer"
+              "trailer",
+              "audiogram",
+              "text"
             ],
             "title": "Mode",
             "default": "clips"
@@ -3863,6 +4030,16 @@
               }
             ]
           },
+          "text_results": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextResultsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "frame": {
             "type": "string",
             "enum": [
@@ -3942,7 +4119,9 @@
               "thumbnail",
               "clean",
               "reframe",
-              "trailer"
+              "trailer",
+              "audiogram",
+              "text"
             ],
             "title": "Mode",
             "default": "clips"
@@ -4480,6 +4659,88 @@
           "error_message"
         ],
         "title": "TaskOut"
+      },
+      "TextResultsOut": {
+        "properties": {
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Points"
+          },
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/ChapterOut"
+            },
+            "type": "array",
+            "title": "Chapters"
+          },
+          "chapters_text": {
+            "type": "string",
+            "title": "Chapters Text",
+            "description": "Los capítulos listos para pegar en la descripción de YouTube."
+          },
+          "blog_title": {
+            "type": "string",
+            "title": "Blog Title"
+          },
+          "blog_markdown": {
+            "type": "string",
+            "title": "Blog Markdown"
+          },
+          "linkedin": {
+            "type": "string",
+            "title": "Linkedin"
+          },
+          "thread": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Thread"
+          },
+          "seo_title": {
+            "type": "string",
+            "title": "Seo Title"
+          },
+          "seo_description": {
+            "type": "string",
+            "title": "Seo Description"
+          },
+          "seo_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Seo Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "language",
+          "summary",
+          "key_points",
+          "chapters",
+          "chapters_text",
+          "blog_title",
+          "blog_markdown",
+          "linkedin",
+          "thread",
+          "seo_title",
+          "seo_description",
+          "seo_tags"
+        ],
+        "title": "TextResultsOut",
+        "description": "Del vídeo al texto: lo que escribió la IA a partir de la transcripción."
       },
       "ThumbnailFrameIn": {
         "properties": {
