@@ -114,8 +114,10 @@ def create_job(
     if body.mode == "thumbnail":  # las miniaturas no suben vídeo: van por POST /thumbnails
         raise AppError("validation_error")
     options = body.model_dump(include=set(JobOptions.model_fields))
-    if options["caption_style"] is None:  # el estilo por defecto del usuario
-        options["caption_style"] = editing.get_preferences(user)[0].model_dump()
+    if options["caption_style"] is None:  # el estilo por defecto del usuario, sin subtítulos salvo que se pidan
+        options["caption_style"] = {**editing.get_preferences(user)[0].model_dump(), "enabled": False}
+    if body.mode == "subtitle":  # en «Solo subtitular» los subtítulos son el propio modo
+        options["caption_style"]["enabled"] = True
     job = services.create_job(
         session, user, upload_id=body.upload_id, max_clips=body.max_clips, language=body.language, now=now,
         options=options, trim=(body.trim_start or 0.0, body.trim_end) if body.trim_end else None,

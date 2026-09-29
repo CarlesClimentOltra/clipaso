@@ -13,8 +13,9 @@ export default function TermsPage() {
       <p className="updated">Última actualización: {legal.updatedAt}</p>
 
       <p>
-        Estos términos regulan el uso de Clipaso, un servicio que convierte vídeos largos en clips verticales con
-        subtítulos mediante inteligencia artificial, prestado por {owner.name} (en adelante, «Clipaso»). Al crear una
+        Estos términos regulan el uso de Clipaso, un servicio que, mediante inteligencia artificial, convierte vídeos
+        largos en clips con subtítulos, subtitula vídeos completos, quita silencios y muletillas y crea portadas y
+        miniaturas, prestado por {owner.name} (en adelante, «Clipaso»). Al crear una
         cuenta o usar el servicio los aceptas. Si no estás de acuerdo, no uses el servicio.
       </p>
 

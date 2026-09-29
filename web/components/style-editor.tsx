@@ -88,20 +88,11 @@ export function StyleEditor({
   const { t } = useI18n();
   const s = t.styles;
   const set = (patch: Partial<CaptionStyle>) => onChange({ ...value, ...patch });
-  const enabled = value.enabled !== false;
-  const off = disabled || !enabled;
+  // Activar o quitar los subtítulos se hace fuera (interruptor «Añadir subtítulos» del selector).
+  const off = disabled;
 
   return (
     <div className="@container flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/60 px-4 py-3">
-        <div>
-          <Label htmlFor="subs-enabled">{s.burnIn}</Label>
-          <p className="text-xs text-muted-foreground">{s.burnInHint}</p>
-        </div>
-        <Switch id="subs-enabled" checked={enabled} disabled={disabled}
-                onCheckedChange={(c: boolean) => set({ enabled: c })} />
-      </div>
-
       <Section icon={TypeIcon} title={s.sections.text}>
         <div className="grid gap-4 @md:grid-cols-2">
           <div className="flex flex-col gap-2">

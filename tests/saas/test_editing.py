@@ -496,6 +496,14 @@ def test_subtitle_mode_video_gets_a_cover(client, sample_video, monkeypatch):
     assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"] is not None
 
 
+def test_subtitles_are_off_by_default_except_in_subtitle_mode(client, sample_video, monkeypatch):
+    _, pipeline = processed_job(client, sample_video, monkeypatch)
+    assert not pipeline.calls[0]["opts"].profile.subtitles.enabled
+    style = {"font": "Anton", "enabled": False}
+    _, pipeline = processed_job(client, sample_video, monkeypatch, mode="subtitle", caption_style=style)
+    assert pipeline.calls[0]["opts"].profile.subtitles.enabled
+
+
 def test_clean_mode_replaces_the_source_and_reports_what_was_removed(client, sample_video, monkeypatch):
     job_id, pipeline = processed_job(client, sample_video, monkeypatch, mode="clean", format="original",
                                      clean_pace="fast", clean_fillers=False, subtitle_language="en")

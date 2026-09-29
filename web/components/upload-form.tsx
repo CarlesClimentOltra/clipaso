@@ -2,22 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  AudioLinesIcon,
-  CaptionsIcon,
-  FileVideoIcon,
-  ImageIcon,
-  ScissorsIcon,
-  UploadCloudIcon,
-  XIcon,
-} from "lucide-react";
+import { FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
 import { Segmented } from "@/components/segmented";
-import { ThumbnailForm } from "@/components/thumbnail-form";
 import { TrimSelector, type TrimRange } from "@/components/trim-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -28,6 +19,7 @@ import { ApiError, type Me } from "@/lib/api/client";
 import { useApi, useClipOptions, useCreateProject, usePreferences } from "@/lib/api/hooks";
 import { discardUpload, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useI18n } from "@/lib/i18n";
+import type { VideoMode } from "@/lib/modes";
 import { MAX_CLIENT_TRIM_BYTES, preloadTrimmer, trimVideo } from "@/lib/trim";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +48,8 @@ function formatSpeed(bytesPerSecond: number): string {
   return `${mbps >= 10 ? Math.round(mbps) : mbps.toFixed(1)} Mbit/s`;
 }
 
-export function UploadForm({ me }: { me: Me }) {
+/** Subir y configurar un proyecto de un modo que ya se eligió en «Nuevo proyecto». */
+export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -75,20 +68,26 @@ export function UploadForm({ me }: { me: Me }) {
   const [optionsDraft, setOptionsDraft] = useState<Omit<ProjectOptionsValue, "caption_style"> & {
     caption_style: ProjectOptionsValue["caption_style"] | null;
   }>({
-    mode: "clips", subtitle_language: null, format: "vertical", duration: "auto", topic: "", keep_source: true,
-    branding: true, caption_style: null, clean_pace: "normal", clean_fillers: true,
+    // Con el vídeo entero, por defecto se respeta su formato; los clips, en vertical.
+    mode, subtitle_language: null, format: mode === "clips" ? "vertical" : "original", duration: "auto", topic: "",
+    keep_source: true, branding: true, caption_style: null, clean_pace: "normal", clean_fillers: true,
   });
-  const cleanMode = optionsDraft.mode === "clean";
+  const cleanMode = mode === "clean";
   // El resultado es el vídeo entero (solo subtitular o sin silencios).
-  const subtitleMode = optionsDraft.mode === "subtitle" || cleanMode;
+  const subtitleMode = mode === "subtitle" || cleanMode;
   const { data: prefs } = usePreferences();
   const { data: catalog } = useClipOptions();
-  // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo).
-  const defaultStyle = prefs?.caption_style ?? catalog?.presets[0]?.style ?? null;
+  // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo). Los subtítulos
+  // van desactivados salvo en «Solo subtitular», donde son el propio modo.
+  const baseStyle = prefs?.caption_style ?? catalog?.presets[0]?.style ?? null;
+  const defaultStyle = baseStyle && { ...baseStyle, enabled: mode === "subtitle" };
   const options: ProjectOptionsValue | null =
     optionsDraft.caption_style ?? defaultStyle
       ? { ...optionsDraft, caption_style: (optionsDraft.caption_style ?? defaultStyle)! }
       : null;
+  const subtitlesOn = mode === "subtitle" || options?.caption_style.enabled === true;
+  // Sin subtítulos no hay nada que traducir.
+  const toSend = options && { ...options, subtitle_language: subtitlesOn ? options.subtitle_language : null };
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const cancelledRef = useRef(false);
   const { t, locale } = useI18n();
@@ -177,7 +176,7 @@ export function UploadForm({ me }: { me: Me }) {
         trim: prepared.serverTrim,
         maxClips: subtitleMode ? 1 : maxClips,
         language,
-        options: options ?? { ...optionsDraft, caption_style: null },
+        options: toSend ?? { ...optionsDraft, caption_style: null },
         onUploadProgress: setProgress,
         onPhase: setPhase,
         signal: abortRef.current.signal,
@@ -206,70 +205,28 @@ export function UploadForm({ me }: { me: Me }) {
     setProgress(null);
   }
 
-  function setMode(mode: ProjectOptionsValue["mode"]) {
-    const whole = mode === "subtitle" || mode === "clean";
-    setOptionsDraft((d) => ({
-      ...d,
-      mode,
-      // Con el vídeo entero, por defecto se respeta su formato; los clips, en vertical.
-      format: whole ? "original" : d.format === "original" ? "vertical" : d.format,
-      subtitle_language: whole ? d.subtitle_language : null,
-    }));
-  }
-
-  const MODES = [
-    { id: "clips" as const, icon: ScissorsIcon, title: u.modes.clips[0], text: u.modes.clips[1] },
-    { id: "subtitle" as const, icon: CaptionsIcon, title: u.modes.subtitle[0], text: u.modes.subtitle[1] },
-    { id: "clean" as const, icon: AudioLinesIcon, title: u.modes.clean[0], text: u.modes.clean[1] },
-    { id: "thumbnail" as const, icon: ImageIcon, title: u.modes.thumbnail[0], text: u.modes.thumbnail[1] },
-  ];
   const c = t.clean;
-
-  const modeCards = (
-    <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={u.modeLabel}>
-      {MODES.map((m) => {
-        const selected = optionsDraft.mode === m.id;
-        return (
-          <button
-            key={m.id}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            disabled={busy}
-            onClick={() => setMode(m.id)}
-            className={cn(
-              "flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              selected ? "border-primary bg-brand-soft/60 ring-1 ring-primary" : "hover:bg-muted/50",
-            )}
-          >
-            <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl",
-                                selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-              <m.icon className="size-5" />
-            </span>
-            <span>
-              <span className="block font-medium">{m.title}</span>
-              <span className="block text-sm text-muted-foreground">{m.text}</span>
-            </span>
-          </button>
-        );
-      })}
+  const translateField = (
+    <div className="flex max-w-sm flex-col gap-2">
+      <Label htmlFor="subtitle-language">{u.subtitleLanguage}</Label>
+      <select
+        id="subtitle-language"
+        value={optionsDraft.subtitle_language ?? ""}
+        disabled={busy}
+        onChange={(e) => setOptionsDraft((d) => ({ ...d, subtitle_language: e.target.value || null }))}
+        className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+      >
+        <option value="">{u.sameLanguage}</option>
+        {SUBTITLE_LANGUAGES.map((l) => (
+          <option key={l} value={l}>{u.translateTo(u.languages[l] ?? l)}</option>
+        ))}
+      </select>
+      {optionsDraft.subtitle_language && <p className="text-xs text-muted-foreground">{u.translateHint}</p>}
     </div>
   );
 
-  // Miniatura: otro flujo (el vídeo no se sube, no gasta minutos).
-  if (optionsDraft.mode === "thumbnail") {
-    return (
-      <div className="flex flex-col gap-6">
-        {modeCards}
-        <ThumbnailForm />
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-6">
-      {modeCards}
-
       {outOfMinutes && (
         <Alert variant="destructive">
           <AlertTitle>{u.outOfMinutesTitle}</AlertTitle>
@@ -372,24 +329,7 @@ export function UploadForm({ me }: { me: Me }) {
       )}
 
       <div className="grid gap-6 sm:grid-cols-2">
-        {subtitleMode ? (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="subtitle-language">{u.subtitleLanguage}</Label>
-            <select
-              id="subtitle-language"
-              value={optionsDraft.subtitle_language ?? ""}
-              disabled={busy}
-              onChange={(e) => setOptionsDraft((d) => ({ ...d, subtitle_language: e.target.value || null }))}
-              className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-            >
-              <option value="">{u.sameLanguage}</option>
-              {SUBTITLE_LANGUAGES.map((l) => (
-                <option key={l} value={l}>{u.translateTo(u.languages[l] ?? l)}</option>
-              ))}
-            </select>
-            {optionsDraft.subtitle_language && <p className="text-xs text-muted-foreground">{u.translateHint}</p>}
-          </div>
-        ) : (
+        {!subtitleMode && (
           <div className="flex flex-col gap-2">
             <Label>{u.clipCount}</Label>
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={u.clipCount}>
@@ -462,6 +402,7 @@ export function UploadForm({ me }: { me: Me }) {
           onChange={setOptionsDraft}
           disabled={busy}
           sourceFrame={sourceFrame}
+          subtitlesExtra={subtitleMode ? translateField : undefined}
           background={
             fileUrl ? (
               // Un fotograma del propio vídeo (del inicio del tramo) de fondo en la vista previa.

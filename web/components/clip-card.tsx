@@ -247,7 +247,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
             className={buttonVariants({ className: cn("flex-1", rendering && "pointer-events-none opacity-50") })}
             aria-disabled={rendering}
           >
-            <ScissorsIcon /> {c.editClip}
+            <ScissorsIcon /> {job.options.mode === "subtitle" || job.options.mode === "clean" ? c.editVideo : c.editClip}
           </Link>
         ) : (
           <Button variant="secondary" className="flex-1" onClick={() => setEditing(true)}>

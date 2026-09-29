@@ -1,7 +1,7 @@
 // Datos que aparecen en las páginas legales. Cambiar aquí si cambia el titular, el dominio o un proveedor.
 
 export const legal = {
-  updatedAt: "28 de septiembre de 2026",
+  updatedAt: "29 de septiembre de 2026",
   owner: {
     name: "Carles Climent Oltra",
     taxId: "20496132G", // NIF
@@ -20,19 +20,22 @@ export const legal = {
     },
     {
       name: "Cloudflare R2",
-      role: "Almacenamiento de los vídeos subidos, clips y miniaturas",
+      role: "Almacenamiento de los vídeos subidos, clips, vídeos procesados, portadas y miniaturas",
       location: "Jurisdicción UE: los datos se guardan en la UE",
       company: "Cloudflare, Inc. (EE. UU.)",
     },
     {
       name: "Modal",
-      role: "Procesamiento de los vídeos (transcripción, reencuadre y subtítulos) en servidores con GPU",
+      role: "Procesamiento de los vídeos (transcripción, reencuadre, subtítulos y eliminación de silencios) en " +
+        "servidores con GPU",
       location: "Servidores en la UE",
       company: "Modal Labs, Inc. (EE. UU.)",
     },
     {
       name: "Anthropic",
-      role: "Selección de los mejores momentos con IA (Claude). Recibe el texto transcrito, no el vídeo",
+      role: "IA (Claude): elegir los mejores momentos, escribir títulos y textos, traducir subtítulos y proponer " +
+        "portadas y miniaturas. Recibe el texto transcrito y, para las portadas y miniaturas, unos pocos fotogramas; " +
+        "nunca el vídeo completo ni tu email",
       location: "EE. UU.",
       company: "Anthropic, PBC (EE. UU.)",
     },

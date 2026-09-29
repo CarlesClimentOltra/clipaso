@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckIcon, SaveIcon, Settings2Icon, SlidersHorizontalIcon } from "lucide-react";
+import { CaptionsIcon, CheckIcon, SaveIcon, Settings2Icon, SlidersHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,8 @@ import { CaptionPreview, type ClipFormat } from "@/components/caption-preview";
 import { StyleEditor } from "@/components/style-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { ApiError, type CaptionStyle, type UserStyle } from "@/lib/api/client";
 import { useStyleActions, useStyles } from "@/lib/api/hooks";
 import { useI18n } from "@/lib/i18n";
@@ -75,8 +77,55 @@ export function StyleCard({
   );
 }
 
-/** Elige uno de tus estilos para este proyecto o clip y, si quieres, ajústalo solo aquí. */
+/** Interruptor «Añadir subtítulos»: los estilos solo se muestran si están activados. */
+function SubtitlesToggle({ on, onChange, disabled }: { on: boolean; onChange: (on: boolean) => void; disabled?: boolean }) {
+  const { t } = useI18n();
+  const s = t.styles;
+  return (
+    <div className={cn("flex items-center justify-between gap-4 rounded-xl border p-4",
+                       on ? "border-primary/50 bg-brand-soft/40" : "bg-muted/30")}>
+      <div className="flex items-start gap-3">
+        <CaptionsIcon className={cn("mt-0.5 size-5 shrink-0", on ? "text-brand-ink" : "text-muted-foreground")} />
+        <div>
+          <Label htmlFor="subs-enabled" className="text-sm font-medium">{s.burnIn}</Label>
+          <p className="text-xs text-muted-foreground">{on ? s.burnInOn : s.burnInHint}</p>
+        </div>
+      </div>
+      <Switch id="subs-enabled" checked={on} disabled={disabled} onCheckedChange={(c: boolean) => onChange(c)} />
+    </div>
+  );
+}
+
+/** Elige uno de tus estilos para este proyecto o clip y, si quieres, ajústalo solo aquí.
+ * Con `optional`, arriba va el interruptor «Añadir subtítulos» (desactivado = vídeo sin texto). */
 export function StylePicker({
+  value,
+  onChange,
+  format = "vertical",
+  disabled,
+  optional = false,
+}: {
+  value: CaptionStyle;
+  onChange: (style: CaptionStyle) => void;
+  format?: ClipFormat;
+  disabled?: boolean;
+  optional?: boolean;
+}) {
+  const on = value.enabled !== false;
+  if (optional && !on) {
+    return <SubtitlesToggle on={false} disabled={disabled} onChange={() => onChange({ ...value, enabled: true })} />;
+  }
+  return (
+    <div className="flex flex-col gap-4">
+      {optional && (
+        <SubtitlesToggle on disabled={disabled} onChange={() => onChange({ ...value, enabled: false })} />
+      )}
+      <StyleChooser value={{ ...value, enabled: true }} onChange={onChange} format={format} disabled={disabled} />
+    </div>
+  );
+}
+
+function StyleChooser({
   value,
   onChange,
   format = "vertical",

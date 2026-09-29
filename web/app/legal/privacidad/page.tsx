@@ -36,10 +36,16 @@ export default function PrivacyPage() {
           añadas tú; Google trata tus datos según su propia política de privacidad.
         </li>
         <li>
-          <strong>Los vídeos que subes</strong> y lo que generamos a partir de ellos: el audio, su transcripción, una
-          versión ligera del vídeo para el editor, los clips, las miniaturas, los títulos, descripciones y hashtags, y
+          <strong>Los vídeos que subes</strong> y lo que generamos a partir de ellos: el audio, su transcripción (y su
+          traducción, si la pides), una versión ligera del vídeo para el editor, los clips o el vídeo completo ya
+          procesado (subtitulado o sin silencios), las portadas y miniaturas, los títulos, descripciones y hashtags, y
           las correcciones que hagas. Si en tus vídeos aparecen o hablan otras personas, también tratamos su imagen y
           su voz por cuenta tuya (ver apartado 8).
+        </li>
+        <li>
+          <strong>Fotogramas del modo «Generar miniatura»:</strong> en este modo el vídeo no se sube. Tu navegador saca
+          unas pocas imágenes del vídeo y solo nos envía esas imágenes, que guardamos junto al proyecto para que puedas
+          cambiar de fotograma.
         </li>
         <li>
           <strong>Tu marca personal y preferencias</strong>, si las configuras: el logo que subas, tu @usuario y el
@@ -137,8 +143,9 @@ export default function PrivacyPage() {
         Alojamos los datos en la Unión Europea siempre que es posible: tus vídeos, clips y cuenta se guardan en la UE, y
         el procesamiento de vídeo se hace en servidores de la UE. Aun así, varios proveedores son empresas con sede en
         Estados Unidos, y uno de ellos, Anthropic, trata en EE. UU. el <strong>texto transcrito</strong> de tus vídeos
-        para seleccionar los mejores momentos (no recibe el vídeo ni tu email). Anthropic no usa estos datos para entrenar
-        sus modelos y solo los conserva durante un plazo limitado.
+        (para elegir los mejores momentos, escribir los textos para publicar y traducir subtítulos) y{" "}
+        <strong>unos pocos fotogramas</strong> (para proponer portadas y miniaturas). No recibe el vídeo completo ni tu
+        email. Anthropic no usa estos datos para entrenar sus modelos y solo los conserva durante un plazo limitado.
       </p>
       <p>
         Estas transferencias se amparan en el Marco de Privacidad de Datos UE-EE. UU. cuando el proveedor está adherido y,
@@ -148,9 +155,10 @@ export default function PrivacyPage() {
       <h2>7. Cuánto tiempo conservamos los datos</h2>
       <ul>
         <li>
-          <strong>Vídeo original:</strong> tú decides al subirlo. Si eliges guardarlo (para editar los clips y pedir
-          más), se conserva mientras el proyecto esté disponible y se borra al caducar o si borras el proyecto. Si no,
-          se borra en cuanto terminan tus clips. Una subida que no llega a procesarse se borra en un máximo de 24 horas.
+          <strong>Vídeo original:</strong> tú decides al subirlo. Si eliges guardarlo (para editar el resultado y pedir
+          más clips), se conserva mientras el proyecto esté disponible y se borra al caducar o si borras el proyecto. En
+          «Quitar silencios y muletillas» lo que se guarda es la versión ya limpia. Si no lo guardas, se borra en cuanto
+          termina el procesamiento. Una subida que no llega a procesarse se borra en un máximo de 24 horas.
         </li>
         <li>
           <strong>Transcripción y vista previa del editor:</strong> se guardan junto al proyecto (para corregir y
@@ -161,7 +169,8 @@ export default function PrivacyPage() {
           <strong>Logo y preferencias:</strong> hasta que los cambies o elimines tu cuenta.
         </li>
         <li>
-          <strong>Clips y miniaturas:</strong> durante el tiempo que indica tu plan (7 días en el plan Gratis, 30 en
+          <strong>Clips, vídeos procesados, portadas y miniaturas</strong> (incluidos los fotogramas del modo «Generar
+          miniatura»): durante el tiempo que indica tu plan (7 días en el plan Gratis, 30 en
           Creator y 60 en Pro). Después se borran automáticamente; el proyecto queda en tu historial como «caducado»,
           solo con su título y fechas.
         </li>

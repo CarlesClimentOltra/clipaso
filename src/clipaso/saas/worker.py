@@ -232,7 +232,8 @@ class JobRunner:
                 user = s.get(User, user_id)
                 email = clips_ready(user.email, title, len(clips), user.plan.retention_days,
                                     f"{self.settings.notifications.web_url}/projects/{job_id}",
-                                    lang=(user.preferences or {}).get("locale", "es"))
+                                    lang=(user.preferences or {}).get("locale", "es"),
+                                    mode=options.get("mode", "clips"))
             log.info("job.done", clips=len(clips), cost_usd=round(result.cost_usd, 4))
             deliver(self.notifier, email)
 

@@ -75,7 +75,7 @@ function Stats({ me, jobs }: { me: Me; jobs: JobSummary[] }) {
   const { t } = useI18n();
   const d = t.dashboard;
   const fm = t.common.minutes;
-  const clips = jobs.reduce((n, j) => n + (j.status === "done" && j.mode !== "thumbnail" ? j.clip_count : 0), 0);
+  const clips = jobs.reduce((n, j) => n + (j.status === "done" ? j.clip_count : 0), 0);
   const active = jobs.filter(isActive).length;
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -151,7 +151,9 @@ function ProjectCard({ job }: { job: JobSummary }) {
           </div>
         ) : (
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><ClockIcon className="size-3.5" /> {t.common.minutes(job.video_minutes)}</span>
+            {job.mode !== "thumbnail" && (
+              <span className="flex items-center gap-1"><ClockIcon className="size-3.5" /> {t.common.minutes(job.video_minutes)}</span>
+            )}
             <span>{formatDate(job.created_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
             {job.status === "failed" && <span className="text-destructive">{t.dashboard.failed}</span>}
             {job.status === "expired" && <span>{t.dashboard.expired}</span>}

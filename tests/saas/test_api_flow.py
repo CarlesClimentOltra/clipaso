@@ -547,3 +547,14 @@ def test_delete_identity_calls_supabase_admin(monkeypatch):
 
     with pytest.raises(auth_mod.AppError):
         auth_mod.delete_identity("user-123", AuthSettings(mode="supabase", supabase_url="https://abc.supabase.co"))
+
+
+def test_ready_email_talks_about_the_video_in_whole_video_modes():
+    from clipaso.saas.notifications import clips_ready
+
+    email = clips_ready("a@b.c", "Charla", 1, 7, "https://x/projects/1", mode="clean")
+    assert email.subject == "Tu vídeo «Charla» está listo" and "sin silencios" in email.html
+    assert "Ver mi vídeo" in email.html and "clip" not in email.text
+    english = clips_ready("a@b.c", "Talk", 1, 7, "https://x", lang="en", mode="subtitle")
+    assert "captioned video" in english.text
+    assert "clips" in clips_ready("a@b.c", "Charla", 3, 7, "https://x").subject

@@ -77,6 +77,15 @@ TEXTS = {
         "open": "Ver y descargar",
         "clip_one": "1 clip",
         "clip_many": "{n} clips",
+        # Modos en los que el resultado es el vídeo entero.
+        "video_title": "Tu vídeo está listo",
+        "video_subject": "Tu vídeo «{title}» está listo",
+        "video_body": "Hemos terminado <strong>{title}</strong>: {what} está listo para ver y descargar.",
+        "video_text": "Hemos terminado «{title}»: {what} está listo.",
+        "video_keep": "Estará disponible durante {days} días.",
+        "video_button": "Ver mi vídeo",
+        "what_subtitle": "tu vídeo subtitulado",
+        "what_clean": "tu vídeo sin silencios",
         "failed_title": "No hemos podido procesar tu vídeo",
         "failed_subject": "No hemos podido procesar «{title}»",
         "failed_body": "No hemos podido procesar <strong>{title}</strong>.",
@@ -95,6 +104,14 @@ TEXTS = {
         "open": "Watch and download",
         "clip_one": "1 clip",
         "clip_many": "{n} clips",
+        "video_title": "Your video is ready",
+        "video_subject": "Your video “{title}” is ready",
+        "video_body": "We've finished <strong>{title}</strong>: {what} is ready to watch and download.",
+        "video_text": "We've finished “{title}”: {what} is ready.",
+        "video_keep": "It'll be available for {days} days.",
+        "video_button": "See my video",
+        "what_subtitle": "your captioned video",
+        "what_clean": "your video without silences",
         "failed_title": "We couldn't process your video",
         "failed_subject": "We couldn't process “{title}”",
         "failed_body": "We couldn't process <strong>{title}</strong>.",
@@ -125,8 +142,18 @@ def _layout(title: str, body: str, button: tuple[str, str] | None, lang: str) ->
 
 
 def clips_ready(to: str, title: str, clip_count: int, retention_days: int, project_url: str,
-                lang: str = "es") -> Email:
+                lang: str = "es", mode: str = "clips") -> Email:
     tx = _t(lang)
+    if f"what_{mode}" in tx:  # el resultado es el vídeo entero (subtitulado o sin silencios)
+        what = tx[f"what_{mode}"]
+        keep = tx["video_keep"].format(days=retention_days)
+        return Email(
+            to=to,
+            subject=tx["video_subject"].format(title=title),
+            html=_layout(tx["video_title"], f"<p>{tx['video_body'].format(title=escape(title), what=what)}</p>"
+                         f"<p>{keep}</p>", (tx["video_button"], project_url), lang),
+            text=f"{tx['video_text'].format(title=title, what=what)}\n{tx['open']}: {project_url}\n{keep}",
+        )
     clips = tx["clip_one"] if clip_count == 1 else tx["clip_many"].format(n=clip_count)
     keep = tx["ready_keep"].format(days=retention_days)
     body = f"<p>{tx['ready_body'].format(title=escape(title), clips=clips)}</p><p>{keep}</p>"

@@ -204,7 +204,7 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
                             disabled={locked} />
               </TabsContent>
               <TabsContent value="style">
-                <StylePicker value={style} onChange={setStyle} format={format} disabled={locked} />
+                <StylePicker value={style} onChange={setStyle} format={format} disabled={locked} optional />
               </TabsContent>
               <TabsContent value="cover">
                 {data.clip.cover && (

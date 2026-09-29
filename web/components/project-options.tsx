@@ -26,6 +26,7 @@ export function ProjectOptions({
   disabled,
   background,
   sourceFrame = "horizontal",
+  subtitlesExtra,
 }: {
   me: Me;
   value: ProjectOptionsValue;
@@ -35,6 +36,8 @@ export function ProjectOptions({
   background?: React.ReactNode;
   /** Encuadre del vídeo elegido (para la vista previa del formato «original»). */
   sourceFrame?: ClipFormat;
+  /** Ajustes que solo tienen sentido con subtítulos (p. ej. traducirlos); se muestran bajo los estilos. */
+  subtitlesExtra?: React.ReactNode;
 }) {
   const { data: options } = useClipOptions();
   const { data: prefs } = usePreferences();
@@ -50,6 +53,7 @@ export function ProjectOptions({
     .sort((a, b) => (subtitleMode ? Number(b.id === "original") - Number(a.id === "original") : 0));
   const hasBrand = !!prefs && (!!prefs.branding.handle || prefs.branding.has_logo);
   const durationHint = o.durations[value.duration]?.[1];
+  const subtitlesOn = value.caption_style.enabled !== false;
 
   return (
     <div className="flex flex-col gap-6">
@@ -121,10 +125,14 @@ export function ProjectOptions({
 
       <div className="flex flex-col gap-3">
         <Label>{o.style}</Label>
-        <div className="grid gap-5 md:grid-cols-[1fr_200px]">
-          <StylePicker value={value.caption_style} onChange={(caption_style) => set({ caption_style })} format={format}
-                       disabled={disabled} />
-          <div className="hidden md:block">
+        <div className={cn("grid gap-5", subtitlesOn && "md:grid-cols-[1fr_200px]")}>
+          {/* Solo en «Solo subtitular» son obligatorios; en el resto, desactivados hasta que el usuario los pida. */}
+          <div className="flex min-w-0 flex-col gap-5">
+            <StylePicker value={value.caption_style} onChange={(caption_style) => set({ caption_style })}
+                         format={format} disabled={disabled} optional={value.mode !== "subtitle"} />
+            {subtitlesOn && subtitlesExtra}
+          </div>
+          <div className={cn("hidden", subtitlesOn && "md:block")}>
             <div className="sticky top-20 flex flex-col gap-2">
               <span className="text-xs text-muted-foreground">{t.brand.preview}</span>
               <CaptionPreview
