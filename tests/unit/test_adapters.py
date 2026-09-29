@@ -5,17 +5,17 @@ import shutil
 import numpy as np
 import pytest
 
-from smartcuts.adapters.exporters.subtitles import ass_color, ass_time, build_ass
-from smartcuts.adapters.reframing.face_track import camera_path, sendcmd_script
-from smartcuts.application.workspace import Workspace
-from smartcuts.domain.errors import ConfigurationError
-from smartcuts.domain.models import SubtitleStyle, Transcript
-from smartcuts.infra import registry
+from clipaso.adapters.exporters.subtitles import ass_color, ass_time, build_ass
+from clipaso.adapters.reframing.face_track import camera_path, sendcmd_script
+from clipaso.application.workspace import Workspace
+from clipaso.domain.errors import ConfigurationError
+from clipaso.domain.models import SubtitleStyle, Transcript
+from clipaso.infra import registry
 from tests.conftest import make_words
 
 
 def test_registry_unknown_name():
-    import smartcuts.adapters  # noqa: F401
+    import clipaso.adapters  # noqa: F401
 
     with pytest.raises(ConfigurationError, match="Disponibles"):
         registry.create("selectors", "no-existe")
@@ -66,8 +66,8 @@ def test_sendcmd_script_clamps_to_frame():
 
 
 def test_build_ass_styles_box_position_and_handle():
-    from smartcuts.adapters.exporters.subtitles import build_ass
-    from smartcuts.domain.models import SubtitleStyle, Word
+    from clipaso.adapters.exporters.subtitles import build_ass
+    from clipaso.domain.models import SubtitleStyle, Word
 
     style = SubtitleStyle(font="Arial Black", position="top", box=True, box_color="112233")
     ass = build_ass([Word(text=" hola", start=0, end=0.5)], style, 1080, 1920, handle="@ana",
@@ -105,8 +105,8 @@ def test_build_ass_box_opacity_and_no_outline():
 
 
 def test_build_captions_srt_and_vtt():
-    from smartcuts.adapters.exporters.subtitles import build_captions
-    from smartcuts.domain.models import Word
+    from clipaso.adapters.exporters.subtitles import build_captions
+    from clipaso.domain.models import Word
 
     words = [Word(text=" Hola,", start=0.0, end=0.4), Word(text=" mundo", start=0.5, end=1.25)]
     srt = build_captions(words, "srt")
@@ -122,8 +122,8 @@ def test_exporter_renders_logo_handle_and_styled_subtitles(tmp_path):
     import cv2
     import numpy as np
 
-    from smartcuts.adapters.exporters.ffmpeg_exporter import FFmpegExporter
-    from smartcuts.domain.models import (
+    from clipaso.adapters.exporters.ffmpeg_exporter import FFmpegExporter
+    from clipaso.domain.models import (
         Branding,
         ClipCandidate,
         OutputProfile,
@@ -134,7 +134,7 @@ def test_exporter_renders_logo_handle_and_styled_subtitles(tmp_path):
         VideoEncoding,
         Word,
     )
-    from smartcuts.domain.ports import ExportRequest, ReframePlan
+    from clipaso.domain.ports import ExportRequest, ReframePlan
 
     src = tmp_path / "src.mp4"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=gray:s=640x360:d=2:r=25",
@@ -168,7 +168,7 @@ def test_exporter_renders_logo_handle_and_styled_subtitles(tmp_path):
 
 
 def test_chunk_words_respects_user_breaks():
-    from smartcuts.adapters.exporters.subtitles import chunk_words
+    from clipaso.adapters.exporters.subtitles import chunk_words
 
     words = make_words("uno dos tres cuatro")
     words[0] = words[0].model_copy(update={"brk": "split"})
@@ -178,10 +178,10 @@ def test_chunk_words_respects_user_breaks():
 
 
 def test_translator_keeps_sentence_timing():
-    from smartcuts.application.cost import CostTracker
-    from smartcuts.application.translation import Translator
-    from smartcuts.domain.models import Sentence, Word
-    from smartcuts.domain.ports import LLMResponse, LLMUsage
+    from clipaso.application.cost import CostTracker
+    from clipaso.application.translation import Translator
+    from clipaso.domain.models import Sentence, Word
+    from clipaso.domain.ports import LLMResponse, LLMUsage
 
     class FakeLLM:
         name, model, billable = "fake", "claude-haiku-4-5", True
@@ -197,25 +197,25 @@ def test_translator_keeps_sentence_timing():
 
             self.users.append(user)
             items = [json.loads(line) for line in user.splitlines()]
-            texts = {0: "Hello everyone, this is SmartCuts.", 1: "See you later."}
+            texts = {0: "Hello everyone, this is Clipaso.", 1: "See you later."}
             return LLMResponse(data={"items": [{"i": it["i"], "text": texts[it["i"]]} for it in items]},
                                usage=LLMUsage(model=self.model, input_tokens=100, output_tokens=20))
 
     names = ["Hola", "a", "todos", "esto", "es"]
     words = [Word(text=f" {w}", start=i * 0.5, end=i * 0.5 + 0.4) for i, w in enumerate(names)]
     transcript = Transcript(language="es", duration=10, sentences=[
-        Sentence(index=0, start=0, end=2.4, text="Hola a todos, esto es SmartCuts.", words=words),
+        Sentence(index=0, start=0, end=2.4, text="Hola a todos, esto es Clipaso.", words=words),
         Sentence(index=1, start=5, end=6, text="Hasta luego.",
                  words=[Word(text=" Hasta", start=5, end=5.4), Word(text=" luego.", start=5.5, end=6)]),
     ])
     llm = FakeLLM()
     cost = CostTracker(budget_usd=1, pricing={"claude-haiku-4-5": (1.0, 5.0)})
     out = Translator(llm, cost).translate(transcript, "en")
-    assert out.language == "en" and out.sentences[0].text == "Hello everyone, this is SmartCuts."
+    assert out.language == "en" and out.sentences[0].text == "Hello everyone, this is Clipaso."
     first = out.sentences[0].words
-    assert [w.text.strip() for w in first] == ["Hello", "everyone,", "this", "is", "SmartCuts."]
+    assert [w.text.strip() for w in first] == ["Hello", "everyone,", "this", "is", "Clipaso."]
     assert first[0].start == 0 and first[-1].end <= 2.4 + 1e-6
     assert all(a.start <= b.start for a, b in zip(first, first[1:], strict=False))
     second = out.sentences[1].words
     assert second[0].start >= 5 and second[-1].end == 6  # cada frase se queda en su tramo
-    assert '"text": "Hola a todos, esto es SmartCuts."' in llm.users[0] and cost.spent > 0
+    assert '"text": "Hola a todos, esto es Clipaso."' in llm.users[0] and cost.spent > 0

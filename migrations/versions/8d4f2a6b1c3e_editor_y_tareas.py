@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-import smartcuts.saas.models
+import clipaso.saas.models
 
 revision = '8d4f2a6b1c3e'
 down_revision = '5c2d8e1f0a7b'
@@ -44,11 +44,11 @@ def upgrade() -> None:
         sa.Column('attempts', sa.Integer(), nullable=False),
         sa.Column('error_code', sa.String(length=64), nullable=True),
         sa.Column('error_detail', sa.Text(), nullable=True),
-        sa.Column('created_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=False),
-        sa.Column('started_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
-        sa.Column('finished_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
-        sa.Column('heartbeat_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
-        sa.Column('dispatched_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
+        sa.Column('created_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=False),
+        sa.Column('started_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
+        sa.Column('finished_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
+        sa.Column('heartbeat_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
+        sa.Column('dispatched_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(['clip_id'], ['clips.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['job_id'], ['jobs.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),

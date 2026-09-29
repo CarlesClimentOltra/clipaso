@@ -28,4 +28,4 @@ RUN pip install --no-deps -e . \
 USER app
 
 EXPOSE 8080
-CMD ["smartcuts", "api", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["clipaso", "api", "--host", "0.0.0.0", "--port", "8080"]

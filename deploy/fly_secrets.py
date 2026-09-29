@@ -20,16 +20,16 @@ from dotenv import dotenv_values
 ROOT = Path(__file__).resolve().parents[1]
 FLYCTL = Path.home() / ".fly" / "bin" / ("flyctl.exe" if sys.platform == "win32" else "flyctl")
 COPY = [
-    "SMARTCUTS_DATABASE__URL",
-    "SMARTCUTS_AUTH__SUPABASE_URL",
-    "SMARTCUTS_AUTH__SUPABASE_SERVICE_KEY",  # para eliminar cuentas
-    "SMARTCUTS_STORAGE__R2_ACCOUNT_ID",
-    "SMARTCUTS_STORAGE__R2_ACCESS_KEY_ID",
-    "SMARTCUTS_STORAGE__R2_SECRET_ACCESS_KEY",
-    "SMARTCUTS_STORAGE__R2_BUCKET",
-    "SMARTCUTS_SENTRY_DSN",
+    "CLIPASO_DATABASE__URL",
+    "CLIPASO_AUTH__SUPABASE_URL",
+    "CLIPASO_AUTH__SUPABASE_SERVICE_KEY",  # para eliminar cuentas
+    "CLIPASO_STORAGE__R2_ACCOUNT_ID",
+    "CLIPASO_STORAGE__R2_ACCESS_KEY_ID",
+    "CLIPASO_STORAGE__R2_SECRET_ACCESS_KEY",
+    "CLIPASO_STORAGE__R2_BUCKET",
+    "CLIPASO_SENTRY_DSN",
 ]
-REQUIRED = ["SMARTCUTS_DATABASE__URL", "SMARTCUTS_AUTH__SUPABASE_URL", "SMARTCUTS_STORAGE__R2_ACCESS_KEY_ID"]
+REQUIRED = ["CLIPASO_DATABASE__URL", "CLIPASO_AUTH__SUPABASE_URL", "CLIPASO_STORAGE__R2_ACCESS_KEY_ID"]
 
 
 def modal_token() -> dict[str, str]:
@@ -47,7 +47,7 @@ def main() -> int:
     values = {k: env[k] for k in COPY if env.get(k)}
     values |= modal_token()
     # Solo firma URLs del almacenamiento local (no se usa con R2), pero prod exige una clave propia.
-    values["SMARTCUTS_API__SECRET_KEY"] = secrets.token_urlsafe(48)
+    values["CLIPASO_API__SECRET_KEY"] = secrets.token_urlsafe(48)
 
     payload = "\n".join(f"{k}={v}" for k, v in values.items())
     # --stage: se aplican en el próximo despliegue (no reinicia nada ahora).

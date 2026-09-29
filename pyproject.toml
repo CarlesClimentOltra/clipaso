@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "smartcuts"
+name = "clipaso"
 version = "0.1.0"
 description = "Genera clips verticales cortos a partir de vídeos largos."
 readme = "README.md"
@@ -48,10 +48,10 @@ dev = [
 ]
 
 [project.scripts]
-smartcuts = "smartcuts.interfaces.cli.main:app"
+clipaso = "clipaso.interfaces.cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/smartcuts"]
+packages = ["src/clipaso"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

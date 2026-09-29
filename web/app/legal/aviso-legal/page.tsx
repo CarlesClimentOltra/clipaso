@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Aviso legal · SmartCuts" };
+export const metadata: Metadata = { title: "Aviso legal · Clipaso" };
 
 export default function LegalNoticePage() {
   const { owner } = legal;
@@ -24,7 +24,7 @@ export default function LegalNoticePage() {
           Email: <a href={`mailto:${owner.email}`}>{owner.email}</a>
         </li>
         <li>Sitio web: {legal.site}</li>
-        <li>Actividad: servicio en línea de edición automática de vídeo (SmartCuts)</li>
+        <li>Actividad: servicio en línea de edición automática de vídeo (Clipaso)</li>
       </ul>
 
       <h2>Condiciones de uso</h2>

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
-/** Marca de SmartCuts: un «play» cortado en diagonal (vídeo + corte inteligente). */
+/** Marca de Clipaso: un «play» cortado en diagonal (vídeo + corte inteligente). */
 export function BrandMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={cn("size-8 shrink-0 rounded-[28%] dark:ring-1 dark:ring-white/20", className)} aria-hidden="true">
@@ -19,7 +19,7 @@ export function Brand({ href = "/", className }: { href?: string; className?: st
     <Link href={href} className={cn("flex items-center gap-2 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50", className)}>
       <BrandMark />
       <span className="text-[1.05rem] font-semibold tracking-tight">
-        Smart<span className="text-brand-ink">Cuts</span>
+        Clip<span className="text-brand-ink">aso</span>
       </span>
     </Link>
   );

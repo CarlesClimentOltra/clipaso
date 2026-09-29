@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
-// Imagen que aparece al compartir un enlace de SmartCuts en redes o mensajería.
-export const alt = "SmartCuts · Clips verticales con IA";
+// Imagen que aparece al compartir un enlace de Clipaso en redes o mensajería.
+export const alt = "Clipaso · Clips verticales con IA";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -28,7 +28,7 @@ export default function OpengraphImage() {
               <circle cx="24.5" cy="8.5" r="1.6" fill="#b6e34a" />
             </svg>
             <span style={{ fontSize: 44, fontWeight: 700 }}>
-              Smart<span style={{ color: "#b6e34a" }}>Cuts</span>
+              Clip<span style={{ color: "#b6e34a" }}>aso</span>
             </span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

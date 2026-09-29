@@ -4,9 +4,9 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export const es = {
   meta: {
-    title: "SmartCuts · Clips verticales con IA",
+    title: "Clipaso · Clips verticales con IA",
     description:
-      "Sube tu vídeo y SmartCuts encuentra los mejores momentos y los convierte en clips verticales con subtítulos para TikTok, Reels y Shorts.",
+      "Sube tu vídeo y Clipaso encuentra los mejores momentos y los convierte en clips verticales con subtítulos para TikTok, Reels y Shorts.",
   },
   common: {
     cancel: "Cancelar",
@@ -69,10 +69,10 @@ export const es = {
     titleStart: "Convierte tus vídeos largos en",
     titleAccent: "clips virales",
     lead:
-      "SmartCuts encuentra los mejores momentos de tus vídeos y los convierte en clips verticales con subtítulos, listos para TikTok, Instagram Reels y YouTube Shorts. Sin editar a mano.",
+      "Clipaso encuentra los mejores momentos de tus vídeos y los convierte en clips verticales con subtítulos, listos para TikTok, Instagram Reels y YouTube Shorts. Sin editar a mano.",
     howButton: "Cómo funciona",
     trust: ["30 min gratis al mes", "Sin tarjeta", "Datos en la UE"],
-    marqueeLabel: "Ventajas de SmartCuts",
+    marqueeLabel: "Ventajas de Clipaso",
     marquee: [
       ["IA que elige", "Los mejores momentos"],
       ["Subtítulos automáticos", "Palabra a palabra"],
@@ -113,7 +113,7 @@ export const es = {
     examples: {
       eyebrow: "Ejemplos",
       title: "Así queda un vídeo largo convertido en clips",
-      lead: "Tres tipos de vídeo habituales y los clips que SmartCuts sacaría de cada uno.",
+      lead: "Tres tipos de vídeo habituales y los clips que Clipaso sacaría de cada uno.",
       note: "Ejemplos ilustrativos.",
       source: "Vídeo original",
       score: "Potencial",
@@ -165,7 +165,7 @@ export const es = {
       editorStart: "Inicio",
       editorEnd: "Fin",
       editorWords: ["Hoy", "os", "enseño"],
-      editorFixed: "SmartCuts",
+      editorFixed: "Clipaso",
       editorTail: ["paso", "a", "paso"],
       textsTitle: "Textos listos para publicar",
       textsText: "Título, descripción y hashtags pensados para TikTok, Reels y Shorts.",
@@ -188,7 +188,7 @@ export const es = {
       title: "¿Tienes dudas?",
       lead: "Si no encuentras la respuesta, escríbenos y te ayudamos.",
       items: [
-        ["¿Qué vídeos funcionan mejor?", "Los que tienen conversación: podcasts, entrevistas, charlas, clases o directos. SmartCuts elige los momentos a partir de lo que se dice, así que necesita diálogo."],
+        ["¿Qué vídeos funcionan mejor?", "Los que tienen conversación: podcasts, entrevistas, charlas, clases o directos. Clipaso elige los momentos a partir de lo que se dice, así que necesita diálogo."],
         ["¿Cuánto tarda?", "Unos pocos minutos para un vídeo de media hora. Te avisamos por email cuando tus clips están listos, así que puedes cerrar la pestaña."],
         ["¿Puedo editar los clips?", "Sí. Desde el editor puedes mover el inicio y el final, corregir palabras de los subtítulos, cambiar el estilo y volver a generar el clip. También puedes pedir más clips del mismo vídeo sin gastar minutos."],
         ["¿En qué idiomas funciona?", "En español, inglés, portugués, francés, italiano y alemán, entre otros. También puede detectar el idioma automáticamente."],
@@ -276,7 +276,7 @@ export const es = {
   },
   onboarding: {
     title: "Primeros pasos",
-    lead: "Tres pasos para sacar el máximo partido a SmartCuts.",
+    lead: "Tres pasos para sacar el máximo partido a Clipaso.",
     dismiss: "Ocultar",
     done: "Hecho",
     steps: [

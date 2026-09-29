@@ -39,7 +39,7 @@ type AuthContextValue = {
   getToken: () => Promise<string | null>;
 };
 
-const DEV_KEY = "smartcuts.dev-session";
+const DEV_KEY = "clipaso.dev-session";
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 let supabase: SupabaseClient | null = null;

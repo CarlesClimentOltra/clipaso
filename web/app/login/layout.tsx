@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "Entrar",
-  description: "Entra en SmartCuts o crea tu cuenta gratis: 30 minutos de vídeo al mes sin tarjeta.",
+  description: "Entra en Clipaso o crea tu cuenta gratis: 30 minutos de vídeo al mes sin tarjeta.",
 };
 
 export default function LoginLayout({ children }: { children: ReactNode }) {

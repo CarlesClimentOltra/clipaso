@@ -5,7 +5,7 @@ export const LOCALES = ["es", "en"] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "es";
 
-const KEY = "smartcuts.locale";
+const KEY = "clipaso.locale";
 const listeners = new Set<() => void>();
 let memory: Locale | null = null;
 

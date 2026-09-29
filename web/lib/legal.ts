@@ -10,7 +10,7 @@ export const legal = {
   },
   site: "smartcuts-kohl.vercel.app",
   minAge: 18,
-  // Encargados del tratamiento (proveedores que tratan datos por cuenta de SmartCuts).
+  // Encargados del tratamiento (proveedores que tratan datos por cuenta de Clipaso).
   processors: [
     {
       name: "Supabase",

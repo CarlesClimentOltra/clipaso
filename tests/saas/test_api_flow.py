@@ -9,14 +9,14 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from smartcuts.domain.errors import SelectionError
-from smartcuts.domain.models import ExportedClip, Sentence, SignalSet, Transcript, Word
-from smartcuts.infra.config import Settings
-from smartcuts.saas import worker as worker_mod
-from smartcuts.saas.db import session_scope, utcnow
-from smartcuts.saas.dispatch import redispatch_queued
-from smartcuts.saas.models import Job, JobStatus, Upload, UsageEvent
-from smartcuts.saas.worker import JobRunner
+from clipaso.domain.errors import SelectionError
+from clipaso.domain.models import ExportedClip, Sentence, SignalSet, Transcript, Word
+from clipaso.infra.config import Settings
+from clipaso.saas import worker as worker_mod
+from clipaso.saas.db import session_scope, utcnow
+from clipaso.saas.dispatch import redispatch_queued
+from clipaso.saas.models import Job, JobStatus, Upload, UsageEvent
+from clipaso.saas.worker import JobRunner
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="necesita ffmpeg")
 
@@ -226,7 +226,7 @@ def test_tampered_storage_signature_rejected(client, sample_video):
 @pytest.fixture
 def small_parts(monkeypatch):
     """Partes de 16 KB para que el vídeo de prueba se suba en varias partes."""
-    from smartcuts.saas import services
+    from clipaso.saas import services
 
     monkeypatch.setattr(services, "MIN_PART_SIZE", 16 * 1024)
 
@@ -275,8 +275,8 @@ def test_abort_upload_removes_parts(client, sample_video, small_parts):
 
 
 def test_original_is_purged_after_success_if_not_kept(client, sample_video, monkeypatch):
-    from smartcuts.saas.maintenance import run_cleanup
-    from smartcuts.saas.models import Upload, UploadStatus
+    from clipaso.saas.maintenance import run_cleanup
+    from clipaso.saas.models import Upload, UploadStatus
 
     upload_id = upload_video(client, sample_video)
     job_id = client.post("/jobs", json={"upload_id": upload_id, "keep_source": False}, headers=AUTH).json()["id"]
@@ -300,9 +300,9 @@ def test_original_is_purged_after_success_if_not_kept(client, sample_video, monk
 
 
 def test_kept_original_and_analysis_are_deleted_when_project_expires(client, sample_video, monkeypatch):
-    from smartcuts.saas.artifacts import transcript_key
-    from smartcuts.saas.maintenance import run_cleanup
-    from smartcuts.saas.models import Upload, UploadStatus
+    from clipaso.saas.artifacts import transcript_key
+    from clipaso.saas.maintenance import run_cleanup
+    from clipaso.saas.models import Upload, UploadStatus
 
     upload_id = upload_video(client, sample_video)
     job_id = client.post("/jobs", json={"upload_id": upload_id}, headers=AUTH).json()["id"]
@@ -323,8 +323,8 @@ def test_kept_original_and_analysis_are_deleted_when_project_expires(client, sam
 
 
 def test_cleanup_purges_abandoned_uploads(client, sample_video):
-    from smartcuts.saas.maintenance import run_cleanup
-    from smartcuts.saas.models import Upload, UploadStatus
+    from clipaso.saas.maintenance import run_cleanup
+    from clipaso.saas.models import Upload, UploadStatus
 
     upload_id = upload_video(client, sample_video)  # lista pero nunca procesada
     app = client.app
@@ -351,7 +351,7 @@ def test_first_login_parallel_requests_create_user_once(client):
 
 
 def test_unexpected_errors_keep_cors_headers(client, monkeypatch):
-    from smartcuts.saas import services
+    from clipaso.saas import services
 
     def boom(*a, **k):
         raise RuntimeError("fallo inesperado")
@@ -363,7 +363,7 @@ def test_unexpected_errors_keep_cors_headers(client, monkeypatch):
 
 
 def test_part_size_stays_within_protocol_limits():
-    from smartcuts.saas.services import MAX_PARTS, MIN_PART_SIZE, choose_part_size
+    from clipaso.saas.services import MAX_PARTS, MIN_PART_SIZE, choose_part_size
 
     gib = 1024**3
     assert choose_part_size(50 * 1024 * 1024) == MIN_PART_SIZE
@@ -518,8 +518,8 @@ def test_delete_account_waits_for_running_jobs(client, sample_video):
 
 
 def test_delete_identity_calls_supabase_admin(monkeypatch):
-    from smartcuts.infra.config import AuthSettings
-    from smartcuts.interfaces.api import auth as auth_mod
+    from clipaso.infra.config import AuthSettings
+    from clipaso.interfaces.api import auth as auth_mod
 
     calls = []
 

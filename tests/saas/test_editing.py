@@ -10,11 +10,11 @@ from urllib.parse import urlsplit
 import cv2
 import numpy as np
 
-from smartcuts.saas import tasks as tasks_mod
-from smartcuts.saas.db import session_scope, utcnow
-from smartcuts.saas.models import Clip, Task, TaskStatus
-from smartcuts.saas.tasks import TaskRunner
-from smartcuts.saas.worker import JobRunner
+from clipaso.saas import tasks as tasks_mod
+from clipaso.saas.db import session_scope, utcnow
+from clipaso.saas.models import Clip, Task, TaskStatus
+from clipaso.saas.tasks import TaskRunner
+from clipaso.saas.worker import JobRunner
 from tests.saas.test_api_flow import AUTH, FakePipeline, _stored_files, upload_video, worker_mod
 
 
@@ -93,7 +93,7 @@ def test_editor_render_applies_trim_word_fixes_and_style(client, sample_video, m
     assert editor["can_render"] and editor["window_start"] == 0 and editor["format"] == "vertical"
     word = next(w for w in editor["words"] if w["text"] == "SmartCus.")
 
-    body = {"start": 0.0, "end": 3.0, "word_edits": {word["key"]: "SmartCuts."},
+    body = {"start": 0.0, "end": 3.0, "word_edits": {word["key"]: "Clipaso."},
             "caption_style": {"font": "Anton", "text_color": "FFFFFF", "highlight_color": "FF3B30"}}
     r = client.post(f"/clips/{clip['id']}/render", json=body, headers=AUTH)
     assert r.status_code == 202 and r.json()["status"] == "rendering"
@@ -104,7 +104,7 @@ def test_editor_render_applies_trim_word_fixes_and_style(client, sample_video, m
     run_tasks(client)
     call = pipeline.calls[-1]
     assert call["kind"] == "render" and (call["clip"].start, call["clip"].end) == (0.0, 3.0)
-    assert "SmartCuts." in [w.text.strip() for w in call["transcript"].words_between(0, 3)]
+    assert "Clipaso." in [w.text.strip() for w in call["transcript"].words_between(0, 3)]
     assert call["opts"].profile.subtitles.font == "Anton"
 
     clip = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]
@@ -113,7 +113,7 @@ def test_editor_render_applies_trim_word_fixes_and_style(client, sample_video, m
     assert storage.size(_clip_row(client, clip["id"]).video_key) and storage.size(old_video_key) is None
 
     srt = client.get(f"/clips/{clip['id']}/captions?format=srt", headers=AUTH)
-    assert srt.status_code == 200 and "SmartCuts." in srt.text and "00:00:00,200 --> 00:00:01,000" in srt.text
+    assert srt.status_code == 200 and "Clipaso." in srt.text and "00:00:00,200 --> 00:00:01,000" in srt.text
     vtt = client.get(f"/clips/{clip['id']}/captions?format=vtt", headers=AUTH).text
     assert vtt.startswith("WEBVTT")
 
@@ -235,7 +235,7 @@ def test_custom_styles(client, sample_video, monkeypatch):
 
 
 def test_legacy_default_style_becomes_a_custom_style(client):
-    from smartcuts.saas.models import User
+    from clipaso.saas.models import User
 
     client.get("/me", headers=AUTH)
     app = client.app
@@ -300,8 +300,8 @@ def test_account_locale_drives_notification_language(client, sample_video, monke
 
 
 def test_words_starting_at_the_same_time_get_distinct_keys():
-    from smartcuts.domain.models import Sentence, Transcript, Word
-    from smartcuts.saas.artifacts import apply_edits, word_keys
+    from clipaso.domain.models import Sentence, Transcript, Word
+    from clipaso.saas.artifacts import apply_edits, word_keys
 
     words = [Word(text=" a", start=1.0, end=1.0), Word(text=" b", start=1.0, end=1.2),
              Word(text=" c", start=2, end=2.5)]
@@ -315,8 +315,8 @@ def test_words_starting_at_the_same_time_get_distinct_keys():
 def test_trim_on_the_server_bills_only_the_part_and_replaces_the_original(client, tmp_path, monkeypatch):
     import subprocess
 
-    from smartcuts.infra import ffmpeg
-    from smartcuts.saas.models import Upload
+    from clipaso.infra import ffmpeg
+    from clipaso.saas.models import Upload
     from tests.saas.test_api_flow import put_parts
 
     video = tmp_path / "larga.mp4"
@@ -439,8 +439,8 @@ def test_subtitle_only_mode(client, sample_video, monkeypatch):
 
 
 def test_original_profile_keeps_the_frame():
-    from smartcuts.infra.config import Settings
-    from smartcuts.saas.rendering import original_profile
+    from clipaso.infra.config import Settings
+    from clipaso.saas.rendering import original_profile
 
     settings = Settings(_env_file=None)
     vertical = original_profile(settings, (2160, 3840))

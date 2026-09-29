@@ -4,9 +4,9 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export const en: Dict = {
   meta: {
-    title: "SmartCuts · AI vertical clips",
+    title: "Clipaso · AI vertical clips",
     description:
-      "Upload your video and SmartCuts finds the best moments and turns them into vertical clips with captions for TikTok, Reels and Shorts.",
+      "Upload your video and Clipaso finds the best moments and turns them into vertical clips with captions for TikTok, Reels and Shorts.",
   },
   common: {
     cancel: "Cancel",
@@ -69,10 +69,10 @@ export const en: Dict = {
     titleStart: "Turn your long videos into",
     titleAccent: "viral clips",
     lead:
-      "SmartCuts finds the best moments in your videos and turns them into vertical clips with captions, ready for TikTok, Instagram Reels and YouTube Shorts. No manual editing.",
+      "Clipaso finds the best moments in your videos and turns them into vertical clips with captions, ready for TikTok, Instagram Reels and YouTube Shorts. No manual editing.",
     howButton: "How it works",
     trust: ["30 free minutes a month", "No card required", "Data in the EU"],
-    marqueeLabel: "SmartCuts benefits",
+    marqueeLabel: "Clipaso benefits",
     marquee: [
       ["AI that picks", "The best moments"],
       ["Automatic captions", "Word by word"],
@@ -113,7 +113,7 @@ export const en: Dict = {
     examples: {
       eyebrow: "Examples",
       title: "What a long video looks like as clips",
-      lead: "Three common kinds of video and the clips SmartCuts would pull from each one.",
+      lead: "Three common kinds of video and the clips Clipaso would pull from each one.",
       note: "Illustrative examples.",
       source: "Original video",
       score: "Potential",
@@ -165,7 +165,7 @@ export const en: Dict = {
       editorStart: "Start",
       editorEnd: "End",
       editorWords: ["Today", "I'll", "show"],
-      editorFixed: "SmartCuts",
+      editorFixed: "Clipaso",
       editorTail: ["step", "by", "step"],
       textsTitle: "Copy ready to post",
       textsText: "Title, description and hashtags written for TikTok, Reels and Shorts.",
@@ -188,7 +188,7 @@ export const en: Dict = {
       title: "Questions?",
       lead: "If you can't find the answer, write to us and we'll help.",
       items: [
-        ["Which videos work best?", "The ones with conversation: podcasts, interviews, talks, classes or streams. SmartCuts picks moments based on what's said, so it needs dialogue."],
+        ["Which videos work best?", "The ones with conversation: podcasts, interviews, talks, classes or streams. Clipaso picks moments based on what's said, so it needs dialogue."],
         ["How long does it take?", "A few minutes for a half-hour video. We email you when your clips are ready, so you can close the tab."],
         ["Can I edit the clips?", "Yes. In the editor you can move the start and end, fix caption words, change the style and generate the clip again. You can also ask for more clips from the same video without using minutes."],
         ["Which languages does it support?", "Spanish, English, Portuguese, French, Italian and German, among others. It can also detect the language automatically."],
@@ -276,7 +276,7 @@ export const en: Dict = {
   },
   onboarding: {
     title: "Getting started",
-    lead: "Three steps to get the most out of SmartCuts.",
+    lead: "Three steps to get the most out of Clipaso.",
     dismiss: "Hide",
     done: "Done",
     steps: [

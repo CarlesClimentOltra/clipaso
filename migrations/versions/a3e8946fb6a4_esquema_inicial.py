@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-import smartcuts.saas.models
+import clipaso.saas.models
 
 revision = 'a3e8946fb6a4'
 down_revision = None
@@ -40,7 +40,7 @@ def upgrade() -> None:
     sa.Column('email', sa.String(length=320), nullable=False),
     sa.Column('plan_code', sa.String(length=32), nullable=False),
     sa.Column('stripe_customer_id', sa.String(length=128), nullable=True),
-    sa.Column('created_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=False),
+    sa.Column('created_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['plan_code'], ['plans.code'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -58,7 +58,7 @@ def upgrade() -> None:
     sa.Column('duration_seconds', sa.Float(), nullable=True),
     sa.Column('width', sa.Integer(), nullable=True),
     sa.Column('height', sa.Integer(), nullable=True),
-    sa.Column('created_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=False),
+    sa.Column('created_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -81,11 +81,11 @@ def upgrade() -> None:
     sa.Column('options', sa.JSON(), nullable=False),
     sa.Column('llm_cost_usd', sa.Float(), nullable=False),
     sa.Column('attempts', sa.Integer(), nullable=False),
-    sa.Column('created_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=False),
-    sa.Column('started_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
-    sa.Column('finished_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
-    sa.Column('heartbeat_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
-    sa.Column('expires_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True),
+    sa.Column('created_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=False),
+    sa.Column('started_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
+    sa.Column('finished_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
+    sa.Column('heartbeat_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
+    sa.Column('expires_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['upload_id'], ['uploads.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -120,7 +120,7 @@ def upgrade() -> None:
     sa.Column('minutes', sa.Float(), nullable=False),
     sa.Column('period', sa.String(length=7), nullable=False),
     sa.Column('note', sa.String(length=255), nullable=False),
-    sa.Column('created_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=False),
+    sa.Column('created_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['job_id'], ['jobs.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')

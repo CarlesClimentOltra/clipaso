@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Política de privacidad · SmartCuts" };
+export const metadata: Metadata = { title: "Política de privacidad · Clipaso" };
 
 export default function PrivacyPage() {
   const { owner } = legal;
@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <p className="updated">Última actualización: {legal.updatedAt}</p>
 
       <p>
-        Esta política explica qué datos personales trata SmartCuts cuando usas la web y el servicio, para qué, durante
+        Esta política explica qué datos personales trata Clipaso cuando usas la web y el servicio, para qué, durante
         cuánto tiempo y qué derechos tienes. Está redactada conforme al Reglamento General de Protección de Datos (RGPD)
         y a la Ley Orgánica 3/2018 de Protección de Datos (LOPDGDD).
       </p>
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
 
       <h2>4. Decisiones automatizadas</h2>
       <p>
-        SmartCuts usa inteligencia artificial para transcribir tus vídeos y proponer los fragmentos con más potencial.
+        Clipaso usa inteligencia artificial para transcribir tus vídeos y proponer los fragmentos con más potencial.
         Es una herramienta de edición: no toma decisiones que produzcan efectos jurídicos sobre ti ni te afecten de forma
         significativa. Tú decides qué clips usar y dónde publicarlos.
       </p>
@@ -183,7 +183,7 @@ export default function PrivacyPage() {
       <p>
         Si subes vídeos en los que aparecen o hablan otras personas, eres tú quien decide tratar esos datos y debes contar
         con una base legal para ello (por ejemplo, su consentimiento para grabarlas y publicar los clips). En ese caso,
-        SmartCuts actúa como encargado del tratamiento por cuenta tuya y trata esos datos solo para generar tus clips,
+        Clipaso actúa como encargado del tratamiento por cuenta tuya y trata esos datos solo para generar tus clips,
         conforme a los <Link href="/legal/terminos">Términos del servicio</Link>.
       </p>
 
@@ -213,7 +213,7 @@ export default function PrivacyPage() {
       </p>
 
       <h2>11. Menores</h2>
-      <p>SmartCuts está dirigido a mayores de {legal.minAge} años. No creamos cuentas a sabiendas a menores de esa edad.</p>
+      <p>Clipaso está dirigido a mayores de {legal.minAge} años. No creamos cuentas a sabiendas a menores de esa edad.</p>
 
       <h2>12. Cambios en esta política</h2>
       <p>

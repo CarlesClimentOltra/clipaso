@@ -11,7 +11,7 @@ import { dictionary } from "@/lib/i18n";
 const CONCURRENCY = 4;
 const MAX_RETRIES = 4;
 const URL_BATCH = 50;
-const STORAGE_PREFIX = "smartcuts.upload.";
+const STORAGE_PREFIX = "clipaso.upload.";
 
 export type UploadProgress = {
   sentBytes: number;

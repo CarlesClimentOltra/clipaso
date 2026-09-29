@@ -16,7 +16,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-6 text-sm text-muted-foreground">
-        <span>© {new Date().getFullYear()} SmartCuts · {t.footer.rights}</span>
+        <span>© {new Date().getFullYear()} Clipaso · {t.footer.rights}</span>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <nav aria-label={t.footer.legalNav} className="flex flex-wrap gap-x-4 gap-y-1">
             {links.map((l) => (

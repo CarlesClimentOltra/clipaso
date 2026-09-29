@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-import smartcuts.saas.models
+import clipaso.saas.models
 ${imports if imports else ""}
 
 revision = ${repr(up_revision)}

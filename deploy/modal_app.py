@@ -1,4 +1,4 @@
-"""Worker de SmartCuts en Modal: una GPU por vídeo, que solo cuesta mientras procesa.
+"""Worker de Clipaso en Modal: una GPU por vídeo, que solo cuesta mientras procesa.
 
     modal run deploy/modal_app.py::smoke   # comprueba la imagen (GPU, Whisper, ffmpeg, fuentes)
     modal deploy deploy/modal_app.py       # publica el worker y las tareas periódicas
@@ -9,7 +9,7 @@ Además corren dos tareas programadas:
 - cada hora, `cleanup`: caducidad de clips y borrado de subidas abandonadas.
 
 La configuración (base de datos, R2, Anthropic, Sentry) llega del secreto
-`smartcuts-worker` de Modal; se crea con `deploy/modal_secret.py`.
+`clipaso-worker` de Modal; se crea con `deploy/modal_secret.py`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from pathlib import Path
 import modal
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_NAME = "smartcuts-worker"
+APP_NAME = "clipaso-worker"
 GPU = "T4"  # 16 GB, la más barata; Whisper large-v3-turbo transcribe ~20x más rápido que tiempo real
 REGION = "eu"  # los vídeos de los usuarios no salen de la UE
 SITE = "/usr/local/lib/python3.12/site-packages"
@@ -47,10 +47,10 @@ def _bake_assets() -> None:
     models = Path("/app/data/models")
     models.mkdir(parents=True, exist_ok=True)
     urllib.request.urlretrieve(YUNET_URL, models / "face_detection_yunet_2023mar.onnx")
-    fonts = Path("/usr/local/share/fonts/smartcuts")
+    fonts = Path("/usr/local/share/fonts/clipaso")
     fonts.mkdir(parents=True, exist_ok=True)
     urllib.request.urlretrieve(FONT_URL, fonts / "ArchivoBlack-Regular.ttf")
-    Path("/etc/fonts/conf.d/99-smartcuts-arial-black.conf").write_text(FONT_ALIAS)
+    Path("/etc/fonts/conf.d/99-clipaso-arial-black.conf").write_text(FONT_ALIAS)
 
 
 image = (
@@ -66,9 +66,9 @@ image = (
     .env({
         "HF_HUB_OFFLINE": "1",  # el modelo ya está en la imagen
         "PYTHONPATH": "/app/src",
-        "SMARTCUTS_LOG_JSON": "true",
-        "SMARTCUTS_WORKER__DISPATCHER": "modal",
-        "SMARTCUTS_WORKER__MODAL_APP": APP_NAME,
+        "CLIPASO_LOG_JSON": "true",
+        "CLIPASO_WORKER__DISPATCHER": "modal",
+        "CLIPASO_WORKER__MODAL_APP": APP_NAME,
     })
     # El código va al final: cambiarlo no reconstruye las capas pesadas de arriba.
     .add_local_dir(ROOT / "src", "/app/src", ignore=["**/__pycache__"])
@@ -77,15 +77,15 @@ image = (
 )
 
 app = modal.App(APP_NAME, image=image)
-secret = modal.Secret.from_name("smartcuts-worker")
+secret = modal.Secret.from_name("clipaso-worker")
 
 
 def _context(component: str):
-    from smartcuts.bootstrap import build_storage
-    from smartcuts.infra.config import get_settings
-    from smartcuts.infra.logging import configure_logging
-    from smartcuts.infra.observability import init_sentry
-    from smartcuts.saas.db import session_factory
+    from clipaso.bootstrap import build_storage
+    from clipaso.infra.config import get_settings
+    from clipaso.infra.logging import configure_logging
+    from clipaso.infra.observability import init_sentry
+    from clipaso.saas.db import session_factory
 
     settings = get_settings()
     configure_logging(settings.log_level, settings.log_json)
@@ -104,7 +104,7 @@ def _context(component: str):
 class Worker:
     @modal.enter()
     def setup(self) -> None:
-        from smartcuts.saas.worker import JobRunner
+        from clipaso.saas.worker import JobRunner
 
         self.runner = JobRunner(*_context("worker"))
 
@@ -120,8 +120,8 @@ class Worker:
 
 @app.function(region=REGION, secrets=[secret], schedule=modal.Period(minutes=5), timeout=300)
 def sweep() -> None:
-    from smartcuts.saas.dispatch import get_dispatcher, redispatch_queued
-    from smartcuts.saas.worker import JobRunner
+    from clipaso.saas.dispatch import get_dispatcher, redispatch_queued
+    from clipaso.saas.worker import JobRunner
 
     settings, sessions, storage = _context("sweep")
     runner = JobRunner(settings, sessions, storage)
@@ -132,7 +132,7 @@ def sweep() -> None:
 
 @app.function(region=REGION, secrets=[secret], schedule=modal.Period(hours=1), timeout=900)
 def cleanup() -> None:
-    from smartcuts.saas.maintenance import run_cleanup
+    from clipaso.saas.maintenance import run_cleanup
 
     run_cleanup(*_context("cleanup"))
 
@@ -143,20 +143,20 @@ def smoke() -> dict:
     import subprocess
     import tempfile
 
-    from smartcuts.infra import ffmpeg
-    from smartcuts.infra.cuda import cuda_device_count
+    from clipaso.infra import ffmpeg
+    from clipaso.infra.cuda import cuda_device_count
 
     report: dict = {"cuda_devices": cuda_device_count(), "nvenc": ffmpeg.nvenc_available()}
     report["font"] = subprocess.run(["fc-match", "Arial Black"], capture_output=True, text=True).stdout.strip()
     report["yunet"] = Path("/app/data/models/face_detection_yunet_2023mar.onnx").exists()
 
     # Las fuentes de los subtítulos (assets/fonts) deben resolverse sin caer en otra por defecto.
-    from smartcuts.adapters.exporters.ffmpeg_exporter import _fonts_dir_for
-    from smartcuts.adapters.exporters.subtitles import build_ass
-    from smartcuts.domain.models import SubtitleStyle, Word
+    from clipaso.adapters.exporters.ffmpeg_exporter import _fonts_dir_for
+    from clipaso.adapters.exporters.subtitles import build_ass
+    from clipaso.domain.models import SubtitleStyle, Word
 
     fonts_ok = {}
-    from smartcuts.saas.presets import FONTS
+    from clipaso.saas.presets import FONTS
 
     for font in FONTS.values():
         with tempfile.TemporaryDirectory() as tmp:
@@ -172,7 +172,7 @@ def smoke() -> dict:
             fonts_ok[font] = chosen
     report["subtitle_fonts"] = fonts_ok
 
-    from smartcuts.adapters.transcription.faster_whisper import FasterWhisperTranscriber
+    from clipaso.adapters.transcription.faster_whisper import FasterWhisperTranscriber
 
     with tempfile.TemporaryDirectory() as tmp:
         wav = Path(tmp) / "tone.wav"

@@ -26,7 +26,7 @@ export function landingMetadata(locale: Locale): Metadata {
     openGraph: {
       type: "website",
       url: PATHS[locale],
-      siteName: "SmartCuts",
+      siteName: "Clipaso",
       title: t.title,
       description: t.description,
       locale: OG_LOCALE[locale],
@@ -36,13 +36,13 @@ export function landingMetadata(locale: Locale): Metadata {
   };
 }
 
-/** Datos estructurados (schema.org) para que los buscadores entiendan qué es SmartCuts. */
+/** Datos estructurados (schema.org) para que los buscadores entiendan qué es Clipaso. */
 export function landingJsonLd(locale: Locale) {
   const t = DICTIONARIES[locale].meta;
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "SmartCuts",
+    name: "Clipaso",
     url: `${SITE_URL}${PATHS[locale] === "/" ? "" : PATHS[locale]}`,
     description: t.description,
     applicationCategory: "MultimediaApplication",

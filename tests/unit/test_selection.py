@@ -4,11 +4,11 @@ from typing import Any
 
 import pytest
 
-from smartcuts.adapters.selection.heuristic import HeuristicSelector
-from smartcuts.adapters.selection.hybrid import HybridSelector
-from smartcuts.application.cost import CostTracker
-from smartcuts.domain.errors import BudgetExceededError, SelectionError
-from smartcuts.domain.ports import LLMResponse, LLMUsage, SelectionRequest
+from clipaso.adapters.selection.heuristic import HeuristicSelector
+from clipaso.adapters.selection.hybrid import HybridSelector
+from clipaso.application.cost import CostTracker
+from clipaso.domain.errors import BudgetExceededError, SelectionError
+from clipaso.domain.ports import LLMResponse, LLMUsage, SelectionRequest
 
 
 class FakeLLM:

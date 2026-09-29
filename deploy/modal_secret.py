@@ -1,4 +1,4 @@
-"""Crea (o actualiza) el secreto `smartcuts-worker` de Modal a partir de tu `.env`.
+"""Crea (o actualiza) el secreto `clipaso-worker` de Modal a partir de tu `.env`.
 
     .venv\\Scripts\\python deploy\\modal_secret.py
 
@@ -19,25 +19,25 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
-NAME = "smartcuts-worker"
+NAME = "clipaso-worker"
 WEB_URL = "https://smartcuts-kohl.vercel.app"  # enlaces de los emails al usuario
 COPY = [
-    "SMARTCUTS_DATABASE__URL",
-    "SMARTCUTS_AUTH__SUPABASE_URL",
-    "SMARTCUTS_STORAGE__R2_ACCOUNT_ID",
-    "SMARTCUTS_STORAGE__R2_ACCESS_KEY_ID",
-    "SMARTCUTS_STORAGE__R2_SECRET_ACCESS_KEY",
-    "SMARTCUTS_STORAGE__R2_BUCKET",
-    "SMARTCUTS_STORAGE__R2_JURISDICTION",
-    "SMARTCUTS_SENTRY_DSN",
-    "SMARTCUTS_LLM__MODEL",
-    "SMARTCUTS_LLM__EFFORT",
-    "SMARTCUTS_BUDGET__MAX_USD_PER_JOB",
+    "CLIPASO_DATABASE__URL",
+    "CLIPASO_AUTH__SUPABASE_URL",
+    "CLIPASO_STORAGE__R2_ACCOUNT_ID",
+    "CLIPASO_STORAGE__R2_ACCESS_KEY_ID",
+    "CLIPASO_STORAGE__R2_SECRET_ACCESS_KEY",
+    "CLIPASO_STORAGE__R2_BUCKET",
+    "CLIPASO_STORAGE__R2_JURISDICTION",
+    "CLIPASO_SENTRY_DSN",
+    "CLIPASO_LLM__MODEL",
+    "CLIPASO_LLM__EFFORT",
+    "CLIPASO_BUDGET__MAX_USD_PER_JOB",
     "ANTHROPIC_API_KEY",
-    "SMARTCUTS_NOTIFICATIONS__BREVO_API_KEY",
-    "SMARTCUTS_NOTIFICATIONS__SENDER_EMAIL",
+    "CLIPASO_NOTIFICATIONS__BREVO_API_KEY",
+    "CLIPASO_NOTIFICATIONS__SENDER_EMAIL",
 ]
-REQUIRED = ["SMARTCUTS_DATABASE__URL", "SMARTCUTS_STORAGE__R2_ACCESS_KEY_ID", "ANTHROPIC_API_KEY"]
+REQUIRED = ["CLIPASO_DATABASE__URL", "CLIPASO_STORAGE__R2_ACCESS_KEY_ID", "ANTHROPIC_API_KEY"]
 
 
 def main() -> int:
@@ -48,18 +48,18 @@ def main() -> int:
         return 1
     values = {k: env[k] for k in COPY if env.get(k)}
     values |= {
-        "SMARTCUTS_ENV": "prod",
-        "SMARTCUTS_AUTH__MODE": "supabase",
-        "SMARTCUTS_STORAGE__BACKEND": "r2",
-        "SMARTCUTS_LLM__PROVIDER": "anthropic",
+        "CLIPASO_ENV": "prod",
+        "CLIPASO_AUTH__MODE": "supabase",
+        "CLIPASO_STORAGE__BACKEND": "r2",
+        "CLIPASO_LLM__PROVIDER": "anthropic",
         # El worker no firma URLs propias (usa R2), pero la configuración de prod exige una clave.
-        "SMARTCUTS_API__SECRET_KEY": secrets.token_urlsafe(48),
-        "SMARTCUTS_NOTIFICATIONS__WEB_URL": WEB_URL,
+        "CLIPASO_API__SECRET_KEY": secrets.token_urlsafe(48),
+        "CLIPASO_NOTIFICATIONS__WEB_URL": WEB_URL,
     }
-    if env.get("SMARTCUTS_NOTIFICATIONS__BREVO_API_KEY") and env.get("SMARTCUTS_NOTIFICATIONS__SENDER_EMAIL"):
-        values["SMARTCUTS_NOTIFICATIONS__PROVIDER"] = "brevo"
+    if env.get("CLIPASO_NOTIFICATIONS__BREVO_API_KEY") and env.get("CLIPASO_NOTIFICATIONS__SENDER_EMAIL"):
+        values["CLIPASO_NOTIFICATIONS__PROVIDER"] = "brevo"
     else:
-        print("Aviso: sin SMARTCUTS_NOTIFICATIONS__BREVO_API_KEY/SENDER_EMAIL en .env no se enviarán emails.")
+        print("Aviso: sin CLIPASO_NOTIFICATIONS__BREVO_API_KEY/SENDER_EMAIL en .env no se enviarán emails.")
     cli = [sys.executable, str(ROOT / "deploy" / "modal_cli.py")]
     fd, path = tempfile.mkstemp(suffix=".json")
     try:

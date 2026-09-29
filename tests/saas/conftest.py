@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from smartcuts.infra.config import Settings
-from smartcuts.interfaces.api.app import create_app
+from clipaso.infra.config import Settings
+from clipaso.interfaces.api.app import create_app
 
 
 @pytest.fixture(scope="session")

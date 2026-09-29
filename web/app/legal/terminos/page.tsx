@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Términos del servicio · SmartCuts" };
+export const metadata: Metadata = { title: "Términos del servicio · Clipaso" };
 
 export default function TermsPage() {
   const { owner } = legal;
@@ -13,8 +13,8 @@ export default function TermsPage() {
       <p className="updated">Última actualización: {legal.updatedAt}</p>
 
       <p>
-        Estos términos regulan el uso de SmartCuts, un servicio que convierte vídeos largos en clips verticales con
-        subtítulos mediante inteligencia artificial, prestado por {owner.name} (en adelante, «SmartCuts»). Al crear una
+        Estos términos regulan el uso de Clipaso, un servicio que convierte vídeos largos en clips verticales con
+        subtítulos mediante inteligencia artificial, prestado por {owner.name} (en adelante, «Clipaso»). Al crear una
         cuenta o usar el servicio los aceptas. Si no estás de acuerdo, no uses el servicio.
       </p>
 
@@ -48,7 +48,7 @@ export default function TermsPage() {
       <h2>3. Tu contenido</h2>
       <ul>
         <li>
-          <strong>Tus vídeos y los clips generados son tuyos.</strong> SmartCuts no adquiere ningún derecho sobre ellos.
+          <strong>Tus vídeos y los clips generados son tuyos.</strong> Clipaso no adquiere ningún derecho sobre ellos.
         </li>
         <li>
           Nos concedes únicamente el permiso necesario para almacenarlos y procesarlos con el fin de prestarte el
@@ -60,14 +60,14 @@ export default function TermsPage() {
           cuando aparezcan otras personas, su autorización para grabarlas, procesar sus datos y publicar los clips.
         </li>
         <li>
-          Para esos datos de terceros, tú eres el responsable del tratamiento y SmartCuts actúa como encargado: los trata
+          Para esos datos de terceros, tú eres el responsable del tratamiento y Clipaso actúa como encargado: los trata
           solo siguiendo tus instrucciones (generar tus clips), con las medidas de seguridad descritas en la política de
           privacidad, a través de los proveedores allí indicados, y los elimina en los plazos indicados en ella.
         </li>
       </ul>
 
       <h2>4. Usos prohibidos</h2>
-      <p>No puedes usar SmartCuts para subir o generar contenido que:</p>
+      <p>No puedes usar Clipaso para subir o generar contenido que:</p>
       <ul>
         <li>Infrinja derechos de propiedad intelectual o de imagen de otras personas.</li>
         <li>Sea ilegal, incluido cualquier contenido de abuso sexual infantil, que denunciaremos a las autoridades.</li>
@@ -94,7 +94,7 @@ export default function TermsPage() {
         </li>
         <li>
           Los clips se conservan durante los días que indica tu plan y después se borran automáticamente.{" "}
-          <strong>Descarga los clips que quieras guardar</strong>: SmartCuts no es un servicio de almacenamiento a largo
+          <strong>Descarga los clips que quieras guardar</strong>: Clipaso no es un servicio de almacenamiento a largo
           plazo.
         </li>
         <li>Podemos mejorar o cambiar funciones del servicio; si un cambio te perjudica de forma relevante, te avisaremos.</li>
@@ -102,7 +102,7 @@ export default function TermsPage() {
 
       <h2>7. Responsabilidad</h2>
       <p>
-        SmartCuts responde de los daños que cause por dolo o negligencia grave y en los demás casos que establezca la ley.
+        Clipaso responde de los daños que cause por dolo o negligencia grave y en los demás casos que establezca la ley.
         No respondemos del uso que hagas de los clips ni del contenido que subas. Si eres consumidor, nada de lo previsto
         en estos términos limita los derechos que te reconoce la legislación de consumidores y usuarios.
       </p>

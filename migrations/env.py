@@ -1,12 +1,12 @@
-"""Entorno de Alembic: toma la URL de la configuración de SmartCuts."""
+"""Entorno de Alembic: toma la URL de la configuración de Clipaso."""
 
 from __future__ import annotations
 
 from alembic import context
 from sqlalchemy import create_engine, pool
 
-from smartcuts.saas import models  # noqa: F401  (registra las tablas en Base.metadata)
-from smartcuts.saas.db import Base
+from clipaso.saas import models  # noqa: F401  (registra las tablas en Base.metadata)
+from clipaso.saas.db import Base
 
 config = context.config
 url = config.attributes["database_url"]

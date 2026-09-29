@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from smartcuts.domain.models import OutputProfile, Signal, SignalSet, SourceVideo, Transcript, Word
-from smartcuts.domain.segmentation import build_sentences
+from clipaso.domain.models import OutputProfile, Signal, SignalSet, SourceVideo, Transcript, Word
+from clipaso.domain.segmentation import build_sentences
 
 
 def make_words(text: str, start: float = 0.0, wps: float = 2.5, gap_after_sentence: float = 0.3) -> list[Word]:

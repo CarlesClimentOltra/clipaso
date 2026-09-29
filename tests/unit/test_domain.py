@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from smartcuts.domain.clips import clip_bounds, pick_non_overlapping, sentence_windows, signal_score
-from smartcuts.domain.models import ClipCandidate, Signal, SignalSet
-from smartcuts.domain.segmentation import build_sentences
+from clipaso.domain.clips import clip_bounds, pick_non_overlapping, sentence_windows, signal_score
+from clipaso.domain.models import ClipCandidate, Signal, SignalSet
+from clipaso.domain.segmentation import build_sentences
 from tests.conftest import make_words
 
 

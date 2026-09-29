@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Política de cookies · SmartCuts" };
+export const metadata: Metadata = { title: "Política de cookies · Clipaso" };
 
 const ITEMS = [
   {
@@ -11,7 +11,7 @@ const ITEMS = [
     duration: "Hasta que cierras sesión",
   },
   {
-    name: "smartcuts.upload.…",
+    name: "clipaso.upload.…",
     purpose: "Recordar qué partes de un vídeo ya se han subido para continuar si se corta la conexión",
     duration: "Se borra al terminar la subida",
   },
@@ -29,7 +29,7 @@ export default function CookiesPage() {
       <p className="updated">Última actualización: {legal.updatedAt}</p>
 
       <p>
-        <strong>SmartCuts no usa cookies de publicidad, de analítica ni de seguimiento, ni de terceros.</strong> Por eso
+        <strong>Clipaso no usa cookies de publicidad, de analítica ni de seguimiento, ni de terceros.</strong> Por eso
         no te mostramos ningún aviso para aceptarlas.
       </p>
       <p>

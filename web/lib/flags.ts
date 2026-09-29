@@ -4,7 +4,7 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-const PREFIX = "smartcuts.flag.";
+const PREFIX = "clipaso.flag.";
 const listeners = new Set<() => void>();
 const memory = new Map<string, boolean>();
 

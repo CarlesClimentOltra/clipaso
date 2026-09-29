@@ -1,4 +1,4 @@
-# SmartCuts
+# Clipaso
 
 SaaS que convierte vídeos largos en clips verticales listos para TikTok, Reels y
 Shorts: transcribe, elige los mejores momentos con Claude, reencuadra a 9:16
@@ -6,22 +6,22 @@ siguiendo la cara y añade subtítulos con la palabra activa resaltada.
 
 > Versión comercial: los usuarios **suben sus propios archivos**. No hay
 > descarga desde YouTube ni otras plataformas (la versión de uso personal con
-> YouTube vive en `../SmartCuts-Personal`).
+> YouTube vive en `../Clipaso-Personal`).
 
 ## Arquitectura
 
 ```
-Next.js (web/) ──JWT──▶ FastAPI (api) ──SQL──▶ Postgres ◀── worker (GPU) = core SmartCuts
+Next.js (web/) ──JWT──▶ FastAPI (api) ──SQL──▶ Postgres ◀── worker (GPU) = core Clipaso
      │  polling /jobs/:id        │ URLs firmadas              │ sube clips
      └──── subida/descarga directa ───────▶ Cloudflare R2 ◀───┘
 ```
 
 - **web/**: Next.js + TypeScript + Tailwind + shadcn/ui + TanStack Query. Tipos de la API generados desde OpenAPI.
-- **API** (`src/smartcuts/interfaces/api`): FastAPI sin estado. Auth (Supabase JWT), cuotas, jobs, URLs firmadas.
-- **Dominio SaaS** (`src/smartcuts/saas`): usuarios, planes, subidas, jobs, clips y libro de consumo en minutos.
-- **Worker** (`src/smartcuts/saas/worker.py`): reclama jobs de la tabla `jobs` (cola en Postgres), ejecuta el core,
+- **API** (`src/clipaso/interfaces/api`): FastAPI sin estado. Auth (Supabase JWT), cuotas, jobs, URLs firmadas.
+- **Dominio SaaS** (`src/clipaso/saas`): usuarios, planes, subidas, jobs, clips y libro de consumo en minutos.
+- **Worker** (`src/clipaso/saas/worker.py`): reclama jobs de la tabla `jobs` (cola en Postgres), ejecuta el core,
   informa del progreso con latido, sube resultados y devuelve los minutos si algo falla.
-- **Core** (`src/smartcuts/{domain,application,adapters,infra}`): el pipeline de vídeo, sin cambios de diseño.
+- **Core** (`src/clipaso/{domain,application,adapters,infra}`): el pipeline de vídeo, sin cambios de diseño.
 
 | Entorno | BD | Auth | Almacenamiento | Worker | LLM |
 |---|---|---|---|---|---|
@@ -43,22 +43,22 @@ copy .env.example .env
 cd web; npm install; copy .env.example .env.local; cd ..
 
 # tres terminales (o todo de golpe: doble clic en dev.cmd)
-.venv\Scripts\smartcuts api --reload     # http://localhost:8000  (docs en /docs)
-.venv\Scripts\smartcuts worker
+.venv\Scripts\clipaso api --reload     # http://localhost:8000  (docs en /docs)
+.venv\Scripts\clipaso worker
 cd web; npm run dev                      # http://localhost:3000
 ```
 
 Otros comandos:
 
 ```powershell
-.venv\Scripts\smartcuts doctor           # comprueba el entorno
-.venv\Scripts\smartcuts db-upgrade       # aplica migraciones (en dev se aplican solas)
-.venv\Scripts\smartcuts openapi; cd web; npm run gen:api   # regenera los tipos del frontend
-.venv\Scripts\smartcuts process video.mp4 -n 5              # usar el core sin web
+.venv\Scripts\clipaso doctor           # comprueba el entorno
+.venv\Scripts\clipaso db-upgrade       # aplica migraciones (en dev se aplican solas)
+.venv\Scripts\clipaso openapi; cd web; npm run gen:api   # regenera los tipos del frontend
+.venv\Scripts\clipaso process video.mp4 -n 5              # usar el core sin web
 ```
 
-Cambiar el modelo de datos: edita `src/smartcuts/saas/models.py` y genera la migración con
-`python -c "from smartcuts.infra.config import Settings; from smartcuts.saas.migrations import make_migration; make_migration(Settings(), 'descripcion')"`.
+Cambiar el modelo de datos: edita `src/clipaso/saas/models.py` y genera la migración con
+`python -c "from clipaso.infra.config import Settings; from clipaso.saas.migrations import make_migration; make_migration(Settings(), 'descripcion')"`.
 
 ## Worker en Modal
 
@@ -76,12 +76,12 @@ hora se ejecuta la limpieza (caducidad, subidas abandonadas).
 ```
 
 `deploy/modal_cli.py` es la CLI de `modal` usando los certificados de Windows (necesario si un antivirus
-inspecciona HTTPS). Para que la API envíe los vídeos a Modal: `SMARTCUTS_WORKER__DISPATCHER=modal` en su
+inspecciona HTTPS). Para que la API envíe los vídeos a Modal: `CLIPASO_WORKER__DISPATCHER=modal` en su
 entorno; con eso `dev.cmd` ya no abre el worker local.
 
 ## API en Fly.io
 
-La API corre en Fly.io (Frankfurt) con el `Dockerfile` de la raíz: https://smartcuts-api.fly.dev.
+La API corre en Fly.io (Frankfurt) con el `Dockerfile` de la raíz: https://clipaso-api.fly.dev.
 Sin tráfico la máquina se suspende y despierta en menos de un segundo. Las migraciones se aplican
 solas en cada despliegue (`release_command`), antes de publicar la nueva versión.
 
@@ -92,13 +92,13 @@ flyctl logs                                                     # logs en vivo
 ```
 
 `--depot=false` usa el constructor propio de Fly (el de depot falla con antivirus que inspeccionan HTTPS).
-Los orígenes CORS de la web están en `fly.toml` (`SMARTCUTS_API__WEB_ORIGINS`).
+Los orígenes CORS de la web están en `fly.toml` (`CLIPASO_API__WEB_ORIGINS`).
 
 ## Planes y consumo
 
 Se mide en **minutos de vídeo** (redondeados a la décima). Al encolar un vídeo se reservan sus
 minutos; si el procesamiento falla se devuelven automáticamente. Catálogo en
-`src/smartcuts/saas/plans.py` (precios provisionales; `stripe_price_id` listo para la fase de cobros).
+`src/clipaso/saas/plans.py` (precios provisionales; `stripe_price_id` listo para la fase de cobros).
 
 ## Tests
 

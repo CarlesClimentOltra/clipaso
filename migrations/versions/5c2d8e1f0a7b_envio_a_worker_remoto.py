@@ -10,7 +10,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-import smartcuts.saas.models
+import clipaso.saas.models
 
 revision = '5c2d8e1f0a7b'
 down_revision = '3f693a7c9801'
@@ -20,7 +20,7 @@ depends_on = None
 
 def upgrade() -> None:
     with op.batch_alter_table('jobs', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('dispatched_at', smartcuts.saas.models.UTCDateTime(timezone=True), nullable=True))
+        batch_op.add_column(sa.Column('dispatched_at', clipaso.saas.models.UTCDateTime(timezone=True), nullable=True))
 
 
 def downgrade() -> None:

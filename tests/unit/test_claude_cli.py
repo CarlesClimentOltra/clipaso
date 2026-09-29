@@ -5,9 +5,9 @@ import subprocess
 
 import pytest
 
-from smartcuts.adapters.llm.claude_cli import ClaudeCodeCLI
-from smartcuts.application.cost import CostTracker
-from smartcuts.domain.errors import ConfigurationError, LLMError
+from clipaso.adapters.llm.claude_cli import ClaudeCodeCLI
+from clipaso.application.cost import CostTracker
+from clipaso.domain.errors import ConfigurationError, LLMError
 
 
 def completed(payload: dict | None, stderr: str = "", code: int = 0) -> subprocess.CompletedProcess[str]:
@@ -31,7 +31,7 @@ def test_parses_structured_output_and_usage(monkeypatch):
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-should-not-leak")
     monkeypatch.setattr(subprocess, "run", fake_run)
-    monkeypatch.setattr("smartcuts.adapters.llm.claude_cli.find_claude_executable", lambda _=None: "claude")
+    monkeypatch.setattr("clipaso.adapters.llm.claude_cli.find_claude_executable", lambda _=None: "claude")
 
     resp = ClaudeCodeCLI().complete_json(system="sys", user="transcripción larga", schema={"type": "object"})
 
