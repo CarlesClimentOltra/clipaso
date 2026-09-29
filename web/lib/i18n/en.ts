@@ -560,6 +560,8 @@ export const en: Dict = {
     error: "Couldn't request more clips.",
   },
   cover: {
+    panelTitle: "Cover & thumbnail",
+    panelText: "Ready for TikTok and YouTube · view, download or edit",
     button: "Cover",
     title: "Clip cover",
     frameInEditor: "To change the frame, open «Edit clip» → Cover tab.",

@@ -560,6 +560,8 @@ export const es = {
     error: "No se pudo pedir más clips.",
   },
   cover: {
+    panelTitle: "Portada y miniatura",
+    panelText: "Listas para TikTok y YouTube · ver, descargar o editar",
     button: "Portada",
     title: "Portada del clip",
     frameInEditor: "Para cambiar el fotograma, abre «Editar clip» → pestaña Portada.",

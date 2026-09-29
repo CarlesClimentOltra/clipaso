@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   CheckIcon,
+  ChevronRightIcon,
   CopyIcon,
   ImageIcon,
   Loader2Icon,
@@ -188,6 +189,25 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
             <AlertDescription>{clip.render_error} {c.keptPrevious}</AlertDescription>
           </Alert>
         )}
+        {clip.cover && (
+          <button
+            type="button"
+            onClick={() => setCoverOpen(true)}
+            className="group flex items-center gap-3 rounded-xl border border-primary/30 bg-brand-soft/40 p-2 text-left outline-none transition-colors hover:border-primary hover:bg-brand-soft focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={clip.cover.vertical_url} alt="" className="h-16 w-9 shrink-0 rounded-md object-cover shadow-sm" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={clip.cover.horizontal_url} alt="" className="hidden h-9 w-16 shrink-0 rounded-md object-cover shadow-sm sm:block" />
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1.5 font-medium">
+                <ImageIcon className="size-4 text-brand-ink" /> {t.cover.panelTitle}
+              </span>
+              <span className="block text-xs text-muted-foreground">{t.cover.panelText}</span>
+            </span>
+            <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          </button>
+        )}
         {(clip.description || clip.hashtags.length > 0) && (
           <div className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
             {clip.description && <p className="line-clamp-4 whitespace-pre-line">{clip.description}</p>}
@@ -206,11 +226,6 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
             {c.range(Math.round(clip.duration), formatTimestamp(clip.start), formatTimestamp(clip.end))}
           </span>
           <span className="flex items-center gap-0.5" aria-label={c.rate}>
-            {clip.cover && (
-              <Button variant="ghost" size="sm" onClick={() => setCoverOpen(true)} className="mr-1 h-7 px-2 text-xs">
-                <ImageIcon /> {t.cover.button}
-              </Button>
-            )}
             <Button variant="ghost" size="icon-sm" aria-pressed={clip.rating === 1} aria-label={c.like}
                     onClick={() => vote(1)} className={cn(clip.rating === 1 && "text-brand-ink")}>
               <ThumbsUpIcon className={cn(clip.rating === 1 && "fill-current")} />
