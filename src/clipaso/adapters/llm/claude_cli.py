@@ -49,6 +49,7 @@ def find_claude_executable(explicit: str | None = None) -> str:
 class ClaudeCodeCLI:
     name = "claude_cli"
     billable = False  # va contra la suscripción, no contra el presupuesto en USD
+    supports_images = False  # quien llama debe tener un plan B sin imágenes
 
     def __init__(
         self,
@@ -67,7 +68,8 @@ class ClaudeCodeCLI:
         return int(len(text) / 3.2) + 50
 
     def complete_json(
-        self, *, system: str, user: str, schema: dict[str, Any], max_tokens: int | None = None
+        self, *, system: str, user: str, schema: dict[str, Any], max_tokens: int | None = None,
+        images: list[bytes] | None = None,
     ) -> LLMResponse:
         exe = find_claude_executable(self.cli_path)
         # Sin ANTHROPIC_API_KEY en el entorno: si estuviera, Claude Code la usaría y facturaría por API.

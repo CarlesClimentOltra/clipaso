@@ -200,6 +200,22 @@ def request_render(
     return task
 
 
+def request_cover(session: Session, user: User, clip: Clip, job: Job, *, now: datetime) -> Task:
+    """Nueva propuesta de portada con IA (en el worker: necesita el vídeo original)."""
+    if not source_available(session, job):
+        raise AppError("source_unavailable", 409)
+    if (clip.cover or {}).get("pending"):
+        raise AppError("cover_busy", 409)
+    if _active_tasks(session, user) >= MAX_ACTIVE_TASKS:
+        raise AppError("too_many_tasks", 429)
+    clip.cover = {**(clip.cover or {}), "pending": True}
+    task = Task(user_id=user.id, job_id=job.id, clip_id=clip.id, kind=TaskKind.COVER_CLIP, payload={},
+                created_at=now)
+    session.add(task)
+    session.flush()
+    return task
+
+
 def request_more_clips(session: Session, user: User, job: Job, *, count: int, topic: str, now: datetime) -> Task:
     if not source_available(session, job):
         raise AppError("source_unavailable", 409)

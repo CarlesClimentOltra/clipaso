@@ -26,6 +26,7 @@ from clipaso.domain.ports import Storage, Transcriber
 from clipaso.infra import ffmpeg, registry
 from clipaso.infra.config import Settings
 from clipaso.infra.logging import bind_job, clear_job, get_logger
+from clipaso.saas import cover_service
 from clipaso.saas.artifacts import make_preview, preview_key, save_analysis
 from clipaso.saas.db import session_scope, utcnow
 from clipaso.saas.maintenance import run_cleanup
@@ -187,6 +188,13 @@ class JobRunner:
             # Análisis del vídeo: editor, subtítulos descargables y «más clips» sin volver a transcribir.
             if result.transcript is not None and result.signals is not None:
                 save_analysis(self.storage, user_id, job_id, result.transcript, result.signals)
+            # Portada de cada clip (fotograma + texto con gancho elegidos por la IA).
+            self._write_progress(job_id, "cover", 0.97, state, force=True)
+            logo = branding.logo_path.read_bytes() if branding and branding.logo_path else None
+            cover_cost = cover_service.generate_for_clips(
+                self.storage, self.settings, user_id, job_id, clips, source=source, transcript=result.transcript,
+                options=options, logo=logo, logo_position=branding.position if branding else "top-right",
+            )
             keep_source = bool(options.get("keep_source"))
             if keep_source:
                 self._write_progress(job_id, "preview", 0.99, state, force=True)
@@ -198,7 +206,7 @@ class JobRunner:
                 job.clips = clips
                 job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0
                 job.finished_at = utcnow()
-                job.llm_cost_usd = round(result.cost_usd, 5)
+                job.llm_cost_usd = round(result.cost_usd + cover_cost, 5)
                 # Si el usuario no quiere editar ni pedir más clips, el original se borra ya (almacenamiento
                 # y RGPD); si no, se conserva hasta que caduque el proyecto.
                 if not keep_source and job.upload_id and (upload := s.get(Upload, job.upload_id)):

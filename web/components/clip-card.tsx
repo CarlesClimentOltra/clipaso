@@ -211,6 +211,7 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
       </CardContent>
       <CardFooter className="mt-auto flex gap-2">
         <ClipDownloads key={clip.version} clipId={clip.id} downloadUrl={clip.download_url} filenameBase={base}
+                       cover={clip.cover}
                        className="flex-1" />
         {job.can_edit ? (
           <Link

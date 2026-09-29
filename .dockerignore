@@ -4,5 +4,6 @@
 !src/
 !configs/
 !migrations/
+!assets/fonts/
 **/__pycache__
 **/*.pyc

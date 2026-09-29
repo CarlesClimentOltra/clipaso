@@ -219,3 +219,20 @@ def test_translator_keeps_sentence_timing():
     second = out.sentences[1].words
     assert second[0].start >= 5 and second[-1].end == 6  # cada frase se queda en su tramo
     assert '"text": "Hola a todos, esto es Clipaso."' in llm.users[0] and cost.spent > 0
+
+
+def test_cover_compose_and_fit():
+    from clipaso.saas import covers
+    from clipaso.saas.presets import PRESETS_BY_ID
+
+    frame = np.full((720, 1280, 3), 120, np.uint8)
+    vertical = covers.fit(frame, covers.SIZES["vertical"], face_x=0.8)
+    assert vertical.shape[:2] == (1920, 1080)
+    tall = np.full((1920, 1080, 3), 90, np.uint8)
+    assert covers.fit(tall, covers.SIZES["horizontal"]).shape[:2] == (720, 1280)  # fondo difuminado
+    base = covers.to_jpeg(vertical)
+    for template in covers.TEMPLATES:
+        for preset in ("clasico", "caja"):
+            out = covers.compose(base, covers.SIZES["vertical"], text="Un texto bastante largo para portada",
+                                 highlight=2, template=template, style=PRESETS_BY_ID[preset].style)
+            assert covers.from_jpeg(out).shape[:2] == (1920, 1080)

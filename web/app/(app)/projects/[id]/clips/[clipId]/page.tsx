@@ -10,6 +10,7 @@ import type { ClipFormat } from "@/components/caption-preview";
 import { slug } from "@/components/clip-card";
 import { ClipDownloads } from "@/components/clip-downloads";
 import { CLIP_ASPECT, ClipPlayer } from "@/components/clip-player";
+import { CoverEditor } from "@/components/editor/cover-editor";
 import { EditorPreview } from "@/components/editor/editor-preview";
 import { TrimTimeline } from "@/components/editor/trim-timeline";
 import { WordEditor } from "@/components/editor/word-editor";
@@ -176,6 +177,7 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
             <TabsTrigger value="trim" disabled={!data.can_render}>{e.tabs.trim}</TabsTrigger>
             <TabsTrigger value="words" disabled={!data.can_render}>{e.tabs.words}</TabsTrigger>
             <TabsTrigger value="style" disabled={!data.can_render}>{e.tabs.style}</TabsTrigger>
+            <TabsTrigger value="cover" disabled={!data.clip.cover}>{e.tabs.cover}</TabsTrigger>
             <TabsTrigger value="texts">{e.tabs.texts}</TabsTrigger>
           </TabsList>
           <Card className="mt-2">
@@ -203,6 +205,12 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
               </TabsContent>
               <TabsContent value="style">
                 <StylePicker value={style} onChange={setStyle} format={format} disabled={locked} />
+              </TabsContent>
+              <TabsContent value="cover">
+                {data.clip.cover && (
+                  <CoverEditor clip={data.clip} jobId={jobId} previewUrl={data.preview_url}
+                               canChangeFrame={data.can_render} />
+                )}
               </TabsContent>
               <TabsContent value="texts">
                 <TextsForm data={data} jobId={jobId} />
@@ -252,6 +260,7 @@ export default function ClipEditorPage() {
                 key={data.clip.version}
                 clipId={data.clip.id}
                 downloadUrl={data.clip.download_url}
+                cover={data.clip.cover}
                 filenameBase={`${slug(data.project_title)}-${String(data.clip.rank).padStart(2, "0")}-${slug(data.clip.title)}`}
                 className="w-44"
               />

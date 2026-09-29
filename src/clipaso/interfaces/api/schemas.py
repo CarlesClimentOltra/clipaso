@@ -129,6 +129,29 @@ class JobCreateIn(JobOptions):
 
 
 ClipStatusT = Literal["ready", "rendering", "failed"]
+CoverTemplateT = Literal["impacto", "caja", "titular", "limpia"]
+
+
+class CoverOut(BaseModel):
+    """Portada del clip: 9:16 (TikTok, Reels, Shorts) y 16:9 (YouTube)."""
+
+    text: str
+    highlight: int | None = Field(description="Palabra del texto resaltada (índice), o ninguna.")
+    template: CoverTemplateT
+    time: float = Field(description="Segundo del vídeo original del que sale el fotograma.")
+    candidates: list[float] = Field(description="Otros momentos que propuso la IA.")
+    vertical_url: str
+    horizontal_url: str
+    vertical_download_url: str
+    horizontal_download_url: str
+    pending: bool = Field(description="Se está generando una nueva propuesta con IA.")
+
+
+class CoverIn(BaseModel):
+    text: str | None = Field(None, max_length=60)
+    highlight: int | None = Field(None, ge=-1, le=20, description="-1 = sin palabra resaltada.")
+    template: CoverTemplateT | None = None
+    time: float | None = Field(None, ge=0, description="Otro fotograma (segundo del vídeo original).")
 
 
 class ClipOut(BaseModel):
@@ -149,6 +172,7 @@ class ClipOut(BaseModel):
     video_url: str
     download_url: str
     thumbnail_url: str | None
+    cover: CoverOut | None = None
 
 
 class ClipUpdateIn(BaseModel):

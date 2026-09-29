@@ -23,7 +23,7 @@ from clipaso.domain.ports import Storage
 from clipaso.infra import ffmpeg
 from clipaso.infra.config import Settings
 from clipaso.infra.logging import bind_job, clear_job, get_logger
-from clipaso.saas import exports
+from clipaso.saas import cover_service, exports
 from clipaso.saas.artifacts import SourceCache, apply_edits, load_signals, load_transcript
 from clipaso.saas.db import session_scope, utcnow
 from clipaso.saas.models import Clip, ClipStatus, Job, Task, TaskKind, TaskStatus, Upload, UploadStatus, User
@@ -110,6 +110,8 @@ class TaskRunner:
                 self._more_clips(task_id, tmp)
             elif kind == TaskKind.EXPORT_CLIP:
                 self._export_clip(task_id, tmp)
+            elif kind == TaskKind.COVER_CLIP:
+                self._cover_clip(task_id, tmp)
             else:
                 raise TaskError("internal_error", f"tarea desconocida: {kind}")
             with session_scope(self.sessions) as s:
@@ -134,6 +136,8 @@ class TaskRunner:
         task.status, task.finished_at = TaskStatus.FAILED, utcnow()
         task.error_code, task.error_detail = code, (detail or code)[:8000]
         # Solo un re-render fallido deja el clip en error; una exportación fallida no toca el clip.
+        if task.kind == TaskKind.COVER_CLIP and task.clip_id and (clip := s.get(Clip, task.clip_id)) and clip.cover:
+            clip.cover = {**clip.cover, "pending": False}
         if task.kind == TaskKind.RENDER_CLIP and task.clip_id and (clip := s.get(Clip, task.clip_id)):
             clip.status, clip.render_error = ClipStatus.FAILED, code  # se traduce al mostrarlo
 
@@ -197,6 +201,10 @@ class TaskRunner:
             clip.video_key, clip.thumb_key, clip.size_bytes = video_key, thumb_key, size
             clip.version, clip.status, clip.render_error = new_version, ClipStatus.READY, None
             exports.drop_exports(self.storage, clip)  # las otras calidades eran de la versión anterior
+            cover_time = (clip.cover or {}).get("time")
+            needs_cover = cover_time is None or not start <= cover_time <= end
+        if needs_cover:  # el fotograma de la portada quedó fuera del nuevo recorte
+            self._covers(task_id, [task.clip_id], transcript, source, tmp)
         for key in old_keys:
             if key and key not in (video_key, thumb_key):
                 self.storage.delete_prefix(key)
@@ -259,6 +267,35 @@ class TaskRunner:
                             quality: {"version": version, "key": key, "size": video.stat().st_size}}
         log.info("task.exported", quality=quality)
 
+    # ------------------------------------------------------------------ portadas
+
+    def _covers(self, task_id: str, clip_ids: list[str], transcript, source: Path, tmp: Path,
+                again: bool = False) -> None:
+        with session_scope(self.sessions) as s:
+            task = s.get(Task, task_id)
+            job = s.get(Job, task.job_id)
+            user = s.get(User, job.user_id)
+            options = dict(job.options or {})
+            branding = project_branding(self.storage, user, options, tmp / "brand-cover")
+            logo = branding.logo_path.read_bytes() if branding and branding.logo_path else None
+            clips = [c for c in (s.get(Clip, cid) for cid in clip_ids) if c is not None]
+            cost = cover_service.generate_for_clips(
+                self.storage, self.settings, job.user_id, job.id, clips, source=source, transcript=transcript,
+                options=options, logo=logo, logo_position=branding.position if branding else "top-right",
+                again=again,
+            )
+            job.llm_cost_usd = round((job.llm_cost_usd or 0) + cost, 5)
+
+    def _cover_clip(self, task_id: str, tmp: Path) -> None:
+        """«Regenerar con IA»: otra propuesta de portada distinta de la actual."""
+        with session_scope(self.sessions) as s:
+            task, job, upload, _user = self._load(s, task_id)
+            upload_key, filename, user_id, job_id = upload.storage_key, upload.filename, job.user_id, job.id
+        transcript = load_transcript(self.storage, user_id, job_id)
+        source = self._source(upload_key, filename)
+        self._beat(task_id)
+        self._covers(task_id, [task.clip_id], transcript, source, tmp, again=True)
+
     # ------------------------------------------------------------------ más clips
 
     def _more_clips(self, task_id: str, tmp: Path) -> None:
@@ -304,5 +341,10 @@ class TaskRunner:
         with session_scope(self.sessions) as s:
             job = s.get(Job, job_id)
             job.clips.extend(new_clips)
+            s.flush()
+            new_ids = [c.id for c in new_clips]
+        self._covers(task_id, new_ids, transcript, source, tmp)
+        with session_scope(self.sessions) as s:
+            job = s.get(Job, job_id)
             job.llm_cost_usd = round((job.llm_cost_usd or 0) + result.cost_usd, 5)
         log.info("task.more_clips", added=len(new_clips))

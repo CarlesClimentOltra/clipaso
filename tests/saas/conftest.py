@@ -34,3 +34,34 @@ def settings(tmp_path) -> Settings:
 def client(settings):
     with TestClient(create_app(settings)) as c:
         yield c
+
+
+class FakeCoverLLM:
+    """IA de portadas de mentira: elige el segundo candidato y un texto fijo (sin red)."""
+
+    name, model, billable, supports_images = "fake", "claude-haiku-4-5", True, True
+
+    def __init__(self):
+        self.calls: list[dict] = []
+
+    def estimate_input_tokens(self, text):
+        return len(text) // 3
+
+    def complete_json(self, *, system, user, schema, max_tokens=None, images=None):
+        from clipaso.domain.ports import LLMResponse, LLMUsage
+
+        self.calls.append({"system": system, "user": user, "images": len(images or [])})
+        return LLMResponse(data={"frame": 1, "text": "Esto lo cambia todo", "highlight": 3},
+                           usage=LLMUsage(model=self.model, input_tokens=1200, output_tokens=20))
+
+
+@pytest.fixture(autouse=True)
+def cover_llm(monkeypatch):
+    """Las portadas no descargan el detector de caras ni llaman a la IA de verdad en los tests."""
+    import clipaso.bootstrap
+    from clipaso.saas import covers
+
+    fake = FakeCoverLLM()
+    monkeypatch.setattr(clipaso.bootstrap, "build_fast_llm", lambda settings: fake)
+    monkeypatch.setattr(covers, "face_detector", lambda model_dir: None)
+    return fake

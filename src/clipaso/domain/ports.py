@@ -115,9 +115,11 @@ class LLMClient(Protocol):
     name: str
     model: str
     billable: bool
+    supports_images: bool  # si acepta imágenes junto al texto (`images`: JPEG en bytes)
 
     def complete_json(
-        self, *, system: str, user: str, schema: dict[str, Any], max_tokens: int = 16000
+        self, *, system: str, user: str, schema: dict[str, Any], max_tokens: int = 16000,
+        images: list[bytes] | None = None,
     ) -> LLMResponse: ...
 
     def estimate_input_tokens(self, text: str) -> int: ...

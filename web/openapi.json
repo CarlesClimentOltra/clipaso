@@ -2256,6 +2256,162 @@
           }
         }
       }
+    },
+    "/clips/{clip_id}/cover": {
+      "put": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Update Cover",
+        "description": "Cambia el texto, la palabra resaltada, la plantilla o el fotograma de la portada (se recompone al momento).",
+        "operationId": "update_cover_clips__clip_id__cover_put",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoverIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clips/{clip_id}/cover/regenerate": {
+      "post": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Regenerate Cover",
+        "description": "Otra propuesta de portada con IA (otro fotograma y otro texto).",
+        "operationId": "regenerate_cover_clips__clip_id__cover_regenerate_post",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClipOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2567,6 +2723,16 @@
               }
             ],
             "title": "Thumbnail Url"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -2656,6 +2822,147 @@
           "etag"
         ],
         "title": "CompletedPart"
+      },
+      "CoverIn": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "highlight": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": -1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlight",
+            "description": "-1 = sin palabra resaltada."
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "impacto",
+                  "caja",
+                  "titular",
+                  "limpia"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time",
+            "description": "Otro fotograma (segundo del vídeo original)."
+          }
+        },
+        "type": "object",
+        "title": "CoverIn"
+      },
+      "CoverOut": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "highlight": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlight",
+            "description": "Palabra del texto resaltada (índice), o ninguna."
+          },
+          "template": {
+            "type": "string",
+            "enum": [
+              "impacto",
+              "caja",
+              "titular",
+              "limpia"
+            ],
+            "title": "Template"
+          },
+          "time": {
+            "type": "number",
+            "title": "Time",
+            "description": "Segundo del vídeo original del que sale el fotograma."
+          },
+          "candidates": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Candidates",
+            "description": "Otros momentos que propuso la IA."
+          },
+          "vertical_url": {
+            "type": "string",
+            "title": "Vertical Url"
+          },
+          "horizontal_url": {
+            "type": "string",
+            "title": "Horizontal Url"
+          },
+          "vertical_download_url": {
+            "type": "string",
+            "title": "Vertical Download Url"
+          },
+          "horizontal_download_url": {
+            "type": "string",
+            "title": "Horizontal Download Url"
+          },
+          "pending": {
+            "type": "boolean",
+            "title": "Pending",
+            "description": "Se está generando una nueva propuesta con IA."
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "highlight",
+          "template",
+          "time",
+          "candidates",
+          "vertical_url",
+          "horizontal_url",
+          "vertical_download_url",
+          "horizontal_download_url",
+          "pending"
+        ],
+        "title": "CoverOut",
+        "description": "Portada del clip: 9:16 (TikTok, Reels, Shorts) y 16:9 (YouTube)."
       },
       "DefaultStyleIn": {
         "properties": {

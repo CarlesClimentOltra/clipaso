@@ -4,6 +4,7 @@ import {
   CaptionsIcon,
   CheckIcon,
   ChevronDownIcon,
+  ImageIcon,
   DownloadIcon,
   FilmIcon,
   Loader2Icon,
@@ -24,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ApiError, type ClipExport } from "@/lib/api/client";
+import { ApiError, type ClipCover, type ClipExport } from "@/lib/api/client";
 import { downloadUrl, useClipExports, useDownloadCaptions, useRequestExport } from "@/lib/api/hooks";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -39,11 +40,13 @@ export function ClipDownloads({
   clipId,
   downloadUrl: mainUrl,
   filenameBase,
+  cover,
   className,
 }: {
   clipId: string;
   downloadUrl: string;
   filenameBase: string;
+  cover?: ClipCover | null;
   className?: string;
 }) {
   const { t } = useI18n();
@@ -165,6 +168,20 @@ export function ClipDownloads({
                   {request.isPending && request.variables?.format === "mp3"
                     ? <Loader2Icon className="ml-auto animate-spin" />
                     : status(audio)}
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </>
+          )}
+          {cover && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{d.cover}</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => downloadUrl(cover.vertical_download_url)}>
+                  <ImageIcon /> {d.coverVertical}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadUrl(cover.horizontal_download_url)}>
+                  <ImageIcon /> {d.coverHorizontal}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </>

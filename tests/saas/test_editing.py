@@ -449,3 +449,60 @@ def test_original_profile_keeps_the_frame():
     assert (wide.width, wide.height) == (1920, 1080) and wide.subtitles.font_size_ratio == 0.06
     odd = original_profile(settings, (853, 481))
     assert odd.width % 2 == 0 and odd.height % 2 == 0
+
+
+def test_covers_are_generated_edited_and_regenerated(client, sample_video, monkeypatch, cover_llm):
+    from clipaso.saas import covers
+
+    dispatcher = Dispatcher()
+    client.app.state.dispatcher = dispatcher
+    job_id, _ = processed_job(client, sample_video, monkeypatch)
+    clip = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]
+    cover = clip["cover"]
+    assert cover["text"] == "Esto lo cambia todo" and cover["highlight"] == 3 and cover["template"] == "impacto"
+    assert cover["vertical_url"] and cover["horizontal_download_url"] and not cover["pending"]
+    assert cover_llm.calls[0]["images"] >= 1  # la IA vio los fotogramas candidatos
+    storage = client.app.state.storage
+    row = _clip_row(client, clip["id"])
+    vertical = covers.from_jpeg(storage.read_bytes(row.cover["vertical"]))
+    horizontal = covers.from_jpeg(storage.read_bytes(row.cover["horizontal"]))
+    assert vertical.shape[:2] == (1920, 1080) and horizontal.shape[:2] == (720, 1280)
+
+    # Editar texto y plantilla: se recompone sin volver a leer el vídeo, y las imágenes viejas se borran.
+    old_keys = [row.cover["vertical"], row.cover["horizontal"]]
+    r = client.put(f"/clips/{clip['id']}/cover", json={"text": "  Nadie   te lo cuenta ", "highlight": 0,
+                                                        "template": "caja"}, headers=AUTH)
+    assert r.status_code == 200
+    cover = r.json()["cover"]
+    assert (cover["text"], cover["highlight"], cover["template"]) == ("Nadie te lo cuenta", 0, "caja")
+    assert all(storage.size(k) is None for k in old_keys)
+    # Otro fotograma del vídeo
+    r = client.put(f"/clips/{clip['id']}/cover", json={"time": 2.0}, headers=AUTH)
+    assert r.status_code == 200 and r.json()["cover"]["time"] == 2.0
+    assert client.put(f"/clips/{clip['id']}/cover", json={"template": "otra"}, headers=AUTH).status_code == 422
+
+    # Regenerar con IA: tarea del worker, con otra propuesta distinta
+    r = client.post(f"/clips/{clip['id']}/cover/regenerate", headers=AUTH)
+    assert r.status_code == 202 and r.json()["cover"]["pending"] and len(dispatcher.tasks) == 1
+    assert client.post(f"/clips/{clip['id']}/cover/regenerate", headers=AUTH).status_code == 409
+    run_tasks(client)
+    cover = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"]
+    assert not cover["pending"] and cover["template"] == "caja"  # conserva la plantilla elegida
+    assert "Nadie te lo cuenta" in cover_llm.calls[-1]["system"]  # pide un texto distinto del actual
+
+
+def test_subtitle_mode_video_gets_a_cover(client, sample_video, monkeypatch):
+    job_id, _ = processed_job(client, sample_video, monkeypatch, mode="subtitle", format="original")
+    assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"] is not None
+
+
+def test_cover_without_ai_uses_the_title(client, sample_video, monkeypatch):
+    import clipaso.bootstrap
+
+    def no_llm(settings):
+        raise RuntimeError("sin IA")
+
+    monkeypatch.setattr(clipaso.bootstrap, "build_fast_llm", no_llm)
+    job_id, _ = processed_job(client, sample_video, monkeypatch)
+    clip = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]
+    assert clip["cover"]["text"] == "Gran momento"

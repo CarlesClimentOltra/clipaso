@@ -46,6 +46,7 @@ class TaskKind(StrEnum):
     RENDER_CLIP = "render_clip"  # volver a exportar un clip editado
     MORE_CLIPS = "more_clips"  # buscar y exportar más clips del mismo vídeo
     EXPORT_CLIP = "export_clip"  # el clip en otra calidad (480p, 720p, 4K)
+    COVER_CLIP = "cover_clip"  # nueva propuesta de portada con IA
 
 
 class TaskStatus(StrEnum):
@@ -173,6 +174,8 @@ class Clip(Base):
     render_error: Mapped[str | None] = mapped_column(String(255))
     # Otras versiones descargables: {"720p": {"version": 2, "key": …, "size": …}, "mp3": {…}}.
     exports: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Portada: fotograma elegido, texto, plantilla y claves de las imágenes (ver saas/cover_service.py).
+    cover: Mapped[dict | None] = mapped_column(JSON)
 
     job: Mapped[Job] = relationship(back_populates="clips")
 

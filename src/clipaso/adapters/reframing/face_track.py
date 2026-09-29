@@ -62,18 +62,24 @@ class YuNetFaceDetector:
         self.net = cv2.FaceDetectorYN.create(str(model), "", (320, 320), score_threshold=min_score)
         self._size: tuple[int, int] | None = None
 
-    def largest_face_center(self, frame_bgr: np.ndarray) -> tuple[float, float] | None:
+    def faces(self, frame_bgr: np.ndarray) -> list[tuple[float, float, float, float, float]]:
+        """Caras como (cx, cy, ancho, alto) normalizados 0..1 y confianza, de la más grande a la más pequeña."""
         h, w = frame_bgr.shape[:2]
         size = (self.width, int(h * self.width / w))
         if size != self._size:
             self.net.setInputSize(size)
             self._size = size
-        _, faces = self.net.detect(self.cv2.resize(frame_bgr, size))
-        if faces is None or len(faces) == 0:
-            return None
-        # Filas: x, y, w, h, 5 landmarks, score. Se queda con la cara más grande.
-        x, y, fw, fh = max(faces, key=lambda f: f[2] * f[3])[:4]
-        return float((x + fw / 2) / size[0]), float((y + fh / 2) / size[1])
+        _, found = self.net.detect(self.cv2.resize(frame_bgr, size))
+        if found is None or len(found) == 0:
+            return []
+        # Filas: x, y, w, h, 5 landmarks, score.
+        out = [(float((x + fw / 2) / size[0]), float((y + fh / 2) / size[1]), float(fw / size[0]),
+                float(fh / size[1]), float(f[-1])) for f in found for x, y, fw, fh in [f[:4]]]
+        return sorted(out, key=lambda c: c[2] * c[3], reverse=True)
+
+    def largest_face_center(self, frame_bgr: np.ndarray) -> tuple[float, float] | None:
+        faces = self.faces(frame_bgr)
+        return (faces[0][0], faces[0][1]) if faces else None
 
 
 @dataclass

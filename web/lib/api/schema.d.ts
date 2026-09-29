@@ -472,6 +472,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clips/{clip_id}/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update Cover
+         * @description Cambia el texto, la palabra resaltada, la plantilla o el fotograma de la portada (se recompone al momento).
+         */
+        put: operations["update_cover_clips__clip_id__cover_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clips/{clip_id}/cover/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Cover
+         * @description Otra propuesta de portada con IA (otro fotograma y otro texto).
+         */
+        post: operations["regenerate_cover_clips__clip_id__cover_regenerate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -649,6 +689,7 @@ export interface components {
             download_url: string;
             /** Thumbnail Url */
             thumbnail_url: string | null;
+            cover?: components["schemas"]["CoverOut"] | null;
         };
         /** ClipUpdateIn */
         ClipUpdateIn: {
@@ -665,6 +706,64 @@ export interface components {
             part_number: number;
             /** Etag */
             etag: string;
+        };
+        /** CoverIn */
+        CoverIn: {
+            /** Text */
+            text?: string | null;
+            /**
+             * Highlight
+             * @description -1 = sin palabra resaltada.
+             */
+            highlight?: number | null;
+            /** Template */
+            template?: ("impacto" | "caja" | "titular" | "limpia") | null;
+            /**
+             * Time
+             * @description Otro fotograma (segundo del vídeo original).
+             */
+            time?: number | null;
+        };
+        /**
+         * CoverOut
+         * @description Portada del clip: 9:16 (TikTok, Reels, Shorts) y 16:9 (YouTube).
+         */
+        CoverOut: {
+            /** Text */
+            text: string;
+            /**
+             * Highlight
+             * @description Palabra del texto resaltada (índice), o ninguna.
+             */
+            highlight: number | null;
+            /**
+             * Template
+             * @enum {string}
+             */
+            template: "impacto" | "caja" | "titular" | "limpia";
+            /**
+             * Time
+             * @description Segundo del vídeo original del que sale el fotograma.
+             */
+            time: number;
+            /**
+             * Candidates
+             * @description Otros momentos que propuso la IA.
+             */
+            candidates: number[];
+            /** Vertical Url */
+            vertical_url: string;
+            /** Horizontal Url */
+            horizontal_url: string;
+            /** Vertical Download Url */
+            vertical_download_url: string;
+            /** Horizontal Download Url */
+            horizontal_download_url: string;
+            /**
+             * Pending
+             * @description Se está generando una nueva propuesta con IA.
+             */
+            pending: boolean;
         };
         /** DefaultStyleIn */
         DefaultStyleIn: {
@@ -3052,6 +3151,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExportsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_cover_clips__clip_id__cover_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_cover_clips__clip_id__cover_regenerate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipOut"];
                 };
             };
             /** @description Bad Request */

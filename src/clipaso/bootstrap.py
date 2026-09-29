@@ -55,11 +55,7 @@ def build_components(
         return registry.create("exporters", name)
 
     def translator_factory() -> Translator:
-        params = settings.llm.model_dump(exclude={"provider"}) | {
-            "model": settings.llm.translation_model, "cli_model": settings.llm.translation_cli_model,
-            "server_side_fallback": False,
-        }
-        return Translator(registry.create("llm", settings.llm.provider, **params), cost)
+        return Translator(build_fast_llm(settings), cost)
 
     return Components(
         sources=sources,
@@ -74,6 +70,19 @@ def build_components(
         cost=cost,
         translator_factory=translator_factory,
     )
+
+
+def build_fast_llm(settings: Settings):
+    """Modelo rápido y barato para tareas sencillas (traducir subtítulos, portadas)."""
+    params = settings.llm.model_dump(exclude={"provider"}) | {
+        "model": settings.llm.translation_model, "cli_model": settings.llm.translation_cli_model,
+        "server_side_fallback": False,
+    }
+    return registry.create("llm", settings.llm.provider, **params)
+
+
+def build_cost_tracker(settings: Settings) -> CostTracker:
+    return CostTracker(budget_usd=settings.budget.max_usd_per_job, pricing=settings.budget.pricing)
 
 
 def build_pipeline(

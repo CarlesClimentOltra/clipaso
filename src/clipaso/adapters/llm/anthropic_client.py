@@ -28,6 +28,7 @@ _FALLBACK_BETA = "server-side-fallback-2026-07-01"
 class AnthropicLLM:
     name = "anthropic"
     billable = True
+    supports_images = True
 
     def __init__(
         self,
@@ -58,15 +59,25 @@ class AnthropicLLM:
         return int(len(text) / 3.2) + 50
 
     def complete_json(
-        self, *, system: str, user: str, schema: dict[str, Any], max_tokens: int | None = None
+        self, *, system: str, user: str, schema: dict[str, Any], max_tokens: int | None = None,
+        images: list[bytes] | None = None,
     ) -> LLMResponse:
+        import base64
+
         import anthropic
 
+        content: str | list[dict[str, Any]] = user
+        if images:
+            content = [
+                *({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                               "data": base64.b64encode(img).decode()}} for img in images),
+                {"type": "text", "text": user},
+            ]
         params: dict[str, Any] = {
             "model": self.model,
             "max_tokens": max_tokens or self.max_output_tokens,
             "system": system,
-            "messages": [{"role": "user", "content": user}],
+            "messages": [{"role": "user", "content": content}],
             "output_config": {"format": {"type": "json_schema", "schema": schema}},
         }
         if self.model.startswith(_ADAPTIVE_PREFIXES):

@@ -13,6 +13,7 @@ from clipaso.interfaces.api.deps import DispatcherDep, SessionDep, SettingsDep, 
 from clipaso.interfaces.api.schemas import (
     ArchiveOut,
     ClipOut,
+    CoverOut,
     JobCreateIn,
     JobOptions,
     JobOut,
@@ -43,6 +44,24 @@ def clip_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> ClipOut:
         video_url=storage.signed_url(clip.video_key, expires=ttl),
         download_url=storage.signed_url(clip.video_key, expires=ttl, download_name=clip_filename(job, clip, "mp4")),
         thumbnail_url=storage.signed_url(clip.thumb_key, expires=ttl) if clip.thumb_key else None,
+        cover=cover_out(clip, job, storage, ttl),
+    )
+
+
+def cover_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> CoverOut | None:
+    c = clip.cover
+    if not c or not c.get("vertical"):
+        return None
+    base = clip_filename(job, clip, "jpg").removesuffix(".jpg")
+    return CoverOut(
+        text=c.get("text", ""), highlight=c.get("highlight"), template=c.get("template", "impacto"),
+        time=c.get("time", clip.start), candidates=[x["time"] for x in c.get("candidates", [])],
+        vertical_url=storage.signed_url(c["vertical"], expires=ttl),
+        horizontal_url=storage.signed_url(c["horizontal"], expires=ttl),
+        vertical_download_url=storage.signed_url(c["vertical"], expires=ttl, download_name=f"{base}-portada-9x16.jpg"),
+        horizontal_download_url=storage.signed_url(c["horizontal"], expires=ttl,
+                                                   download_name=f"{base}-miniatura-16x9.jpg"),
+        pending=bool(c.get("pending")),
     )
 
 

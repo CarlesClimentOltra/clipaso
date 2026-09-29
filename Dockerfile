@@ -22,9 +22,13 @@ print('\n'.join(p['dependencies'] + p['optional-dependencies']['modal']))" > /tm
 COPY src ./src
 COPY configs ./configs
 COPY migrations ./migrations
+# Fuentes para componer las portadas y detector de caras para elegir otro fotograma desde el editor.
+COPY assets ./assets
+ADD https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx \
+    /app/data/models/face_detection_yunet_2023mar.onnx
 RUN pip install --no-deps -e . \
     && useradd --create-home --uid 1000 app \
-    && mkdir -p /app/data && chown app /app/data
+    && chown -R app /app/data
 USER app
 
 EXPOSE 8080

@@ -47,6 +47,20 @@ FONTS: dict[str, str] = {
     "Permanent Marker": "Permanent Marker",
     "Inter": "Inter ExtraBold",
 }
+# Fichero de cada fuente en assets/fonts (las portadas se dibujan con Pillow, que necesita el fichero).
+FONT_FILES: dict[str, str] = {
+    "Archivo Black": "ArchivoBlack-Regular.ttf",
+    "Anton": "Anton-Regular.ttf",
+    "Bebas Neue": "BebasNeue-Regular.ttf",
+    "Poppins": "Poppins-ExtraBold.ttf",
+    "Luckiest Guy": "LuckiestGuy-Regular.ttf",
+    "Montserrat": "Montserrat-Black.ttf",
+    "Oswald": "Oswald-Bold.ttf",
+    "Bangers": "Bangers-Regular.ttf",
+    "Rubik": "Rubik-Black.ttf",
+    "Permanent Marker": "PermanentMarker-Regular.ttf",
+    "Inter": "Inter-ExtraBold.ttf",
+}
 FontT = Literal["Archivo Black", "Anton", "Bebas Neue", "Poppins", "Luckiest Guy", "Montserrat", "Oswald",
                 "Bangers", "Rubik", "Permanent Marker", "Inter"]
 SIZE_SCALE = {"s": 80, "m": 100, "l": 125}  # los tres tamaños de la primera versión, en %

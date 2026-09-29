@@ -12,6 +12,7 @@ from clipaso.interfaces.api.routers.jobs import clip_filename, clip_out
 from clipaso.interfaces.api.schemas import (
     ClipOut,
     ClipUpdateIn,
+    CoverIn,
     EditorOut,
     EditorWordOut,
     ExportIn,
@@ -20,11 +21,11 @@ from clipaso.interfaces.api.schemas import (
     RatingIn,
     RenderIn,
 )
-from clipaso.saas import editing, exports
+from clipaso.saas import cover_service, editing, exports
 from clipaso.saas.artifacts import preview_key
 from clipaso.saas.db import utcnow
 from clipaso.saas.dispatch import dispatch_job
-from clipaso.saas.errors import user_message
+from clipaso.saas.errors import AppError, user_message
 from clipaso.saas.models import Clip, Job, Upload
 from clipaso.saas.rendering import result_frame
 
@@ -153,3 +154,42 @@ def request_export(
             if dispatch_job(dispatcher, task, now):
                 session.commit()
     return _exports_out(session, storage, job, clip, settings.api.signed_url_ttl_seconds)
+
+
+# --------------------------------------------------------------------------- portada
+
+
+@router.put("/{clip_id}/cover", response_model=ClipOut)
+def update_cover(
+    clip_id: str, body: CoverIn, user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep,
+) -> ClipOut:
+    """Cambia el texto, la palabra resaltada, la plantilla o el fotograma de la portada (se recompone al momento)."""
+    clip, job = editing.get_owned_clip(session, user, clip_id)
+    source = None
+    if body.time is not None:
+        if not editing.source_available(session, job):
+            raise AppError("source_unavailable", 409)
+        upload = session.get(Upload, job.upload_id)
+        source = storage.local_path(upload.storage_key) or storage.signed_url(upload.storage_key, expires=900)
+    logo, position = cover_service.branding_logo(storage, user, job.options or {})
+    cover_service.update(
+        storage, job, clip, style=editing.effective_style(job, clip), logo=logo, logo_position=position,
+        text=body.text, highlight=body.highlight, template=body.template, time=body.time, source=source,
+        model_dir=settings.data_dir / "models",
+    )
+    return clip_out(clip, job, storage, settings.api.signed_url_ttl_seconds)
+
+
+@router.post("/{clip_id}/cover/regenerate", response_model=ClipOut, status_code=202)
+def regenerate_cover(
+    clip_id: str, user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep,
+    dispatcher: DispatcherDep,
+) -> ClipOut:
+    """Otra propuesta de portada con IA (otro fotograma y otro texto)."""
+    now = utcnow()
+    clip, job = editing.get_owned_clip(session, user, clip_id)
+    task = editing.request_cover(session, user, clip, job, now=now)
+    session.commit()
+    if dispatch_job(dispatcher, task, now):
+        session.commit()
+    return clip_out(clip, job, storage, settings.api.signed_url_ttl_seconds)

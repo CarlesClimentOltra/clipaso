@@ -15,6 +15,8 @@ import {
   type JobOptions,
   type UserStyles,
   type ExportRequest,
+  type CoverInput,
+  type Editor,
 } from "@/lib/api/client";
 import { uploadFile, type UploadProgress } from "@/lib/api/multipart-upload";
 import { useAuth } from "@/lib/auth";
@@ -279,9 +281,33 @@ export function useEditor(clipId: string) {
     queryKey: ["editor", clipId],
     queryFn: () => unwrap(api.GET("/clips/{clip_id}/editor", { params: { path: { clip_id: clipId } } })),
     enabled: !!session && !!clipId,
-    refetchInterval: (q) => (q.state.data?.clip.status === "rendering" ? 2500 : false),
+    // Mientras se genera el clip o una nueva portada, se consulta hasta que termine.
+    refetchInterval: (q) =>
+      q.state.data?.clip.status === "rendering" || q.state.data?.clip.cover?.pending ? 2500 : false,
     refetchOnWindowFocus: false, // no pisar las ediciones sin guardar
   });
+}
+
+/** Portada del clip: cambios del usuario (se recompone al momento) y nueva propuesta con IA. */
+export function useCoverActions(jobId: string, clipId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  const update = useJobUpdater();
+  const done = (clip: Clip) => {
+    update(jobId, clip);
+    qc.setQueryData(["editor", clipId], (data: Editor | undefined) => (data ? { ...data, clip } : data));
+  };
+  return {
+    save: useMutation({
+      mutationFn: (body: CoverInput) =>
+        unwrap(api.PUT("/clips/{clip_id}/cover", { params: { path: { clip_id: clipId } }, body })),
+      onSuccess: done,
+    }),
+    regenerate: useMutation({
+      mutationFn: () => unwrap(api.POST("/clips/{clip_id}/cover/regenerate", { params: { path: { clip_id: clipId } } })),
+      onSuccess: done,
+    }),
+  };
 }
 
 export type RenderInput = {
