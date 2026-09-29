@@ -45,7 +45,11 @@ class Transcriber(Protocol):
     name: str
 
     def transcribe(
-        self, audio_path: Path, language: str | None, on_progress: Callable[[float], None] | None = None
+        self,
+        audio_path: Path,
+        language: str | None,
+        on_progress: Callable[[float], None] | None = None,
+        prompt: str | None = None,
     ) -> Transcript: ...
 
 

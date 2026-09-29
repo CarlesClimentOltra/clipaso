@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   AlertCircleIcon,
+  AudioLinesIcon,
   CaptionsIcon,
   ClockIcon,
   FilmIcon,
@@ -131,6 +132,8 @@ function ProjectCard({ job }: { job: JobSummary }) {
               <><ImageIcon className="size-3" /> {t.thumbnail.badge}</>
             ) : job.mode === "subtitle" ? (
               <><CaptionsIcon className="size-3" /> {t.project.subtitledBadge(null)}</>
+            ) : job.mode === "clean" ? (
+              <><AudioLinesIcon className="size-3" /> {t.clean.badge}</>
             ) : (
               <><ScissorsIcon className="size-3" /> {job.clip_count}</>
             )}

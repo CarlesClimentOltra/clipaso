@@ -41,7 +41,8 @@ export function ProjectOptions({
   const { t } = useI18n();
   const o = t.options;
   const set = (patch: Partial<ProjectOptionsValue>) => onChange({ ...value, ...patch });
-  const subtitleMode = value.mode === "subtitle";
+  // Vídeo entero (solo subtitular o sin silencios): sin duración ni tema, y con el formato «original».
+  const subtitleMode = value.mode === "subtitle" || value.mode === "clean";
   const format: ClipFormat = value.format === "original" ? sourceFrame : (value.format as ClipFormat);
   // «Original» solo tiene sentido al subtitular el vídeo entero (los clips se reencuadran siempre).
   const formats = (options?.formats ?? [])

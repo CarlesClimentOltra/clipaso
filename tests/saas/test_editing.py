@@ -12,7 +12,7 @@ import numpy as np
 
 from clipaso.saas import tasks as tasks_mod
 from clipaso.saas.db import session_scope, utcnow
-from clipaso.saas.models import Clip, Task, TaskStatus
+from clipaso.saas.models import Clip, Job, Task, TaskStatus, Upload
 from clipaso.saas.tasks import TaskRunner
 from clipaso.saas.worker import JobRunner
 from tests.saas.test_api_flow import AUTH, FakePipeline, _stored_files, upload_video, worker_mod
@@ -494,6 +494,22 @@ def test_covers_are_generated_edited_and_regenerated(client, sample_video, monke
 def test_subtitle_mode_video_gets_a_cover(client, sample_video, monkeypatch):
     job_id, _ = processed_job(client, sample_video, monkeypatch, mode="subtitle", format="original")
     assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"] is not None
+
+
+def test_clean_mode_replaces_the_source_and_reports_what_was_removed(client, sample_video, monkeypatch):
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch, mode="clean", format="original",
+                                     clean_pace="fast", clean_fillers=False, subtitle_language="en")
+    call = pipeline.calls[0]
+    assert call["kind"] == "clean" and call["pace"] == "fast" and not call["fillers"] and call["translate_to"] == "en"
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["status"] == "done" and len(job["clips"]) == 1 and job["more_clips_available"] == 0
+    assert job["options"]["mode"] == "clean" and job["clips"][0]["cover"] is not None
+    assert job["clean_stats"] == {"original_seconds": 3.0, "removed_seconds": 0.5, "pauses": 1, "fillers": 2}
+    with session_scope(client.app.state.sessions) as s:
+        upload = s.get(Upload, s.get(Job, job_id).upload_id)
+        assert upload.duration_seconds == 2.5 and upload.content_type == "video/mp4"
+    # El editor trabaja sobre el vídeo ya limpio.
+    assert client.get(f"/clips/{job['clips'][0]['id']}/editor", headers=AUTH).status_code == 200
 
 
 def test_cover_without_ai_uses_the_title(client, sample_video, monkeypatch):

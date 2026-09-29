@@ -161,10 +161,19 @@ class JobRunner:
                 branding=branding,
             )
             on_progress = lambda stage, overall: self._write_progress(job_id, stage, overall, state)  # noqa: E731
+            clean_plan = None
             if options.get("mode") == "subtitle":
                 # Solo subtitular: el vídeo entero (traducido si se pidió), sin que la IA elija momentos.
                 result = pipeline.subtitle(str(source), opts, out_dir=tmp / "out", on_progress=on_progress,
                                            translate_to=options.get("subtitle_language"))
+            elif options.get("mode") == "clean":
+                # Sin silencios ni muletillas: a partir de aquí, el vídeo de trabajo es el ya limpio.
+                result, clean_plan = pipeline.clean(
+                    str(source), opts, out_dir=tmp / "out", pace=options.get("clean_pace", "normal"),
+                    remove_fillers=options.get("clean_fillers", True),
+                    translate_to=options.get("subtitle_language"), on_progress=on_progress,
+                )
+                source = result.source.path
             else:
                 result = pipeline.run(str(source), opts, out_dir=tmp / "out", on_progress=on_progress)
             if not result.exports:
@@ -200,9 +209,18 @@ class JobRunner:
                 self._write_progress(job_id, "preview", 0.99, state, force=True)
                 if preview := make_preview(Path(source), tmp / "preview.mp4"):
                     self.storage.put_file(preview_key(user_id, job_id), preview, "video/mp4")
+                if clean_plan is not None:
+                    # El editor y los re-renders trabajan sobre el vídeo ya limpio (su transcripción es esa).
+                    self.storage.put_file(upload_key, Path(source), "video/mp4")
 
             with session_scope(self.sessions) as s:
                 job = s.get(Job, job_id)
+                if clean_plan is not None:
+                    job.options = {**(job.options or {}), "clean_stats": clean_plan.stats()}
+                    if keep_source and job.upload_id and (upload := s.get(Upload, job.upload_id)):
+                        upload.size_bytes = Path(source).stat().st_size
+                        upload.duration_seconds = round(clean_plan.duration, 3)
+                        upload.content_type = "video/mp4"
                 job.clips = clips
                 job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0
                 job.finished_at = utcnow()

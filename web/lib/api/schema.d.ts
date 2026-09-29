@@ -670,6 +670,20 @@ export interface components {
              */
             max_words: number;
         };
+        /**
+         * CleanStatsOut
+         * @description Lo que se quitó en el modo «sin silencios».
+         */
+        CleanStatsOut: {
+            /** Original Seconds */
+            original_seconds: number;
+            /** Removed Seconds */
+            removed_seconds: number;
+            /** Pauses */
+            pauses: number;
+            /** Fillers */
+            fillers: number;
+        };
         /** ClipOut */
         ClipOut: {
             /** Id */
@@ -909,16 +923,29 @@ export interface components {
         JobCreateIn: {
             /**
              * Mode
-             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean";
             /**
              * Subtitle Language
-             * @description Solo subtitular: traducir los subtítulos a este idioma.
+             * @description Vídeo entero: traducir los subtítulos a este idioma.
              */
             subtitle_language?: string | null;
+            /**
+             * Clean Pace
+             * @description Sin silencios: natural (solo pausas largas), normal o fast (ritmo rápido, estilo YouTube).
+             * @default normal
+             * @enum {string}
+             */
+            clean_pace: "natural" | "normal" | "fast";
+            /**
+             * Clean Fillers
+             * @description Sin silencios: quitar también «eh», «em», «mmm»…
+             * @default true
+             */
+            clean_fillers: boolean;
             /**
              * Format
              * @default vertical
@@ -978,16 +1005,29 @@ export interface components {
         JobOptions: {
             /**
              * Mode
-             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean";
             /**
              * Subtitle Language
-             * @description Solo subtitular: traducir los subtítulos a este idioma.
+             * @description Vídeo entero: traducir los subtítulos a este idioma.
              */
             subtitle_language?: string | null;
+            /**
+             * Clean Pace
+             * @description Sin silencios: natural (solo pausas largas), normal o fast (ritmo rápido, estilo YouTube).
+             * @default normal
+             * @enum {string}
+             */
+            clean_pace: "natural" | "normal" | "fast";
+            /**
+             * Clean Fillers
+             * @description Sin silencios: quitar también «eh», «em», «mmm»…
+             * @default true
+             */
+            clean_fillers: boolean;
             /**
              * Format
              * @default vertical
@@ -1032,7 +1072,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean";
             /**
              * Status
              * @enum {string}
@@ -1062,6 +1102,7 @@ export interface components {
             /** Error Message */
             error_message: string | null;
             options: components["schemas"]["JobOptions"];
+            clean_stats?: components["schemas"]["CleanStatsOut"] | null;
             /**
              * Frame
              * @description Encuadre de los clips (en el formato «original», el del vídeo).
@@ -1090,7 +1131,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean";
             /**
              * Status
              * @enum {string}

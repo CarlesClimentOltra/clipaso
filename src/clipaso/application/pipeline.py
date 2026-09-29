@@ -15,11 +15,13 @@ import time
 import unicodedata
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from clipaso.application import cleanup
+from clipaso.application.cleanup import CutPlan, PaceT
 from clipaso.application.cost import CostTracker
-from clipaso.application.progress import SUBTITLE_WEIGHTS, ProgressCallback, ProgressReporter
+from clipaso.application.progress import CLEAN_WEIGHTS, SUBTITLE_WEIGHTS, ProgressCallback, ProgressReporter
 from clipaso.application.translation import Translator
 from clipaso.application.workspace import Workspace
 from clipaso.domain.errors import ClipasoError, RenderError, UnsupportedSourceError
@@ -62,6 +64,7 @@ class PipelineOptions:
     exclude: list[tuple[float, float]] = field(default_factory=list)  # fragmentos que ya son clips
     branding: Branding | None = None
     first_rank: int = 1  # al añadir clips a un proyecto, numeración a continuación de los existentes
+    transcribe_prompt: str | None = None  # p. ej. transcripción literal (con muletillas)
 
 
 @dataclass
@@ -132,12 +135,14 @@ class Pipeline:
         self, audio: Path, ws: Workspace, opts: PipelineOptions, progress: ProgressReporter
     ) -> Transcript:
         params = {"provider": self.c.transcriber.name, **self.c.transcriber_params, "language": opts.language}
+        extra = {"prompt": opts.transcribe_prompt} if opts.transcribe_prompt else {}
+        params |= extra
         if "transcript" not in opts.force and (cached := ws.load("transcript", Transcript, params)):
             log.info("transcript.cached", sentences=len(cached.sentences))
             return cached
         with stage("transcribe"):
             transcript = self.c.transcriber.transcribe(
-                audio, opts.language, on_progress=progress.stage_callback("transcribe")
+                audio, opts.language, on_progress=progress.stage_callback("transcribe"), **extra
             )
             ws.save("transcript", transcript, params)
             (ws.path("transcript.txt")).write_text(
@@ -348,28 +353,84 @@ class Pipeline:
             transcript = self._transcribe(audio, ws, opts, progress)
             if not transcript.sentences:
                 raise ClipasoError("La transcripción está vacía")
-            progress.report("signals")
-            signals = self._signals(AnalysisContext(source, audio, transcript), ws, opts)
-            if translate_to and translate_to != transcript.language:
-                if self.c.translator_factory is None:
-                    raise ClipasoError("Traducción no disponible")
-                progress.report("translate")
-                with stage("translate"):
-                    transcript = self.c.translator_factory().translate(
-                        transcript, translate_to, on_progress=progress.stage_callback("translate"))
-            whole = ClipCandidate(start=0.0, end=source.duration, first_sentence=0,
-                                  last_sentence=len(transcript.sentences) - 1, score=1.0,
-                                  title=opts.title or source.title or "Vídeo")
-            out_dir.mkdir(parents=True, exist_ok=True)
-            progress.report("export")
-            exports = self._export(source, transcript, [(1, whole)], ws, opts, out_dir, progress)
-            selection = Selection(strategy="subtitle", clips=[whole])
-            result = JobResult(source=source, selection=selection, exports=exports, cost_usd=self.c.cost.spent,
-                               transcript=transcript, signals=signals)
-            progress.report("export", 1.0)
-            return result
+            return self._whole_video(source, ws, audio, transcript, opts, out_dir, progress, translate_to, "subtitle")
         finally:
             clear_job()
+
+    def clean(
+        self,
+        uri: str,
+        opts: PipelineOptions,
+        *,
+        out_dir: Path,
+        pace: PaceT = "normal",
+        remove_fillers: bool = True,
+        translate_to: str | None = None,
+        on_progress: ProgressCallback | None = None,
+    ) -> tuple[JobResult, CutPlan]:
+        """Quitar silencios y muletillas: el vídeo entero sin pausas largas ni «eh/em», con subtítulos.
+
+        `result.source` es el vídeo ya limpio (sobre él trabajan después el editor y las portadas)."""
+        progress = ProgressReporter(on_progress, CLEAN_WEIGHTS)
+        try:
+            progress.report("ingest")
+            original, ws = self._open(uri, opts)
+            progress.report("audio")
+            audio = self._audio(original, ws)
+            progress.report("transcribe")
+            if remove_fillers:
+                opts = replace(opts, transcribe_prompt=cleanup.verbatim_prompt(opts.language))
+            transcript = self._transcribe(audio, ws, opts, progress)
+            if not transcript.sentences:
+                raise ClipasoError("La transcripción está vacía")
+            progress.report("cut")
+            with stage("cut"):
+                plan = cleanup.plan_cuts(transcript, original.duration,
+                                         cleanup.quiet_spans(audio, 0.1),
+                                         pace, remove_fillers)
+                log.info("clean.plan", **plan.stats(), cuts=len(plan.cuts))
+                cleaned_path = cleanup.render(original.path, plan, out_dir / "limpio.mp4", ws.subdir("clean"))
+            cleaned, cleaned_ws = self._open(str(cleaned_path), opts)
+            cleaned_audio = self._audio(cleaned, cleaned_ws)
+            result = self._whole_video(cleaned, cleaned_ws, cleaned_audio, cleanup.remap_transcript(transcript, plan),
+                                       opts, out_dir, progress, translate_to, "clean")
+            return result, plan
+        finally:
+            clear_job()
+
+    def _whole_video(
+        self,
+        source: SourceVideo,
+        ws: Workspace,
+        audio: Path,
+        transcript: Transcript,
+        opts: PipelineOptions,
+        out_dir: Path,
+        progress: ProgressReporter,
+        translate_to: str | None,
+        strategy: str,
+    ) -> JobResult:
+        """El vídeo entero como un único «clip» con subtítulos (traducidos si se pide)."""
+        progress.report("signals")
+        signals = self._signals(AnalysisContext(source, audio, transcript), ws, opts)
+        if translate_to and translate_to != transcript.language:
+            if self.c.translator_factory is None:
+                raise ClipasoError("Traducción no disponible")
+            progress.report("translate")
+            with stage("translate"):
+                transcript = self.c.translator_factory().translate(
+                    transcript, translate_to, on_progress=progress.stage_callback("translate"))
+        whole = ClipCandidate(start=0.0, end=source.duration, first_sentence=0,
+                              last_sentence=max(0, len(transcript.sentences) - 1), score=1.0,
+                              title=opts.title or source.title or "Vídeo")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        progress.report("export")
+        exports = self._export(source, transcript, [(1, whole)], ws, opts, out_dir, progress)
+        selection = Selection(strategy=strategy, clips=[whole])
+        result = JobResult(source=source, selection=selection, exports=exports, cost_usd=self.c.cost.spent,
+                           transcript=transcript, signals=signals)
+        progress.report("export", 1.0)
+        return result
 
     def render(
         self, uri: str, opts: PipelineOptions, clip: ClipCandidate, rank: int, transcript: Transcript, out_dir: Path

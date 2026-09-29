@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const STEPS = [
   { key: "prepare", stages: ["queued", "starting", "ingest", "audio"] },
   { key: "transcribe", stages: ["transcribe"] },
-  { key: "analyze", stages: ["signals", "select", "translate"] },
+  { key: "analyze", stages: ["cut", "signals", "select", "translate"] },
   { key: "render", stages: ["export", "preview"] },
 ] as const;
 
@@ -25,17 +25,18 @@ export function JobProgress({ job }: { job: Job }) {
   const pct = Math.round((job.progress ?? 0) * 100);
   const queued = job.status === "queued";
   const { t } = useI18n();
-  const subtitle = job.options.mode === "subtitle";
-  const labels = subtitle
-    ? t.progress.subtitleSteps(!!job.options.subtitle_language)
-    : t.progress.steps;
+  const clean = job.options.mode === "clean";
+  const subtitle = job.options.mode === "subtitle" || clean;
+  const labels = clean
+    ? t.clean.steps
+    : subtitle ? t.progress.subtitleSteps(!!job.options.subtitle_language) : t.progress.steps;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">{subtitle ? t.progress.preparingSubtitle : t.progress.preparing}</p>
+            <p className="text-sm text-muted-foreground">{clean ? t.clean.preparing : subtitle ? t.progress.preparingSubtitle : t.progress.preparing}</p>
             <p className="text-xl font-semibold tracking-tight">{queued ? t.progress.queued : labels[current]}</p>
           </div>
           <span className="text-4xl font-semibold tracking-tight tabular-nums">{pct}%</span>

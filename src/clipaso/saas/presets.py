@@ -22,7 +22,9 @@ FORMATS: dict[str, dict] = {
     "original": {"label": "Original", "hint": "El mismo formato que tu vídeo", "profile": None},
 }
 FormatT = Literal["vertical", "square", "horizontal", "original"]
-ModeT = Literal["clips", "subtitle", "thumbnail"]
+ModeT = Literal["clips", "subtitle", "thumbnail", "clean"]
+WHOLE_VIDEO_MODES = ("subtitle", "clean")  # el resultado es el vídeo entero, no clips elegidos por la IA
+CleanPaceT = Literal["natural", "normal", "fast"]
 MAX_ORIGINAL_SHORT_SIDE = 1080  # el vídeo subtitulado sale como mucho en 1080p (4K se pide aparte)
 
 DURATIONS: dict[str, dict] = {

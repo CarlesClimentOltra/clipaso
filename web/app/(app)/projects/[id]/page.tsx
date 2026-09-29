@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { CleanSummary } from "@/components/clean-summary";
 import { ClipCard } from "@/components/clip-card";
 import { CoverEditor } from "@/components/editor/cover-editor";
 import { JobProgress } from "@/components/job-progress";
@@ -80,7 +81,9 @@ export default function ProjectPage() {
   }
 
   const active = job.status === "queued" || job.status === "running";
-  const subtitle = job.options.mode === "subtitle";
+  const clean = job.options.mode === "clean";
+  // El resultado es el vídeo entero (solo subtitular o sin silencios), no varios clips.
+  const subtitle = job.options.mode === "subtitle" || clean;
   const thumbnail = job.options.mode === "thumbnail";
   const moreTask = job.more_clips_task;
   const searchingMore = !!moreTask && (moreTask.status === "queued" || moreTask.status === "running");
@@ -132,7 +135,9 @@ export default function ProjectPage() {
               {job.status === "done" && !thumbnail && (
                 <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
                   <ScissorsIcon className="size-3.5 text-brand-ink" />
-                  {subtitle ? p.subtitledBadge(job.options.subtitle_language) : t.common.clips(job.clips.length)}
+                  {clean
+                    ? t.clean.badge
+                    : subtitle ? p.subtitledBadge(job.options.subtitle_language) : t.common.clips(job.clips.length)}
                 </span>
               )}
               {job.status === "done" && job.expires_at && (
@@ -232,10 +237,12 @@ export default function ProjectPage() {
         </section>
       )}
 
+      {job.status === "done" && clean && job.clean_stats && <CleanSummary stats={job.clean_stats} />}
+
       {job.status === "done" && !thumbnail && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
           <h2 id="clips-title" className="text-xl font-semibold tracking-tight">
-            {subtitle ? p.subtitledTitle : p.clipsTitle(job.clips.length)}
+            {clean ? t.clean.title : subtitle ? p.subtitledTitle : p.clipsTitle(job.clips.length)}
           </h2>
           <div className={cn("grid gap-5", subtitle
             ? job.frame === "horizontal" ? "max-w-3xl" : "max-w-sm"

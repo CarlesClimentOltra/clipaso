@@ -2697,6 +2697,35 @@
         "title": "CaptionStyle",
         "description": "Estilo de subtítulos tal como lo elige el usuario."
       },
+      "CleanStatsOut": {
+        "properties": {
+          "original_seconds": {
+            "type": "number",
+            "title": "Original Seconds"
+          },
+          "removed_seconds": {
+            "type": "number",
+            "title": "Removed Seconds"
+          },
+          "pauses": {
+            "type": "integer",
+            "title": "Pauses"
+          },
+          "fillers": {
+            "type": "integer",
+            "title": "Fillers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_seconds",
+          "removed_seconds",
+          "pauses",
+          "fillers"
+        ],
+        "title": "CleanStatsOut",
+        "description": "Lo que se quitó en el modo «sin silencios»."
+      },
       "ClipOut": {
         "properties": {
           "id": {
@@ -3381,10 +3410,11 @@
             "enum": [
               "clips",
               "subtitle",
-              "thumbnail"
+              "thumbnail",
+              "clean"
             ],
             "title": "Mode",
-            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.",
             "default": "clips"
           },
           "subtitle_language": {
@@ -3398,7 +3428,24 @@
               }
             ],
             "title": "Subtitle Language",
-            "description": "Solo subtitular: traducir los subtítulos a este idioma."
+            "description": "Vídeo entero: traducir los subtítulos a este idioma."
+          },
+          "clean_pace": {
+            "type": "string",
+            "enum": [
+              "natural",
+              "normal",
+              "fast"
+            ],
+            "title": "Clean Pace",
+            "description": "Sin silencios: natural (solo pausas largas), normal o fast (ritmo rápido, estilo YouTube).",
+            "default": "normal"
+          },
+          "clean_fillers": {
+            "type": "boolean",
+            "title": "Clean Fillers",
+            "description": "Sin silencios: quitar también «eh», «em», «mmm»…",
+            "default": true
           },
           "format": {
             "type": "string",
@@ -3508,10 +3555,11 @@
             "enum": [
               "clips",
               "subtitle",
-              "thumbnail"
+              "thumbnail",
+              "clean"
             ],
             "title": "Mode",
-            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas.",
             "default": "clips"
           },
           "subtitle_language": {
@@ -3525,7 +3573,24 @@
               }
             ],
             "title": "Subtitle Language",
-            "description": "Solo subtitular: traducir los subtítulos a este idioma."
+            "description": "Vídeo entero: traducir los subtítulos a este idioma."
+          },
+          "clean_pace": {
+            "type": "string",
+            "enum": [
+              "natural",
+              "normal",
+              "fast"
+            ],
+            "title": "Clean Pace",
+            "description": "Sin silencios: natural (solo pausas largas), normal o fast (ritmo rápido, estilo YouTube).",
+            "default": "normal"
+          },
+          "clean_fillers": {
+            "type": "boolean",
+            "title": "Clean Fillers",
+            "description": "Sin silencios: quitar también «eh», «em», «mmm»…",
+            "default": true
           },
           "format": {
             "type": "string",
@@ -3599,7 +3664,8 @@
             "enum": [
               "clips",
               "subtitle",
-              "thumbnail"
+              "thumbnail",
+              "clean"
             ],
             "title": "Mode",
             "default": "clips"
@@ -3703,6 +3769,16 @@
           "options": {
             "$ref": "#/components/schemas/JobOptions"
           },
+          "clean_stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CleanStatsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "frame": {
             "type": "string",
             "enum": [
@@ -3779,7 +3855,8 @@
             "enum": [
               "clips",
               "subtitle",
-              "thumbnail"
+              "thumbnail",
+              "clean"
             ],
             "title": "Mode",
             "default": "clips"

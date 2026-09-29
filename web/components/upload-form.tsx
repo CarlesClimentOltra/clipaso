@@ -2,18 +2,28 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaptionsIcon, FileVideoIcon, ImageIcon, ScissorsIcon, UploadCloudIcon, XIcon } from "lucide-react";
+import {
+  AudioLinesIcon,
+  CaptionsIcon,
+  FileVideoIcon,
+  ImageIcon,
+  ScissorsIcon,
+  UploadCloudIcon,
+  XIcon,
+} from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
+import { Segmented } from "@/components/segmented";
 import { ThumbnailForm } from "@/components/thumbnail-form";
 import { TrimSelector, type TrimRange } from "@/components/trim-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { ApiError, type Me } from "@/lib/api/client";
 import { useApi, useClipOptions, useCreateProject, usePreferences } from "@/lib/api/hooks";
 import { discardUpload, type UploadProgress } from "@/lib/api/multipart-upload";
@@ -66,9 +76,11 @@ export function UploadForm({ me }: { me: Me }) {
     caption_style: ProjectOptionsValue["caption_style"] | null;
   }>({
     mode: "clips", subtitle_language: null, format: "vertical", duration: "auto", topic: "", keep_source: true,
-    branding: true, caption_style: null,
+    branding: true, caption_style: null, clean_pace: "normal", clean_fillers: true,
   });
-  const subtitleMode = optionsDraft.mode === "subtitle";
+  const cleanMode = optionsDraft.mode === "clean";
+  // El resultado es el vídeo entero (solo subtitular o sin silencios).
+  const subtitleMode = optionsDraft.mode === "subtitle" || cleanMode;
   const { data: prefs } = usePreferences();
   const { data: catalog } = useClipOptions();
   // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo).
@@ -194,24 +206,27 @@ export function UploadForm({ me }: { me: Me }) {
     setProgress(null);
   }
 
-  function setMode(mode: "clips" | "subtitle" | "thumbnail") {
+  function setMode(mode: ProjectOptionsValue["mode"]) {
+    const whole = mode === "subtitle" || mode === "clean";
     setOptionsDraft((d) => ({
       ...d,
       mode,
-      // Al subtitular, por defecto se respeta el formato del vídeo; los clips, en vertical.
-      format: mode === "subtitle" ? "original" : d.format === "original" ? "vertical" : d.format,
-      subtitle_language: mode === "subtitle" ? d.subtitle_language : null,
+      // Con el vídeo entero, por defecto se respeta su formato; los clips, en vertical.
+      format: whole ? "original" : d.format === "original" ? "vertical" : d.format,
+      subtitle_language: whole ? d.subtitle_language : null,
     }));
   }
 
   const MODES = [
     { id: "clips" as const, icon: ScissorsIcon, title: u.modes.clips[0], text: u.modes.clips[1] },
     { id: "subtitle" as const, icon: CaptionsIcon, title: u.modes.subtitle[0], text: u.modes.subtitle[1] },
+    { id: "clean" as const, icon: AudioLinesIcon, title: u.modes.clean[0], text: u.modes.clean[1] },
     { id: "thumbnail" as const, icon: ImageIcon, title: u.modes.thumbnail[0], text: u.modes.thumbnail[1] },
   ];
+  const c = t.clean;
 
   const modeCards = (
-    <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label={u.modeLabel}>
+    <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={u.modeLabel}>
       {MODES.map((m) => {
         const selected = optionsDraft.mode === m.id;
         return (
@@ -414,6 +429,32 @@ export function UploadForm({ me }: { me: Me }) {
         </div>
       </div>
 
+      {cleanMode && (
+        <div className="flex flex-col gap-5 rounded-2xl border bg-muted/30 p-4 sm:p-5">
+          <div className="flex flex-col gap-2">
+            <Label>{c.pace}</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <Segmented
+                label={c.pace}
+                value={optionsDraft.clean_pace}
+                disabled={busy}
+                onChange={(clean_pace) => setOptionsDraft((d) => ({ ...d, clean_pace }))}
+                options={(["natural", "normal", "fast"] as const).map((v) => ({ value: v, label: c.paces[v][0] }))}
+              />
+              <span className="text-xs text-muted-foreground">{c.paces[optionsDraft.clean_pace][1]}</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label htmlFor="clean-fillers">{c.fillersLabel}</Label>
+              <p className="text-xs text-muted-foreground">{c.fillersHint}</p>
+            </div>
+            <Switch id="clean-fillers" checked={optionsDraft.clean_fillers} disabled={busy}
+                    onCheckedChange={(v: boolean) => setOptionsDraft((d) => ({ ...d, clean_fillers: v }))} />
+          </div>
+        </div>
+      )}
+
       {options && (
         <ProjectOptions
           me={me}
@@ -486,7 +527,7 @@ export function UploadForm({ me }: { me: Me }) {
       ) : (
         <Button size="lg" className="h-12 rounded-full text-base"
                 disabled={!file || !duration || outOfMinutes || tooLong || tooBig} onClick={submit}>
-          {subtitleMode ? u.createSubtitle : u.create}
+          {cleanMode ? c.create : subtitleMode ? u.createSubtitle : u.create}
         </Button>
       )}
       <p className="text-xs text-muted-foreground">

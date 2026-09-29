@@ -30,7 +30,7 @@ from clipaso.saas.models import (
     UploadStatus,
     User,
 )
-from clipaso.saas.presets import DEFAULT_STYLE, BrandingPrefs, CaptionStyle
+from clipaso.saas.presets import DEFAULT_STYLE, WHOLE_VIDEO_MODES, BrandingPrefs, CaptionStyle
 
 WORD_KEY = re.compile(r"\d+(\.\d+)?")
 BREAK_KEY = re.compile(r"br:\d+(\.\d+)?")
@@ -71,7 +71,8 @@ def _active_tasks(session: Session, user: User) -> int:
 
 
 def is_subtitle_job(job: Job) -> bool:
-    return (job.options or {}).get("mode") == "subtitle"
+    """El resultado es el vídeo entero (solo subtitular o sin silencios), no clips elegidos por la IA."""
+    return (job.options or {}).get("mode") in WHOLE_VIDEO_MODES
 
 
 def more_clips_available(job: Job, user: User) -> int:

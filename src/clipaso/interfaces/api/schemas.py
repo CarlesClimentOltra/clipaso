@@ -7,7 +7,15 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from clipaso.saas.presets import BrandingPrefs, CaptionPreset, CaptionStyle, DurationT, FormatT, ModeT
+from clipaso.saas.presets import (
+    BrandingPrefs,
+    CaptionPreset,
+    CaptionStyle,
+    CleanPaceT,
+    DurationT,
+    FormatT,
+    ModeT,
+)
 from clipaso.saas.styles import UserStyle
 
 
@@ -108,9 +116,13 @@ class JobOptions(BaseModel):
     """Cómo quiere el usuario sus clips."""
 
     mode: ModeT = Field("clips", description="clips: la IA elige los mejores momentos · subtitle: el vídeo "
-                                             "entero con subtítulos.")
+                                             "entero con subtítulos · clean: el vídeo entero sin silencios ni "
+                                             "muletillas.")
     subtitle_language: str | None = Field(None, pattern=r"^[a-z]{2}$",
-                                          description="Solo subtitular: traducir los subtítulos a este idioma.")
+                                          description="Vídeo entero: traducir los subtítulos a este idioma.")
+    clean_pace: CleanPaceT = Field("normal", description="Sin silencios: natural (solo pausas largas), normal "
+                                                          "o fast (ritmo rápido, estilo YouTube).")
+    clean_fillers: bool = Field(True, description="Sin silencios: quitar también «eh», «em», «mmm»…")
     format: FormatT = "vertical"
     duration: DurationT = "auto"
     topic: str = Field("", max_length=200, description="Tema opcional: «momentos donde hablo de dinero».")
@@ -333,10 +345,20 @@ class JobSummary(BaseModel):
     expires_at: datetime | None
 
 
+class CleanStatsOut(BaseModel):
+    """Lo que se quitó en el modo «sin silencios»."""
+
+    original_seconds: float
+    removed_seconds: float
+    pauses: int
+    fillers: int
+
+
 class JobOut(JobSummary):
     error_code: str | None
     error_message: str | None
     options: JobOptions
+    clean_stats: CleanStatsOut | None = None
     frame: Literal["vertical", "square", "horizontal"] = Field(
         description="Encuadre de los clips (en el formato «original», el del vídeo).")
     can_edit: bool = Field(description="Se conserva el original: se puede editar y pedir más clips.")

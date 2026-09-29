@@ -3,12 +3,14 @@ from __future__ import annotations
 import shutil
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from clipaso.application.cleanup import CutPlan
 from clipaso.domain.errors import SelectionError
 from clipaso.domain.models import ExportedClip, Sentence, SignalSet, Transcript, Word
 from clipaso.infra.config import Settings
@@ -100,6 +102,18 @@ class FakePipeline:
         if self.fail:
             raise self.fail
         return FakeResult([self._clip(uri, out_dir, 1, 0.0, 3.0, opts.title or "Vídeo", opts.profile)])
+
+    def clean(self, uri, opts, *, out_dir, pace="normal", remove_fillers=True, translate_to=None, on_progress=None):
+        self.calls.append({"kind": "clean", "opts": opts, "pace": pace, "fillers": remove_fillers,
+                           "translate_to": translate_to})
+        if self.fail:
+            raise self.fail
+        out_dir.mkdir(parents=True, exist_ok=True)
+        cleaned = out_dir / "limpio.mp4"
+        shutil.copyfile(uri, cleaned)
+        result = FakeResult([self._clip(uri, out_dir, 1, 0.0, 2.5, opts.title or "Vídeo", opts.profile)])
+        result.source = SimpleNamespace(path=cleaned)
+        return result, CutPlan(cuts=[(1.0, 1.5)], pauses=1, fillers=2, original=3.0)
 
     def render(self, uri, opts, clip, rank, transcript, out_dir):
         self.calls.append({"kind": "render", "opts": opts, "clip": clip, "transcript": transcript})

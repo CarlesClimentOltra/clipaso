@@ -29,6 +29,16 @@ SUBTITLE_WEIGHTS: dict[str, float] = {
     "translate": 0.12,
     "export": 0.35,
 }
+# Quitar silencios y muletillas: se transcribe, se monta el vídeo sin pausas y luego se subtitula.
+CLEAN_WEIGHTS: dict[str, float] = {
+    "ingest": 0.03,
+    "audio": 0.02,
+    "transcribe": 0.38,
+    "cut": 0.17,
+    "signals": 0.02,
+    "translate": 0.08,
+    "export": 0.30,
+}
 
 
 class ProgressReporter:

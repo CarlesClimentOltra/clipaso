@@ -71,8 +71,13 @@ class FasterWhisperTranscriber:
         raise TranscriptionError("No se pudo cargar Whisper", detail=str(last_error))
 
     def transcribe(
-        self, audio_path: Path, language: str | None, on_progress: Callable[[float], None] | None = None
+        self,
+        audio_path: Path,
+        language: str | None,
+        on_progress: Callable[[float], None] | None = None,
+        prompt: str | None = None,
     ) -> Transcript:
+        """`prompt` orienta el estilo: con muletillas de ejemplo, Whisper las escribe en vez de omitirlas."""
         model = self._load()
         t0 = time.monotonic()
         try:
@@ -83,6 +88,10 @@ class FasterWhisperTranscriber:
                 word_timestamps=True,
                 vad_filter=self.vad_filter,
                 condition_on_previous_text=False,  # reduce alucinaciones repetitivas
+                # Sin condicionar al texto anterior, el prompt inicial solo vale para la primera ventana;
+                # como «hotwords» se repite en todas.
+                initial_prompt=prompt,
+                **({"hotwords": prompt} if prompt else {}),
             )
             words: list[Word] = []
             last_log = t0
