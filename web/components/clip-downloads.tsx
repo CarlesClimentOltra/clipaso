@@ -177,12 +177,16 @@ export function ClipDownloads({
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuLabel>{d.cover}</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => downloadUrl(cover.vertical_download_url)}>
-                  <ImageIcon /> {d.coverVertical}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => downloadUrl(cover.horizontal_download_url)}>
-                  <ImageIcon /> {d.coverHorizontal}
-                </DropdownMenuItem>
+                {cover.vertical_download_url && (
+                  <DropdownMenuItem onClick={() => downloadUrl(cover.vertical_download_url!)}>
+                    <ImageIcon /> {d.coverVertical}
+                  </DropdownMenuItem>
+                )}
+                {cover.horizontal_download_url && (
+                  <DropdownMenuItem onClick={() => downloadUrl(cover.horizontal_download_url!)}>
+                    <ImageIcon /> {d.coverHorizontal}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuGroup>
             </>
           )}

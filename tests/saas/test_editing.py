@@ -451,12 +451,32 @@ def test_original_profile_keeps_the_frame():
     assert odd.width % 2 == 0 and odd.height % 2 == 0
 
 
+def test_only_the_cover_the_format_needs(client, sample_video, monkeypatch):
+    storage = client.app.state.storage
+    job_id, _ = processed_job(client, sample_video, monkeypatch, format="vertical")
+    clip = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]
+    assert clip["cover"]["vertical_url"] and clip["cover"]["horizontal_url"] is None
+    row = _clip_row(client, clip["id"])
+    assert row.cover["sizes"] == ["vertical"] and "horizontal" not in row.cover and "base_horizontal" not in row.cover
+    # Editar (texto u otro fotograma) mantiene solo esa.
+    r = client.put(f"/clips/{clip['id']}/cover", json={"text": "Otro texto", "highlight": -1}, headers=AUTH)
+    edited = r.json()["cover"]
+    assert r.status_code == 200 and edited["horizontal_url"] is None and edited["highlight"] is None
+    r = client.put(f"/clips/{clip['id']}/cover", json={"time": 2.0}, headers=AUTH)
+    assert r.status_code == 200 and r.json()["cover"]["horizontal_url"] is None
+    assert storage.read_bytes(_clip_row(client, clip["id"]).cover["vertical"])
+
+    job_id, _ = processed_job(client, sample_video, monkeypatch, mode="subtitle", format="horizontal")
+    cover = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"]
+    assert cover["horizontal_url"] and cover["vertical_url"] is None
+
+
 def test_covers_are_generated_edited_and_regenerated(client, sample_video, monkeypatch, cover_llm):
     from clipaso.saas import covers
 
     dispatcher = Dispatcher()
     client.app.state.dispatcher = dispatcher
-    job_id, _ = processed_job(client, sample_video, monkeypatch)
+    job_id, _ = processed_job(client, sample_video, monkeypatch, format="square")  # cuadrado: las dos portadas
     clip = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]
     cover = clip["cover"]
     assert cover["text"] == "Esto lo cambia todo" and cover["highlight"] == 3 and cover["template"] == "impacto"

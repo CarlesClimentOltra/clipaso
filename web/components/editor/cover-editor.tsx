@@ -176,23 +176,38 @@ export function CoverEditor({
     save(next);
   }
 
+  const both = !!cover.vertical_url && !!cover.horizontal_url;
+
   return (
     <div className="flex flex-col gap-6">
-      {!large && <p className="text-xs text-muted-foreground">{c.lead}</p>}
+      {!large && (
+        <p className="text-xs text-muted-foreground">
+          {both ? c.lead : cover.vertical_url ? c.leadVertical : c.leadHorizontal}
+        </p>
+      )}
 
-      <div className={cn("relative grid gap-4",
-                         large ? "lg:grid-cols-[1fr_220px]" : "sm:grid-cols-[minmax(0,180px)_1fr]")}>
-        {large ? (
+      <div className={cn("relative grid gap-4", both &&
+                         (large ? "lg:grid-cols-[1fr_220px]" : "sm:grid-cols-[minmax(0,180px)_1fr]"))}>
+        {!both ? (
+          // Solo la portada que usa el formato del proyecto (9:16 para TikTok o 16:9 para YouTube).
+          cover.vertical_url ? (
+            <Preview url={cover.vertical_url} downloadUrl={cover.vertical_download_url!} label={c.vertical}
+                     className="mx-auto w-full max-w-[240px]" />
+          ) : (
+            <Preview url={cover.horizontal_url!} downloadUrl={cover.horizontal_download_url!} label={c.horizontal}
+                     className="mx-auto w-full max-w-xl" />
+          )
+        ) : large ? (
           <>
-            <Preview url={cover.horizontal_url} downloadUrl={cover.horizontal_download_url} label={c.horizontal}
+            <Preview url={cover.horizontal_url!} downloadUrl={cover.horizontal_download_url!} label={c.horizontal}
                      className="self-start" />
-            <Preview url={cover.vertical_url} downloadUrl={cover.vertical_download_url} label={c.vertical}
+            <Preview url={cover.vertical_url!} downloadUrl={cover.vertical_download_url!} label={c.vertical}
                      className="mx-auto w-full max-w-[220px]" />
           </>
         ) : (
           <>
-            <Preview url={cover.vertical_url} downloadUrl={cover.vertical_download_url} label={c.vertical} />
-            <Preview url={cover.horizontal_url} downloadUrl={cover.horizontal_download_url} label={c.horizontal}
+            <Preview url={cover.vertical_url!} downloadUrl={cover.vertical_download_url!} label={c.vertical} />
+            <Preview url={cover.horizontal_url!} downloadUrl={cover.horizontal_download_url!} label={c.horizontal}
                      className="self-start" />
           </>
         )}
@@ -221,6 +236,18 @@ export function CoverEditor({
         {words.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">{c.highlight}</span>
+            <button
+              type="button"
+              disabled={busy}
+              aria-pressed={highlight === null}
+              onClick={() => setHighlight(null)}
+              className={cn(
+                "rounded-md border border-dashed px-2 py-0.5 text-xs outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                highlight === null ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
+            >
+              {c.noHighlight}
+            </button>
             {words.map((w, i) => (
               <button
                 key={`${i}-${w}`}

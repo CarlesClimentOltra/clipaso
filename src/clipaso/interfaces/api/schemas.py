@@ -176,10 +176,11 @@ class CoverOut(BaseModel):
     candidates: list[float] = Field(description="Otros momentos que propuso la IA.")
     candidate_images: list[str | None] = Field(
         default_factory=list, description="Imagen de cada momento propuesto (miniaturas hechas sin subir el vídeo).")
-    vertical_url: str
-    horizontal_url: str
-    vertical_download_url: str
-    horizontal_download_url: str
+    # Solo las que usa el proyecto: 9:16 (TikTok, Reels, Shorts), 16:9 (YouTube) o ambas.
+    vertical_url: str | None = None
+    horizontal_url: str | None = None
+    vertical_download_url: str | None = None
+    horizontal_download_url: str | None = None
     pending: bool = Field(description="Se está generando una nueva propuesta con IA.")
 
 

@@ -53,19 +53,24 @@ def clip_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> ClipOut:
 
 def cover_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> CoverOut | None:
     c = clip.cover
-    if not c or not c.get("vertical"):
+    if not c or not (c.get("vertical") or c.get("horizontal")):
         return None
+
+    def url(key: str, name: str | None = None) -> str | None:
+        if not c.get(key):
+            return None
+        return storage.signed_url(c[key], expires=ttl, **({"download_name": name} if name else {}))
+
     base = clip_filename(job, clip, "jpg").removesuffix(".jpg")
     return CoverOut(
         text=c.get("text", ""), highlight=c.get("highlight"), template=c.get("template", "impacto"),
         time=c.get("time", clip.start), candidates=[x["time"] for x in c.get("candidates", [])],
         candidate_images=[storage.signed_url(x["key"], expires=ttl) if x.get("key") else None
                           for x in c.get("candidates", [])],
-        vertical_url=storage.signed_url(c["vertical"], expires=ttl),
-        horizontal_url=storage.signed_url(c["horizontal"], expires=ttl),
-        vertical_download_url=storage.signed_url(c["vertical"], expires=ttl, download_name=f"{base}-portada-9x16.jpg"),
-        horizontal_download_url=storage.signed_url(c["horizontal"], expires=ttl,
-                                                   download_name=f"{base}-miniatura-16x9.jpg"),
+        vertical_url=url("vertical"),
+        horizontal_url=url("horizontal"),
+        vertical_download_url=url("vertical", f"{base}-portada-9x16.jpg"),
+        horizontal_download_url=url("horizontal", f"{base}-miniatura-16x9.jpg"),
         pending=bool(c.get("pending")),
     )
 

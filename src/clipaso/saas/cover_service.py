@@ -2,8 +2,9 @@
 
 `clip.cover` guarda la decisión y dónde están las imágenes:
 {"n": versión, "time", "face_x", "text", "highlight", "template", "candidates": [{"time", "face_x"}],
- "base_vertical", "base_horizontal", "vertical", "horizontal", "pending": bool}
-Las «base» son el fotograma ya recortado sin texto; las otras dos, las portadas terminadas.
+ "sizes": ["vertical", "horizontal"], "base_vertical", "base_horizontal", "vertical", "horizontal", "pending": bool}
+Las «base» son el fotograma ya recortado sin texto; las otras dos, las portadas terminadas. Solo se hacen los
+tamaños que el proyecto usa (`sizes`): un vídeo vertical no necesita miniatura de YouTube, ni al revés.
 """
 
 from __future__ import annotations
@@ -21,6 +22,23 @@ from clipaso.saas.services import clips_prefix
 
 log = get_logger(__name__)
 
+ALL_SIZES: tuple[str, ...] = ("vertical", "horizontal")
+
+
+def sizes_for(options: dict) -> tuple[str, ...]:
+    """Portadas que tienen sentido para el proyecto: la 9:16 (TikTok, Reels, Shorts), la 16:9 (YouTube) o las dos
+    (cuadrado, que se publica en ambos sitios, y el modo miniatura)."""
+    from clipaso.saas.rendering import result_frame
+
+    if options.get("mode") == "thumbnail":
+        return ALL_SIZES
+    frame = result_frame(options)
+    return (frame,) if frame in ALL_SIZES else ALL_SIZES
+
+
+def _sizes(cover: dict | None) -> tuple[str, ...]:
+    return tuple((cover or {}).get("sizes") or ALL_SIZES)
+
 
 def branding_logo(storage: Storage, user: User | None, options: dict) -> tuple[bytes | None, str]:
     """Logo de la marca (si el proyecto la lleva) y su esquina."""
@@ -32,11 +50,15 @@ def branding_logo(storage: Storage, user: User | None, options: dict) -> tuple[b
     return storage.read_bytes(logo_key(user.id)), prefs.position
 
 
-def _keys(user_id: str, job_id: str, clip: Clip, n: int) -> dict[str, str]:
+def _keys(user_id: str, job_id: str, clip: Clip, n: int, sizes: tuple[str, ...]) -> dict[str, str]:
     prefix = clips_prefix(user_id, job_id).rstrip("/")
     stem = f"{prefix}/{clip.rank:02d}-portada-{n}"
-    return {"base_vertical": f"{stem}-base-v.jpg", "base_horizontal": f"{stem}-base-h.jpg",
-            "vertical": f"{stem}-9x16.jpg", "horizontal": f"{stem}-16x9.jpg"}
+    names = {"vertical": ("base-v", "9x16"), "horizontal": ("base-h", "16x9")}
+    keys: dict[str, str] = {}
+    for size in sizes:
+        base, finished = names[size]
+        keys[f"base_{size}"], keys[size] = f"{stem}-{base}.jpg", f"{stem}-{finished}.jpg"
+    return keys
 
 
 def _drop_images(storage: Storage, cover: dict | None) -> None:
@@ -46,39 +68,40 @@ def _drop_images(storage: Storage, cover: dict | None) -> None:
 
 
 def _store(
-    storage: Storage, user_id: str, job_id: str, clip: Clip, *, base_v: bytes, base_h: bytes, info: dict,
+    storage: Storage, user_id: str, job_id: str, clip: Clip, *, bases: dict[str, bytes], info: dict,
     style: CaptionStyle, logo: bytes | None, logo_position: str,
 ) -> dict:
-    """Compone las dos portadas, las sube y sustituye a las anteriores."""
+    """Compone las portadas de cada tamaño de `bases`, las sube y sustituye a las anteriores."""
     previous = clip.cover
     n = (previous or {}).get("n", 0) + 1
-    keys = _keys(user_id, job_id, clip, n)
+    sizes = tuple(s for s in ALL_SIZES if s in bases)
+    keys = _keys(user_id, job_id, clip, n, sizes)
     template = info.get("template") or covers.DEFAULT_TEMPLATE
-    finished = {
-        size: covers.compose(base, covers.SIZES[size], text=info.get("text", ""), highlight=info.get("highlight"),
-                             template=template, style=style, logo=logo, logo_position=logo_position)
-        for size, base in (("vertical", base_v), ("horizontal", base_h))
-    }
-    storage.put_bytes(keys["base_vertical"], base_v, "image/jpeg")
-    storage.put_bytes(keys["base_horizontal"], base_h, "image/jpeg")
-    storage.put_bytes(keys["vertical"], finished["vertical"], "image/jpeg")
-    storage.put_bytes(keys["horizontal"], finished["horizontal"], "image/jpeg")
+    for size in sizes:
+        finished = covers.compose(bases[size], covers.SIZES[size], text=info.get("text", ""),
+                                  highlight=info.get("highlight"), template=template, style=style, logo=logo,
+                                  logo_position=logo_position)
+        storage.put_bytes(keys[f"base_{size}"], bases[size], "image/jpeg")
+        storage.put_bytes(keys[size], finished, "image/jpeg")
     _drop_images(storage, previous)
-    cover = {**info, "template": template, "n": n, **keys, "pending": False}
+    info = {k: v for k, v in info.items() if k not in ("base_vertical", "base_horizontal", "vertical", "horizontal")}
+    cover = {**info, "template": template, "n": n, "sizes": list(sizes), **keys, "pending": False}
     clip.cover = cover
     return cover
 
 
 def save_choice(
     storage: Storage, user_id: str, job_id: str, clip: Clip, choice: covers.CoverChoice, *, style: CaptionStyle,
-    logo: bytes | None, logo_position: str,
+    logo: bytes | None, logo_position: str, sizes: tuple[str, ...] | None = None,
 ) -> dict:
     """Guarda la propuesta de la IA (conserva la plantilla que eligiera el usuario)."""
     template = (clip.cover or {}).get("template", covers.DEFAULT_TEMPLATE)
     info = {"time": choice.time, "face_x": choice.face_x, "text": choice.text, "highlight": choice.highlight,
             "template": template, "candidates": choice.candidates}
-    return _store(storage, user_id, job_id, clip, base_v=choice.base_vertical, base_h=choice.base_horizontal, info=info,
-                  style=style, logo=logo, logo_position=logo_position)
+    both = {"vertical": choice.base_vertical, "horizontal": choice.base_horizontal}
+    bases = {s: both[s] for s in (sizes or _sizes(clip.cover))}
+    return _store(storage, user_id, job_id, clip, bases=bases, info=info, style=style, logo=logo,
+                  logo_position=logo_position)
 
 
 def update(
@@ -125,21 +148,19 @@ def update(
         if frame is None:
             raise AppError("validation_error", key="cover_frame")
         info["time"], info["face_x"] = round(time, 2), face_x
-        base_v = covers.to_jpeg(covers.fit(frame, covers.SIZES["vertical"], face_x))
-        base_h = covers.to_jpeg(covers.fit(frame, covers.SIZES["horizontal"], face_x))
+        bases = {s: covers.to_jpeg(covers.fit(frame, covers.SIZES[s], face_x)) for s in _sizes(current)}
     else:
-        base_v = storage.read_bytes(current["base_vertical"])
-        base_h = storage.read_bytes(current["base_horizontal"])
-        if base_v is None or base_h is None:
+        bases = {s: storage.read_bytes(current[f"base_{s}"]) for s in _sizes(current)}
+        if any(b is None for b in bases.values()):
             raise AppError("not_found", 404)
-    return _store(storage, job.user_id, job.id, clip, base_v=base_v, base_h=base_h, info=info, style=style,
+    return _store(storage, job.user_id, job.id, clip, bases=bases, info=info, style=style,
                   logo=logo, logo_position=logo_position)
 
 
 def generate(
     storage: Storage, user_id: str, job_id: str, clip: Clip, *, source: str | Path, transcript, language: str,
     style: CaptionStyle, logo: bytes | None, logo_position: str, llm, detector, cost=None, again: bool = False,
-    teaser: bool = False,
+    teaser: bool = False, sizes: tuple[str, ...] | None = None,
 ) -> dict | None:
     """Propuesta automática (IA) de portada para un clip. `again`: otra distinta de la actual."""
     current = clip.cover or {}
@@ -151,7 +172,8 @@ def generate(
     )
     if choice is None:
         return None
-    return save_choice(storage, user_id, job_id, clip, choice, style=style, logo=logo, logo_position=logo_position)
+    return save_choice(storage, user_id, job_id, clip, choice, style=style, logo=logo, logo_position=logo_position,
+                       sizes=sizes)
 
 
 def generate_for_clips(
@@ -175,7 +197,7 @@ def generate_for_clips(
         try:
             generate(storage, user_id, job_id, clip, source=source, transcript=transcript, language=language,
                      style=style, logo=logo, logo_position=logo_position, llm=llm, detector=detector, cost=cost,
-                     again=again, teaser=options.get("mode") == "trailer")
+                     again=again, teaser=options.get("mode") == "trailer", sizes=sizes_for(options))
         except Exception as exc:
             log.warning("cover.failed", rank=clip.rank, error=str(exc)[:300])
     return cost.spent

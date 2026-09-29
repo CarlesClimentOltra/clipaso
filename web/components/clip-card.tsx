@@ -156,6 +156,9 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
     rate.mutate({ clipId: clip.id, value: clip.rating === value ? 0 : value });
   }
 
+  // Solo existe la portada que usa el formato del proyecto (o las dos).
+  const coverBoth = !!clip.cover?.vertical_url && !!clip.cover?.horizontal_url;
+
   return (
     <Card className="overflow-hidden pt-0">
       <div className="relative">
@@ -195,15 +198,25 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
             onClick={() => setCoverOpen(true)}
             className="group flex items-center gap-3 rounded-xl border border-primary/30 bg-brand-soft/40 p-2 text-left outline-none transition-colors hover:border-primary hover:bg-brand-soft focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={clip.cover.vertical_url} alt="" className="h-16 w-9 shrink-0 rounded-md object-cover shadow-sm" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={clip.cover.horizontal_url} alt="" className="hidden h-9 w-16 shrink-0 rounded-md object-cover shadow-sm sm:block" />
+            {clip.cover.vertical_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clip.cover.vertical_url} alt="" className="h-16 w-9 shrink-0 rounded-md object-cover shadow-sm" />
+            )}
+            {clip.cover.horizontal_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clip.cover.horizontal_url} alt=""
+                   className={cn("h-9 w-16 shrink-0 rounded-md object-cover shadow-sm",
+                                 clip.cover.vertical_url && "hidden sm:block")} />
+            )}
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1.5 font-medium">
-                <ImageIcon className="size-4 text-brand-ink" /> {t.cover.panelTitle}
+                <ImageIcon className="size-4 text-brand-ink" />{" "}
+                {coverBoth ? t.cover.panelTitle : clip.cover.vertical_url ? t.cover.vertical : t.cover.horizontal}
               </span>
-              <span className="block text-xs text-muted-foreground">{t.cover.panelText}</span>
+              <span className="block text-xs text-muted-foreground">
+                {coverBoth ? t.cover.panelText : clip.cover.vertical_url ? t.cover.panelTextVertical
+                  : t.cover.panelTextHorizontal}
+              </span>
             </span>
             <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </button>

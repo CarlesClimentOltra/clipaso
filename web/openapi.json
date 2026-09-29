@@ -3043,19 +3043,47 @@
             "description": "Imagen de cada momento propuesto (miniaturas hechas sin subir el vídeo)."
           },
           "vertical_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Vertical Url"
           },
           "horizontal_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Horizontal Url"
           },
           "vertical_download_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Vertical Download Url"
           },
           "horizontal_download_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Horizontal Download Url"
           },
           "pending": {
@@ -3071,10 +3099,6 @@
           "template",
           "time",
           "candidates",
-          "vertical_url",
-          "horizontal_url",
-          "vertical_download_url",
-          "horizontal_download_url",
           "pending"
         ],
         "title": "CoverOut",

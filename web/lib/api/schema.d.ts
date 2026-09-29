@@ -791,13 +791,13 @@ export interface components {
              */
             candidate_images?: (string | null)[];
             /** Vertical Url */
-            vertical_url: string;
+            vertical_url?: string | null;
             /** Horizontal Url */
-            horizontal_url: string;
+            horizontal_url?: string | null;
             /** Vertical Download Url */
-            vertical_download_url: string;
+            vertical_download_url?: string | null;
             /** Horizontal Download Url */
-            horizontal_download_url: string;
+            horizontal_download_url?: string | null;
             /**
              * Pending
              * @description Se está generando una nueva propuesta con IA.
