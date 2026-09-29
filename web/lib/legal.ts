@@ -8,7 +8,7 @@ export const legal = {
     address: "Calle Cervantes, 3, Llocnou d'En Fenollet (Valencia), España",
     email: "carlesco03@gmail.com",
   },
-  site: "smartcuts-kohl.vercel.app",
+  site: "clipaso.vercel.app",
   minAge: 18,
   // Encargados del tratamiento (proveedores que tratan datos por cuenta de Clipaso).
   processors: [

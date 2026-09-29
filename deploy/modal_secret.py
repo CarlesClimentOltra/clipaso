@@ -20,7 +20,7 @@ from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
 NAME = "clipaso-worker"
-WEB_URL = "https://smartcuts-kohl.vercel.app"  # enlaces de los emails al usuario
+WEB_URL = "https://clipaso.vercel.app"  # enlaces de los emails al usuario
 COPY = [
     "CLIPASO_DATABASE__URL",
     "CLIPASO_AUTH__SUPABASE_URL",
