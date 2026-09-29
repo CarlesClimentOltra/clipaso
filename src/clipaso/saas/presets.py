@@ -22,8 +22,10 @@ FORMATS: dict[str, dict] = {
     "original": {"label": "Original", "hint": "El mismo formato que tu vídeo", "profile": None},
 }
 FormatT = Literal["vertical", "square", "horizontal", "original"]
-ModeT = Literal["clips", "subtitle", "thumbnail", "clean", "reframe"]
-WHOLE_VIDEO_MODES = ("subtitle", "clean", "reframe")  # el resultado es el vídeo entero, no clips de la IA
+ModeT = Literal["clips", "subtitle", "thumbnail", "clean", "reframe", "trailer"]
+# El resultado es un único vídeo (el entero, o el tráiler), no varios clips elegidos por la IA.
+WHOLE_VIDEO_MODES = ("subtitle", "clean", "reframe", "trailer")
+TrailerSecondsT = Literal[30, 60, 90]
 CleanPaceT = Literal["natural", "normal", "fast"]
 # Cambiar formato: auto = sigue a quien habla (o fondo desenfocado si no hay nada que recortar),
 # blur_pad = la imagen completa sobre un fondo desenfocado, center = rellenar recortando por el centro.

@@ -61,6 +61,19 @@ export function ModeArt({ mode, className }: { mode: Mode; className?: string })
           </div>
         </div>
       )}
+      {mode === "trailer" && (
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-1">
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <span key={i} className={cn("h-9 w-5 rounded-sm transition-colors duration-300",
+                                          [1, 4, 6].includes(i) ? "bg-lime-300" : "bg-white/15")} />
+            ))}
+          </div>
+          <div className="flex gap-0.5 transition-transform duration-300 group-hover:scale-110">
+            {[0, 1, 2].map((i) => <span key={i} className="h-11 w-8 rounded-sm bg-lime-300" />)}
+          </div>
+        </div>
+      )}
       {mode === "thumbnail" && (
         <div className="relative flex aspect-video w-44 flex-col justify-center gap-1.5 rounded-lg border border-white/15 bg-linear-to-br from-sky-500/60 to-fuchsia-500/50 p-3">
           <span className="h-4 w-24 rounded-sm bg-white shadow-[0_2px_0_#000]" />

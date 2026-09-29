@@ -26,7 +26,8 @@ export function JobProgress({ job }: { job: Job }) {
   const queued = job.status === "queued";
   const { t } = useI18n();
   // Modos de vídeo entero con sus propios pasos (sin silencios, cambiar formato).
-  const whole = job.options.mode === "clean" ? t.clean : job.options.mode === "reframe" ? t.reframe : null;
+  const whole = job.options.mode === "clean" ? t.clean : job.options.mode === "reframe" ? t.reframe
+    : job.options.mode === "trailer" ? t.trailer : null;
   const subtitle = job.options.mode === "subtitle" || !!whole;
   const labels = whole
     ? whole.steps

@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import {
   ArrowLeftIcon,
   CalendarClockIcon,
+  ClapperboardIcon,
   ClockIcon,
   FolderDownIcon,
   ImageIcon,
@@ -18,6 +19,7 @@ import {
 import { toast } from "sonner";
 
 import { CleanSummary } from "@/components/clean-summary";
+import { formatTime } from "@/lib/captions";
 import { ClipCard } from "@/components/clip-card";
 import { CoverEditor } from "@/components/editor/cover-editor";
 import { JobProgress } from "@/components/job-progress";
@@ -83,7 +85,8 @@ export default function ProjectPage() {
   const active = job.status === "queued" || job.status === "running";
   const clean = job.options.mode === "clean";
   // Textos propios de los modos de vídeo entero con nombre propio (sin silencios, cambiar formato).
-  const whole = clean ? t.clean : job.options.mode === "reframe" ? t.reframe : null;
+  const whole = clean ? t.clean : job.options.mode === "reframe" ? t.reframe
+    : job.options.mode === "trailer" ? t.trailer : null;
   // El resultado es el vídeo entero (subtitulado, sin silencios o en otro formato), no varios clips.
   const subtitle = job.options.mode === "subtitle" || !!whole;
   const thumbnail = job.options.mode === "thumbnail";
@@ -240,6 +243,13 @@ export default function ProjectPage() {
       )}
 
       {job.status === "done" && clean && job.clean_stats && <CleanSummary stats={job.clean_stats} />}
+      {job.status === "done" && job.trailer_stats && (
+        <p className="flex items-center gap-2 rounded-2xl border bg-card px-4 py-3 text-sm" aria-label={t.trailer.summaryLabel}>
+          <ClapperboardIcon className="size-4 shrink-0 text-brand-ink" />
+          {t.trailer.summary(job.trailer_stats.moments, formatTime(job.trailer_stats.original_seconds),
+                             formatTime(job.trailer_stats.trailer_seconds))}
+        </p>
+      )}
 
       {job.status === "done" && !thumbnail && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">

@@ -16,6 +16,7 @@ from clipaso.saas.presets import (
     FormatT,
     ModeT,
     ReframeFitT,
+    TrailerSecondsT,
 )
 from clipaso.saas.styles import UserStyle
 
@@ -118,12 +119,14 @@ class JobOptions(BaseModel):
 
     mode: ModeT = Field("clips", description="clips: la IA elige los mejores momentos · subtitle: el vídeo "
                                              "entero con subtítulos · clean: el vídeo entero sin silencios ni "
-                                             "muletillas · reframe: el vídeo entero en otro formato.")
+                                             "muletillas · reframe: el vídeo entero en otro formato · trailer: "
+                                             "un resumen corto con los mejores momentos.")
     subtitle_language: str | None = Field(None, pattern=r"^[a-z]{2}$",
                                           description="Vídeo entero: traducir los subtítulos a este idioma.")
     clean_pace: CleanPaceT = Field("normal", description="Sin silencios: natural (solo pausas largas), normal "
                                                           "o fast (ritmo rápido, estilo YouTube).")
     clean_fillers: bool = Field(True, description="Sin silencios: quitar también «eh», «em», «mmm»…")
+    trailer_seconds: TrailerSecondsT = Field(60, description="Tráiler: duración aproximada en segundos.")
     reframe_fit: ReframeFitT = Field("auto", description="Cambiar formato: auto (sigue a quien habla), blur_pad "
                                                           "(imagen completa con fondo desenfocado) o center "
                                                           "(rellenar recortando).")
@@ -358,11 +361,20 @@ class CleanStatsOut(BaseModel):
     fillers: int
 
 
+class TrailerStatsOut(BaseModel):
+    """De qué se hizo el tráiler."""
+
+    original_seconds: float
+    trailer_seconds: float
+    moments: int
+
+
 class JobOut(JobSummary):
     error_code: str | None
     error_message: str | None
     options: JobOptions
     clean_stats: CleanStatsOut | None = None
+    trailer_stats: TrailerStatsOut | None = None
     frame: Literal["vertical", "square", "horizontal"] = Field(
         description="Encuadre de los clips (en el formato «original», el del vídeo).")
     can_edit: bool = Field(description="Se conserva el original: se puede editar y pedir más clips.")

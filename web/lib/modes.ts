@@ -1,4 +1,12 @@
-import { AudioLinesIcon, CaptionsIcon, ImageIcon, RatioIcon, ScissorsIcon, type LucideIcon } from "lucide-react";
+import {
+  AudioLinesIcon,
+  CaptionsIcon,
+  ClapperboardIcon,
+  ImageIcon,
+  RatioIcon,
+  ScissorsIcon,
+  type LucideIcon,
+} from "lucide-react";
 
 /** Modos de «Nuevo proyecto». Cada uno tiene su pantalla en /new/<id>; los textos están en `t.newProject.modes`. */
 export const MODES = [
@@ -6,6 +14,7 @@ export const MODES = [
   { id: "subtitle", icon: CaptionsIcon, usesMinutes: true, isNew: false },
   { id: "clean", icon: AudioLinesIcon, usesMinutes: true, isNew: true },
   { id: "reframe", icon: RatioIcon, usesMinutes: true, isNew: true },
+  { id: "trailer", icon: ClapperboardIcon, usesMinutes: true, isNew: true },
   { id: "thumbnail", icon: ImageIcon, usesMinutes: false, isNew: true },
 ] as const satisfies readonly { id: string; icon: LucideIcon; usesMinutes: boolean; isNew: boolean }[];
 

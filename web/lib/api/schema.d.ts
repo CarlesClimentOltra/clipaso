@@ -923,11 +923,11 @@ export interface components {
         JobCreateIn: {
             /**
              * Mode
-             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato · trailer: un resumen corto con los mejores momentos.
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
             /**
              * Subtitle Language
              * @description Vídeo entero: traducir los subtítulos a este idioma.
@@ -946,6 +946,13 @@ export interface components {
              * @default true
              */
             clean_fillers: boolean;
+            /**
+             * Trailer Seconds
+             * @description Tráiler: duración aproximada en segundos.
+             * @default 60
+             * @enum {integer}
+             */
+            trailer_seconds: 30 | 60 | 90;
             /**
              * Reframe Fit
              * @description Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).
@@ -1012,11 +1019,11 @@ export interface components {
         JobOptions: {
             /**
              * Mode
-             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.
+             * @description clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato · trailer: un resumen corto con los mejores momentos.
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
             /**
              * Subtitle Language
              * @description Vídeo entero: traducir los subtítulos a este idioma.
@@ -1035,6 +1042,13 @@ export interface components {
              * @default true
              */
             clean_fillers: boolean;
+            /**
+             * Trailer Seconds
+             * @description Tráiler: duración aproximada en segundos.
+             * @default 60
+             * @enum {integer}
+             */
+            trailer_seconds: 30 | 60 | 90;
             /**
              * Reframe Fit
              * @description Cambiar formato: auto (sigue a quien habla), blur_pad (imagen completa con fondo desenfocado) o center (rellenar recortando).
@@ -1086,7 +1100,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
             /**
              * Status
              * @enum {string}
@@ -1117,6 +1131,7 @@ export interface components {
             error_message: string | null;
             options: components["schemas"]["JobOptions"];
             clean_stats?: components["schemas"]["CleanStatsOut"] | null;
+            trailer_stats?: components["schemas"]["TrailerStatsOut"] | null;
             /**
              * Frame
              * @description Encuadre de los clips (en el formato «original», el del vídeo).
@@ -1145,7 +1160,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe";
+            mode: "clips" | "subtitle" | "thumbnail" | "clean" | "reframe" | "trailer";
             /**
              * Status
              * @enum {string}
@@ -1365,6 +1380,18 @@ export interface components {
             branding: boolean;
             /** Frames */
             frames: components["schemas"]["ThumbnailFrameIn"][];
+        };
+        /**
+         * TrailerStatsOut
+         * @description De qué se hizo el tráiler.
+         */
+        TrailerStatsOut: {
+            /** Original Seconds */
+            original_seconds: number;
+            /** Trailer Seconds */
+            trailer_seconds: number;
+            /** Moments */
+            moments: number;
         };
         /** UploadCompleteIn */
         UploadCompleteIn: {

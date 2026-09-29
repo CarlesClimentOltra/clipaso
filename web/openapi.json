@@ -3412,10 +3412,11 @@
               "subtitle",
               "thumbnail",
               "clean",
-              "reframe"
+              "reframe",
+              "trailer"
             ],
             "title": "Mode",
-            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato · trailer: un resumen corto con los mejores momentos.",
             "default": "clips"
           },
           "subtitle_language": {
@@ -3447,6 +3448,17 @@
             "title": "Clean Fillers",
             "description": "Sin silencios: quitar también «eh», «em», «mmm»…",
             "default": true
+          },
+          "trailer_seconds": {
+            "type": "integer",
+            "enum": [
+              30,
+              60,
+              90
+            ],
+            "title": "Trailer Seconds",
+            "description": "Tráiler: duración aproximada en segundos.",
+            "default": 60
           },
           "reframe_fit": {
             "type": "string",
@@ -3569,10 +3581,11 @@
               "subtitle",
               "thumbnail",
               "clean",
-              "reframe"
+              "reframe",
+              "trailer"
             ],
             "title": "Mode",
-            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato.",
+            "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos · clean: el vídeo entero sin silencios ni muletillas · reframe: el vídeo entero en otro formato · trailer: un resumen corto con los mejores momentos.",
             "default": "clips"
           },
           "subtitle_language": {
@@ -3604,6 +3617,17 @@
             "title": "Clean Fillers",
             "description": "Sin silencios: quitar también «eh», «em», «mmm»…",
             "default": true
+          },
+          "trailer_seconds": {
+            "type": "integer",
+            "enum": [
+              30,
+              60,
+              90
+            ],
+            "title": "Trailer Seconds",
+            "description": "Tráiler: duración aproximada en segundos.",
+            "default": 60
           },
           "reframe_fit": {
             "type": "string",
@@ -3690,7 +3714,8 @@
               "subtitle",
               "thumbnail",
               "clean",
-              "reframe"
+              "reframe",
+              "trailer"
             ],
             "title": "Mode",
             "default": "clips"
@@ -3804,6 +3829,16 @@
               }
             ]
           },
+          "trailer_stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrailerStatsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "frame": {
             "type": "string",
             "enum": [
@@ -3882,7 +3917,8 @@
               "subtitle",
               "thumbnail",
               "clean",
-              "reframe"
+              "reframe",
+              "trailer"
             ],
             "title": "Mode",
             "default": "clips"
@@ -4485,6 +4521,30 @@
         ],
         "title": "ThumbnailIn",
         "description": "Miniatura sin subir el vídeo: el navegador envía unos fotogramas."
+      },
+      "TrailerStatsOut": {
+        "properties": {
+          "original_seconds": {
+            "type": "number",
+            "title": "Original Seconds"
+          },
+          "trailer_seconds": {
+            "type": "number",
+            "title": "Trailer Seconds"
+          },
+          "moments": {
+            "type": "integer",
+            "title": "Moments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "original_seconds",
+          "trailer_seconds",
+          "moments"
+        ],
+        "title": "TrailerStatsOut",
+        "description": "De qué se hizo el tráiler."
       },
       "UploadCompleteIn": {
         "properties": {

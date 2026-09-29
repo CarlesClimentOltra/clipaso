@@ -13,6 +13,7 @@ import { Segmented } from "@/components/segmented";
 import { TrimSelector, type TrimRange } from "@/components/trim-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
@@ -70,14 +71,15 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
     caption_style: ProjectOptionsValue["caption_style"] | null;
   }>({
     // Con el vídeo entero, por defecto se respeta su formato; los clips, en vertical.
-    mode, subtitle_language: null, format: mode === "clips" || mode === "reframe" ? "vertical" : "original", duration: "auto", topic: "",
+    mode, subtitle_language: null, format: ["clips", "reframe", "trailer"].includes(mode) ? "vertical" : "original", duration: "auto", topic: "",
     keep_source: true, branding: true, caption_style: null, clean_pace: "normal", clean_fillers: true,
-    reframe_fit: "auto",
+    reframe_fit: "auto", trailer_seconds: 60,
   });
   const cleanMode = mode === "clean";
   // El resultado es el vídeo entero (solo subtitular o sin silencios).
   const reframeMode = mode === "reframe";
-  const subtitleMode = mode === "subtitle" || cleanMode || reframeMode;
+  const trailerMode = mode === "trailer";
+  const subtitleMode = mode === "subtitle" || cleanMode || reframeMode || trailerMode;
   const { data: prefs } = usePreferences();
   const { data: catalog } = useClipOptions();
   // Hasta que el usuario toque el estilo, se usa el suyo por defecto (o el primero del catálogo). Los subtítulos
@@ -209,6 +211,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
   }
 
   const c = t.clean;
+  const tr = t.trailer;
   const translateField = (
     <div className="flex max-w-sm flex-col gap-2">
       <Label htmlFor="subtitle-language">{u.subtitleLanguage}</Label>
@@ -405,6 +408,35 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
         </div>
       )}
 
+      {trailerMode && (
+        <div className="flex flex-col gap-5 rounded-2xl border bg-muted/30 p-4 sm:p-5">
+          <div className="flex flex-col gap-2">
+            <Label>{tr.length}</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <Segmented
+                label={tr.length}
+                value={String(optionsDraft.trailer_seconds) as "30" | "60" | "90"}
+                disabled={busy}
+                onChange={(v) => setOptionsDraft((d) => ({ ...d, trailer_seconds: Number(v) as 30 | 60 | 90 }))}
+                options={(["30", "60", "90"] as const).map((v) => ({ value: v, label: tr.lengths[v][0] }))}
+              />
+              <span className="text-xs text-muted-foreground">
+                {tr.lengths[String(optionsDraft.trailer_seconds) as "30" | "60" | "90"][1]} · {tr.lengthHint}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="trailer-topic">
+              {tr.topic} <span className="font-normal text-muted-foreground">{t.common.optional}</span>
+            </Label>
+            <Input id="trailer-topic" maxLength={200} value={optionsDraft.topic} disabled={busy}
+                   placeholder={tr.topicPlaceholder}
+                   onChange={(e) => setOptionsDraft((d) => ({ ...d, topic: e.target.value }))} />
+            <p className="text-xs text-muted-foreground">{tr.topicHint}</p>
+          </div>
+        </div>
+      )}
+
       {options && (
         <ProjectOptions
           me={me}
@@ -484,7 +516,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
       ) : (
         <Button size="lg" className="h-12 rounded-full text-base"
                 disabled={!file || !duration || outOfMinutes || tooLong || tooBig} onClick={submit}>
-          {cleanMode ? c.create : reframeMode ? t.reframe.create : subtitleMode ? u.createSubtitle : u.create}
+          {cleanMode ? c.create : reframeMode ? t.reframe.create : trailerMode ? tr.create : subtitleMode ? u.createSubtitle : u.create}
         </Button>
       )}
       <p className="text-xs text-muted-foreground">

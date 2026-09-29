@@ -97,6 +97,7 @@ def job_out(session: Session, job: Job, user: User, storage: Storage, ttl: int) 
         error_message=user_message(job.error_code),
         options=JobOptions.model_validate(options),
         clean_stats=(job.options or {}).get("clean_stats"),
+        trailer_stats=(job.options or {}).get("trailer_stats"),
         frame=result_frame(options),
         can_edit=can_edit,
         more_clips_available=editing.more_clips_available(job, user) if can_edit else 0,

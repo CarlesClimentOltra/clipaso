@@ -351,7 +351,7 @@ SCHEMA = {
 }
 
 
-def _system(language: str, with_images: bool, avoid_text: str | None) -> str:
+def _system(language: str, with_images: bool, avoid_text: str | None, teaser: bool = False) -> str:
     lang = LANGUAGE_NAMES.get(language, language)
     frames = (
         "You receive numbered candidate frames (in order: 0, 1, 2…). Pick the one that makes the most "
@@ -360,6 +360,9 @@ def _system(language: str, with_images: bool, avoid_text: str | None) -> str:
         if with_images else "Set frame to 0. "
     )
     avoid = f' Write something clearly different from the previous cover text: "{avoid_text}".' if avoid_text else ""
+    if teaser:  # tráiler: la portada invita a ver el vídeo, no cuenta la conclusión
+        avoid += (" This is a trailer: never reveal the conclusion, the answer or the punchline; raise the "
+                  "question instead.")
     return (
         "You design thumbnails for short vertical videos (TikTok, Reels, Shorts) and YouTube. " + frames +
         f"Write the cover text in {lang}: 2 to 5 punchy words (never more than 5) that create curiosity about "
@@ -371,14 +374,14 @@ def _system(language: str, with_images: bool, avoid_text: str | None) -> str:
 
 def ask_ai(
     llm: LLMClient, frames: list[Frame], *, transcript: str, title: str, language: str,
-    avoid_text: str | None = None,
+    avoid_text: str | None = None, teaser: bool = False,
 ) -> tuple[int, str, int | None, object | None]:
     """Fotograma elegido, texto, palabra resaltada y consumo (para el coste)."""
     images = None
     if getattr(llm, "supports_images", False):
         images = [to_jpeg(fit(f.image, (360, 640), f.face_x), 80) for f in frames]
     user = json.dumps({"clip_title": title, "transcript": transcript[:2500]}, ensure_ascii=False)
-    response = llm.complete_json(system=_system(language, images is not None, avoid_text), user=user,
+    response = llm.complete_json(system=_system(language, images is not None, avoid_text, teaser), user=user,
                                  schema=SCHEMA, max_tokens=300, images=images)
     data = response.data
     index = int(data.get("frame", 0))
@@ -397,6 +400,7 @@ def fallback_text(title: str) -> str:
 def auto_cover(
     src: str | Path, start: float, end: float, *, detector, llm: LLMClient | None, transcript: str, title: str,
     language: str, cost=None, avoid_time: float | None = None, avoid_text: str | None = None,
+    teaser: bool = False,
 ) -> CoverChoice | None:
     """Elige fotograma y texto para la portada de un tramo del vídeo. None si no se pudo leer ningún fotograma."""
     frames = sample_frames(src, start, end, detector)
@@ -409,7 +413,7 @@ def auto_cover(
     if llm is not None:
         try:
             index, ai_text, highlight, usage = ask_ai(llm, best, transcript=transcript, title=title,
-                                                      language=language, avoid_text=avoid_text)
+                                                      language=language, avoid_text=avoid_text, teaser=teaser)
             text = ai_text or text
             if cost is not None and usage is not None:
                 cost.record_llm(usage)

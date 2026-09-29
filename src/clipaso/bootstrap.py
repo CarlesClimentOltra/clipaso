@@ -9,6 +9,7 @@ from __future__ import annotations
 import clipaso.adapters  # noqa: F401  (registra todos los adaptadores)
 from clipaso.application.cost import CostTracker
 from clipaso.application.pipeline import Components, Pipeline
+from clipaso.application.trailer import TrailerPlanner
 from clipaso.application.translation import Translator
 from clipaso.domain.ports import Storage, Transcriber
 from clipaso.infra import registry
@@ -57,6 +58,10 @@ def build_components(
     def translator_factory() -> Translator:
         return Translator(build_fast_llm(settings), cost)
 
+    def trailer_factory() -> TrailerPlanner:
+        # El mismo modelo que elige los clips (criterio editorial); sin LLM, una heurística.
+        return TrailerPlanner(selector_kwargs.get("llm"), cost, weights=sel.weights)
+
     return Components(
         sources=sources,
         transcriber=transcriber,
@@ -69,6 +74,7 @@ def build_components(
         exporter_factory=exporter_factory,
         cost=cost,
         translator_factory=translator_factory,
+        trailer_factory=trailer_factory,
     )
 
 

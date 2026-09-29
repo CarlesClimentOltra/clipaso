@@ -161,7 +161,8 @@ class JobRunner:
                 branding=branding,
             )
             on_progress = lambda stage, overall: self._write_progress(job_id, stage, overall, state)  # noqa: E731
-            clean_plan = None
+            # Modos que montan un vídeo nuevo (sin silencios, tráiler): a partir de ahí es el vídeo de trabajo.
+            edited: tuple[str, dict, float] | None = None  # (clave de estadísticas, estadísticas, duración)
             if options.get("mode") in ("subtitle", "reframe"):
                 # El vídeo entero (subtitulado o en otro formato), sin que la IA elija momentos. Al cambiar de
                 # formato no hace falta que se hable (vídeos de música, paisajes…).
@@ -176,6 +177,14 @@ class JobRunner:
                     translate_to=options.get("subtitle_language"), on_progress=on_progress,
                 )
                 source = result.source.path
+                edited = ("clean_stats", clean_plan.stats(), clean_plan.duration)
+            elif options.get("mode") == "trailer":
+                result, trailer_plan = pipeline.trailer(
+                    str(source), opts, out_dir=tmp / "out", seconds=float(options.get("trailer_seconds", 60)),
+                    translate_to=options.get("subtitle_language"), on_progress=on_progress,
+                )
+                source = result.source.path
+                edited = ("trailer_stats", trailer_plan.stats(), trailer_plan.duration)
             else:
                 result = pipeline.run(str(source), opts, out_dir=tmp / "out", on_progress=on_progress)
             if not result.exports:
@@ -211,17 +220,18 @@ class JobRunner:
                 self._write_progress(job_id, "preview", 0.99, state, force=True)
                 if preview := make_preview(Path(source), tmp / "preview.mp4"):
                     self.storage.put_file(preview_key(user_id, job_id), preview, "video/mp4")
-                if clean_plan is not None:
-                    # El editor y los re-renders trabajan sobre el vídeo ya limpio (su transcripción es esa).
+                if edited is not None:
+                    # El editor y los re-renders trabajan sobre el vídeo ya montado (su transcripción es esa).
                     self.storage.put_file(upload_key, Path(source), "video/mp4")
 
             with session_scope(self.sessions) as s:
                 job = s.get(Job, job_id)
-                if clean_plan is not None:
-                    job.options = {**(job.options or {}), "clean_stats": clean_plan.stats()}
+                if edited is not None:
+                    stats_key, stats, new_duration = edited
+                    job.options = {**(job.options or {}), stats_key: stats}
                     if keep_source and job.upload_id and (upload := s.get(Upload, job.upload_id)):
                         upload.size_bytes = Path(source).stat().st_size
-                        upload.duration_seconds = round(clean_plan.duration, 3)
+                        upload.duration_seconds = round(new_duration, 3)
                         upload.content_type = "video/mp4"
                 job.clips = clips
                 job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0

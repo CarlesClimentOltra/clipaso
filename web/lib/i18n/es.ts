@@ -6,7 +6,7 @@ export const es = {
   meta: {
     title: "Clipaso · Clips verticales con IA",
     description:
-      "Clipaso convierte tus vídeos largos en clips con subtítulos para TikTok, Reels y Shorts, y además subtitula vídeos enteros, quita silencios y muletillas, cambia el formato y crea miniaturas con IA.",
+      "Clipaso convierte tus vídeos largos en clips con subtítulos para TikTok, Reels y Shorts, y además subtitula vídeos enteros, quita silencios y muletillas, cambia el formato, monta tráileres y crea miniaturas con IA.",
   },
   common: {
     cancel: "Cancelar",
@@ -69,7 +69,7 @@ export const es = {
     titleStart: "Convierte tus vídeos largos en",
     titleAccent: "clips virales",
     lead:
-      "Clipaso encuentra los mejores momentos de tus vídeos y los convierte en clips listos para TikTok, Instagram Reels y YouTube Shorts. Y también subtitula vídeos enteros, quita silencios y muletillas, cambia el formato y crea miniaturas. Sin editar a mano.",
+      "Clipaso encuentra los mejores momentos de tus vídeos y los convierte en clips listos para TikTok, Instagram Reels y YouTube Shorts. Y también subtitula vídeos enteros, quita silencios y muletillas, cambia el formato, monta tráileres y crea miniaturas. Sin editar a mano.",
     howButton: "Cómo funciona",
     trust: ["30 min gratis al mes", "Sin tarjeta", "Datos en la UE"],
     marqueeLabel: "Ventajas de Clipaso",
@@ -189,7 +189,7 @@ export const es = {
       lead: "Si no encuentras la respuesta, escríbenos y te ayudamos.",
       items: [
         ["¿Qué vídeos funcionan mejor?", "Los que tienen conversación: podcasts, entrevistas, charlas, clases o directos. Clipaso elige los momentos a partir de lo que se dice, así que necesita diálogo."],
-        ["¿Qué más puedo hacer, además de clips?", "Subtitular un vídeo entero (también traducido), quitarle los silencios y las muletillas como «eh» o «mmm», pasarlo a otro formato (de TikTok a YouTube, por ejemplo) y generar una miniatura para YouTube y una portada para TikTok. La miniatura no necesita subir el vídeo y no gasta minutos."],
+        ["¿Qué más puedo hacer, además de clips?", "Subtitular un vídeo entero (también traducido), quitarle los silencios y las muletillas como «eh» o «mmm», pasarlo a otro formato (de TikTok a YouTube, por ejemplo), montar un tráiler corto para promocionarlo y generar una miniatura para YouTube y una portada para TikTok. La miniatura no necesita subir el vídeo y no gasta minutos."],
         ["¿Cuánto tarda?", "Unos pocos minutos para un vídeo de media hora. Te avisamos por email cuando está listo, así que puedes cerrar la pestaña."],
         ["¿Puedo editar los clips?", "Sí. Desde el editor puedes mover el inicio y el final, corregir palabras de los subtítulos, añadir o quitar subtítulos, cambiar el estilo y la portada, y volver a generar el clip. También puedes pedir más clips del mismo vídeo sin gastar minutos."],
         ["¿En qué idiomas funciona?", "En español, inglés, portugués, francés, italiano y alemán, entre otros, y puede detectar el idioma automáticamente. Los subtítulos se pueden traducir a español, inglés, portugués, francés, italiano, alemán o catalán."],
@@ -282,7 +282,7 @@ export const es = {
     done: "Hecho",
     steps: [
       ["Elige tu estilo y tu marca", "Tu estilo de subtítulos por defecto, tu logo y tu @usuario.", "Personalizar"],
-      ["Crea tu primer proyecto", "Elige qué hacer: clips, subtítulos, quitar silencios, cambiar el formato o una miniatura.", "Empezar"],
+      ["Crea tu primer proyecto", "Elige qué hacer: clips, subtítulos, quitar silencios, cambiar el formato, un tráiler o una miniatura.", "Empezar"],
       ["Revisa y retoca el resultado", "Ajusta el corte, corrige una palabra o cambia la portada en el editor.", "Ver proyectos"],
     ],
     complete: "¡Todo listo! Ya dominas lo básico.",
@@ -290,14 +290,14 @@ export const es = {
   dashboard: {
     eyebrow: "Mis proyectos",
     hello: (name: string) => (name ? `Hola, ${name}` : "Hola"),
-    lead: "Aquí tienes tus proyectos: clips, vídeos subtitulados, sin silencios o en otro formato, y miniaturas.",
+    lead: "Aquí tienes tus proyectos: clips, vídeos subtitulados, sin silencios o en otro formato, tráileres y miniaturas.",
     statMinutes: "Minutos disponibles",
     statMinutesHint: (used: string, limit: string) => `${used} de ${limit} usados`,
     statProjects: "Proyectos",
     statProjectsActive: (n: number) => `${n} procesándose ahora`,
     statProjectsIdle: "Todos al día",
     statClips: "Resultados listos",
-    statClipsHint: "Clips, vídeos y miniaturas",
+    statClipsHint: "Clips, vídeos, tráileres y miniaturas",
     statPlan: "Tu plan",
     statPlanHint: (days: number) => `Proyectos guardados ${days} días`,
     projects: "Proyectos",
@@ -309,10 +309,10 @@ export const es = {
     failed: "No se pudo procesar",
     expired: "Proyecto caducado",
     newTitle: "Nuevo proyecto",
-    newText: "Clips, subtítulos, sin silencios, otro formato o miniatura",
+    newText: "Clips, subtítulos, silencios, formato, tráiler o miniatura",
     emptyTitle: "Crea tu primer proyecto",
     emptyText:
-      "Elige qué quieres hacer con tu vídeo: sacar los mejores momentos en clips, subtitularlo entero, quitarle los silencios, pasarlo a otro formato o crear su miniatura. En unos minutos lo tendrás listo.",
+      "Elige qué quieres hacer con tu vídeo: sacar los mejores momentos en clips, subtitularlo entero, quitarle los silencios, pasarlo a otro formato, montar su tráiler o crear su miniatura. En unos minutos lo tendrás listo.",
     emptyButton: "Empezar",
     emptySteps: ["Elige qué hacer", "Sube tu vídeo", "Retoca y descarga"],
   },
@@ -380,6 +380,19 @@ export const es = {
           ["Horizontal → vertical", "Con «Automático» seguimos la cara de quien habla, como un cámara."],
           ["Vertical → horizontal", "La imagen entera sobre un fondo desenfocado: no se corta nada."],
           ["No hace falta voz", "Funciona también con vídeos de música, paisajes o sin diálogo."],
+          ["Puedes irte", "Te avisamos por email cuando esté listo."],
+        ],
+      },
+      trailer: {
+        title: "Crear tráiler",
+        card: "La IA elige los mejores momentos de tu vídeo y los monta en un resumen corto que deja con ganas de más.",
+        gets: ["Tráiler de 30, 60 o 90 segundos", "Gancho al principio y final sin destripar",
+               "Título, descripción y hashtags para publicarlo"],
+        lead: "Sube tu vídeo y elige cuánto quieres que dure. La IA monta un tráiler para promocionarlo.",
+        tips: [
+          ["Para promocionar", "Publica el tráiler en TikTok, Reels o Shorts y lleva a la gente al vídeo completo."],
+          ["Céntralo en algo", "Si quieres que hable de un tema concreto, escríbelo y la IA lo tendrá en cuenta."],
+          ["Mejor con diálogo", "Charlas, entrevistas, podcasts o clases: la IA elige por lo que se dice."],
           ["Puedes irte", "Te avisamos por email cuando esté listo."],
         ],
       },
@@ -658,6 +671,22 @@ export const es = {
       center: ["Rellenar", "Ocupa toda la pantalla recortando los bordes por el centro."],
     } as Record<string, [string, string]>,
     previewNote: "Vista aproximada con un fotograma de tu vídeo.",
+  },
+  trailer: {
+    badge: "Tráiler",
+    title: "Tu tráiler",
+    create: "Crear tráiler",
+    preparing: "Estamos montando tu tráiler",
+    steps: ["Preparando el vídeo", "Transcribiendo el audio", "Eligiendo los mejores momentos", "Montando tu tráiler"],
+    length: "Duración del tráiler",
+    lengths: { 30: ["30 s", "Para TikTok y Reels"], 60: ["1 min", "El equilibrio"], 90: ["1:30", "Más contexto"] },
+    lengthHint: "Aproximada: la IA ajusta los cortes a frases completas.",
+    topic: "¿En qué quieres que se centre?",
+    topicPlaceholder: "Por ejemplo: el experimento y lo que descubrió",
+    topicHint: "Si lo dejas vacío, la IA elige lo más atractivo de todo el vídeo.",
+    summaryLabel: "De qué está hecho tu tráiler",
+    summary: (n: number, from: string, to: string) =>
+      `${n} ${n === 1 ? "momento" : "momentos"} de tu vídeo de ${from}, en un tráiler de ${to}.`,
   },
   thumbnail: {
     badge: "Miniatura",

@@ -19,12 +19,20 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from clipaso.application import cleanup
+from clipaso.application import trailer as trailer_mod
 from clipaso.application.cleanup import CutPlan, PaceT
 from clipaso.application.cost import CostTracker
-from clipaso.application.progress import CLEAN_WEIGHTS, SUBTITLE_WEIGHTS, ProgressCallback, ProgressReporter
+from clipaso.application.progress import (
+    CLEAN_WEIGHTS,
+    SUBTITLE_WEIGHTS,
+    TRAILER_WEIGHTS,
+    ProgressCallback,
+    ProgressReporter,
+)
+from clipaso.application.trailer import TrailerPlan, TrailerPlanner
 from clipaso.application.translation import Translator
 from clipaso.application.workspace import Workspace
-from clipaso.domain.errors import ClipasoError, RenderError, UnsupportedSourceError
+from clipaso.domain.errors import ClipasoError, RenderError, SelectionError, UnsupportedSourceError
 from clipaso.domain.models import (
     Branding,
     ClipCandidate,
@@ -80,6 +88,7 @@ class Components:
     exporter_factory: Callable[[str], Exporter]
     cost: CostTracker
     translator_factory: Callable[[], Translator] | None = None
+    trailer_factory: Callable[[], TrailerPlanner] | None = None
 
 
 def slugify(text: str, max_len: int = 50) -> str:
@@ -401,6 +410,53 @@ class Pipeline:
         finally:
             clear_job()
 
+    def trailer(
+        self,
+        uri: str,
+        opts: PipelineOptions,
+        *,
+        out_dir: Path,
+        seconds: float = 60.0,
+        translate_to: str | None = None,
+        on_progress: ProgressCallback | None = None,
+    ) -> tuple[JobResult, TrailerPlan]:
+        """Tráiler: los mejores momentos del vídeo, cortos y montados con ritmo (unos `seconds` en total).
+
+        `result.source` es el tráiler ya montado (sobre él trabajan después el editor y las portadas)."""
+        progress = ProgressReporter(on_progress, TRAILER_WEIGHTS)
+        try:
+            progress.report("ingest")
+            original, ws = self._open(uri, opts)
+            progress.report("audio")
+            audio = self._audio(original, ws)
+            progress.report("transcribe")
+            transcript = self._transcribe(audio, ws, opts, progress)
+            if not transcript.sentences:
+                raise SelectionError("La transcripción está vacía")
+            progress.report("signals")
+            signals = self._signals(AnalysisContext(original, audio, transcript), ws, opts)
+            progress.report("select")
+            if self.c.trailer_factory is None:
+                raise ClipasoError("Tráiler no disponible")
+            with stage("select"):
+                plan = self.c.trailer_factory().plan(
+                    transcript, signals, duration=original.duration, target=seconds,
+                    title=opts.title or original.title, topic=opts.topic)
+            if not plan.segments:
+                raise SelectionError("No se encontraron momentos para el tráiler")
+            progress.report("cut")
+            with stage("cut"):
+                path = trailer_mod.render(original.path, plan, out_dir / "trailer.mp4", ws.subdir("trailer"),
+                                          width=original.width, height=original.height, fps=original.fps)
+            cut, cut_ws = self._open(str(path), opts)
+            cut_audio = self._audio(cut, cut_ws)
+            result = self._whole_video(cut, cut_ws, cut_audio, trailer_mod.remap_transcript(transcript, plan.segments),
+                                       opts, out_dir, progress, translate_to, "trailer",
+                                       texts=(plan.title, plan.description, plan.hashtags))
+            return result, plan
+        finally:
+            clear_job()
+
     def _whole_video(
         self,
         source: SourceVideo,
@@ -412,8 +468,10 @@ class Pipeline:
         progress: ProgressReporter,
         translate_to: str | None,
         strategy: str,
+        texts: tuple[str, str, list[str]] | None = None,
     ) -> JobResult:
-        """El vídeo entero como un único «clip» con subtítulos (traducidos si se pide)."""
+        """El vídeo entero como un único «clip» con subtítulos (traducidos si se pide).
+        `texts` = (título, descripción, hashtags) para publicarlo, si los hay."""
         progress.report("signals")
         signals = self._signals(AnalysisContext(source, audio, transcript), ws, opts)
         if translate_to and translate_to != transcript.language:
@@ -423,9 +481,11 @@ class Pipeline:
             with stage("translate"):
                 transcript = self.c.translator_factory().translate(
                     transcript, translate_to, on_progress=progress.stage_callback("translate"))
+        title, description, hashtags = texts or ("", "", [])
         whole = ClipCandidate(start=0.0, end=source.duration, first_sentence=0,
                               last_sentence=max(0, len(transcript.sentences) - 1), score=1.0,
-                              title=opts.title or source.title or "Vídeo")
+                              title=title or opts.title or source.title or "Vídeo", description=description,
+                              hashtags=hashtags)
         out_dir.mkdir(parents=True, exist_ok=True)
         progress.report("export")
         exports = self._export(source, transcript, [(1, whole)], ws, opts, out_dir, progress)

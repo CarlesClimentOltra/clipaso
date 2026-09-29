@@ -139,6 +139,7 @@ def update(
 def generate(
     storage: Storage, user_id: str, job_id: str, clip: Clip, *, source: str | Path, transcript, language: str,
     style: CaptionStyle, logo: bytes | None, logo_position: str, llm, detector, cost=None, again: bool = False,
+    teaser: bool = False,
 ) -> dict | None:
     """Propuesta automática (IA) de portada para un clip. `again`: otra distinta de la actual."""
     current = clip.cover or {}
@@ -146,6 +147,7 @@ def generate(
         source, clip.start, clip.end, detector=detector, llm=llm, cost=cost, title=clip.title, language=language,
         transcript=transcript_excerpt(transcript, clip.start, clip.end),
         avoid_time=current.get("time") if again else None, avoid_text=current.get("text") if again else None,
+        teaser=teaser,
     )
     if choice is None:
         return None
@@ -173,7 +175,7 @@ def generate_for_clips(
         try:
             generate(storage, user_id, job_id, clip, source=source, transcript=transcript, language=language,
                      style=style, logo=logo, logo_position=logo_position, llm=llm, detector=detector, cost=cost,
-                     again=again)
+                     again=again, teaser=options.get("mode") == "trailer")
         except Exception as exc:
             log.warning("cover.failed", rank=clip.rank, error=str(exc)[:300])
     return cost.spent

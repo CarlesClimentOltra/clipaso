@@ -33,8 +33,8 @@ export const legal = {
     },
     {
       name: "Anthropic",
-      role: "IA (Claude): elegir los mejores momentos, escribir títulos y textos, traducir subtítulos y proponer " +
-        "portadas y miniaturas. Recibe el texto transcrito y, para las portadas y miniaturas, unos pocos fotogramas; " +
+      role: "IA (Claude): elegir los mejores momentos para clips y tráileres, escribir títulos y textos, " +
+        "traducir subtítulos y proponer portadas y miniaturas. Recibe el texto transcrito y, para las portadas y miniaturas, unos pocos fotogramas; " +
         "nunca el vídeo completo ni tu email",
       location: "EE. UU.",
       company: "Anthropic, PBC (EE. UU.)",

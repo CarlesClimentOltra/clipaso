@@ -5,6 +5,7 @@ import {
   AlertCircleIcon,
   AudioLinesIcon,
   CaptionsIcon,
+  ClapperboardIcon,
   ClockIcon,
   FilmIcon,
   FolderIcon,
@@ -137,6 +138,8 @@ function ProjectCard({ job }: { job: JobSummary }) {
               <><AudioLinesIcon className="size-3" /> {t.clean.badge}</>
             ) : job.mode === "reframe" ? (
               <><RatioIcon className="size-3" /> {t.reframe.badge}</>
+            ) : job.mode === "trailer" ? (
+              <><ClapperboardIcon className="size-3" /> {t.trailer.badge}</>
             ) : (
               <><ScissorsIcon className="size-3" /> {job.clip_count}</>
             )}

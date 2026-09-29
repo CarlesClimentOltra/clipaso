@@ -29,6 +29,17 @@ SUBTITLE_WEIGHTS: dict[str, float] = {
     "translate": 0.12,
     "export": 0.35,
 }
+# Tráiler: se transcribe entero, la IA elige los momentos y se montan (el render final es corto).
+TRAILER_WEIGHTS: dict[str, float] = {
+    "ingest": 0.03,
+    "audio": 0.02,
+    "transcribe": 0.45,
+    "signals": 0.03,
+    "select": 0.17,
+    "cut": 0.08,
+    "translate": 0.05,
+    "export": 0.17,
+}
 # Quitar silencios y muletillas: se transcribe, se monta el vídeo sin pausas y luego se subtitula.
 CLEAN_WEIGHTS: dict[str, float] = {
     "ingest": 0.03,

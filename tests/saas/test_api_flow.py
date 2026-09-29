@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from clipaso.application.cleanup import CutPlan
+from clipaso.application.trailer import TrailerPlan
 from clipaso.domain.errors import SelectionError
 from clipaso.domain.models import ExportedClip, Sentence, SignalSet, Transcript, Word
 from clipaso.infra.config import Settings
@@ -115,6 +116,18 @@ class FakePipeline:
         result = FakeResult([self._clip(uri, out_dir, 1, 0.0, 2.5, opts.title or "Vídeo", opts.profile)])
         result.source = SimpleNamespace(path=cleaned)
         return result, CutPlan(cuts=[(1.0, 1.5)], pauses=1, fillers=2, original=3.0)
+
+    def trailer(self, uri, opts, *, out_dir, seconds=60.0, translate_to=None, on_progress=None):
+        self.calls.append({"kind": "trailer", "opts": opts, "seconds": seconds, "translate_to": translate_to})
+        if self.fail:
+            raise self.fail
+        out_dir.mkdir(parents=True, exist_ok=True)
+        cut = out_dir / "trailer.mp4"
+        shutil.copyfile(uri, cut)
+        exp = self._clip(uri, out_dir, 1, 0.0, 3.0, "Lo que nadie cuenta", opts.profile)
+        result = FakeResult([exp])
+        result.source = SimpleNamespace(path=cut)
+        return result, TrailerPlan(segments=[(10.0, 12.0), (1.0, 2.0)], original=120.0)
 
     def render(self, uri, opts, clip, rank, transcript, out_dir):
         self.calls.append({"kind": "render", "opts": opts, "clip": clip, "transcript": transcript})

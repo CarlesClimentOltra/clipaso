@@ -496,6 +496,22 @@ def test_subtitle_mode_video_gets_a_cover(client, sample_video, monkeypatch):
     assert client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["cover"] is not None
 
 
+def test_trailer_mode_replaces_the_source_and_reports_the_moments(client, sample_video, monkeypatch):
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch, mode="trailer", format="vertical",
+                                     trailer_seconds=30, topic="dinero")
+    call = pipeline.calls[0]
+    assert call["kind"] == "trailer" and call["seconds"] == 30 and call["opts"].topic == "dinero"
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert job["status"] == "done" and job["more_clips_available"] == 0
+    assert job["trailer_stats"] == {"original_seconds": 120.0, "trailer_seconds": 3.0, "moments": 2}
+    assert job["clips"][0]["title"] == "Lo que nadie cuenta"
+    with session_scope(client.app.state.sessions) as s:
+        assert s.get(Upload, s.get(Job, job_id).upload_id).duration_seconds == 3.0
+    r = client.post("/jobs", json={"upload_id": upload_video(client, sample_video), "mode": "trailer",
+                                   "trailer_seconds": 45}, headers=AUTH)
+    assert r.status_code == 422
+
+
 def test_reframe_mode_uses_the_chosen_format_and_fit(client, sample_video, monkeypatch):
     job_id, pipeline = processed_job(client, sample_video, monkeypatch, mode="reframe", format="vertical",
                                      reframe_fit="blur_pad")
