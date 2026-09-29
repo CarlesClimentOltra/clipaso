@@ -119,6 +119,21 @@ class JobOptions(BaseModel):
     caption_style: CaptionStyle | None = Field(None, description="Si falta, el estilo por defecto del usuario.")
 
 
+class ThumbnailFrameIn(BaseModel):
+    time: float = Field(ge=0, description="Segundo del vídeo del que sale el fotograma.")
+    image: str = Field(max_length=1_200_000, description="JPEG en base64.")
+
+
+class ThumbnailIn(BaseModel):
+    """Miniatura sin subir el vídeo: el navegador envía unos fotogramas."""
+
+    filename: str = Field(max_length=255)
+    topic: str = Field("", max_length=300, description="De qué trata el vídeo (opcional; mejora el texto).")
+    language: str = Field("es", pattern=r"^[a-z]{2}$")
+    branding: bool = True
+    frames: list[ThumbnailFrameIn] = Field(min_length=1, max_length=24)
+
+
 class JobCreateIn(JobOptions):
     upload_id: str
     max_clips: int = Field(3, ge=1, le=50)
@@ -140,6 +155,8 @@ class CoverOut(BaseModel):
     template: CoverTemplateT
     time: float = Field(description="Segundo del vídeo original del que sale el fotograma.")
     candidates: list[float] = Field(description="Otros momentos que propuso la IA.")
+    candidate_images: list[str | None] = Field(
+        default_factory=list, description="Imagen de cada momento propuesto (miniaturas hechas sin subir el vídeo).")
     vertical_url: str
     horizontal_url: str
     vertical_download_url: str
@@ -304,6 +321,7 @@ JobStatusT = Literal["queued", "running", "done", "failed", "expired"]
 class JobSummary(BaseModel):
     id: str
     title: str
+    mode: ModeT = "clips"
     status: JobStatusT
     stage: str | None
     progress: float

@@ -293,6 +293,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs/thumbnail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Thumbnail
+         * @description Miniatura y portada de un vídeo sin subirlo: el navegador envía unos fotogramas y la IA elige y escribe.
+         */
+        post: operations["create_thumbnail_jobs_thumbnail_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -751,6 +771,11 @@ export interface components {
              * @description Otros momentos que propuso la IA.
              */
             candidates: number[];
+            /**
+             * Candidate Images
+             * @description Imagen de cada momento propuesto (miniaturas hechas sin subir el vídeo).
+             */
+            candidate_images?: (string | null)[];
             /** Vertical Url */
             vertical_url: string;
             /** Horizontal Url */
@@ -888,7 +913,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle";
+            mode: "clips" | "subtitle" | "thumbnail";
             /**
              * Subtitle Language
              * @description Solo subtitular: traducir los subtítulos a este idioma.
@@ -957,7 +982,7 @@ export interface components {
              * @default clips
              * @enum {string}
              */
-            mode: "clips" | "subtitle";
+            mode: "clips" | "subtitle" | "thumbnail";
             /**
              * Subtitle Language
              * @description Solo subtitular: traducir los subtítulos a este idioma.
@@ -1002,6 +1027,12 @@ export interface components {
             id: string;
             /** Title */
             title: string;
+            /**
+             * Mode
+             * @default clips
+             * @enum {string}
+             */
+            mode: "clips" | "subtitle" | "thumbnail";
             /**
              * Status
              * @enum {string}
@@ -1054,6 +1085,12 @@ export interface components {
             id: string;
             /** Title */
             title: string;
+            /**
+             * Mode
+             * @default clips
+             * @enum {string}
+             */
+            mode: "clips" | "subtitle" | "thumbnail";
             /**
              * Status
              * @enum {string}
@@ -1234,6 +1271,45 @@ export interface components {
             status: "queued" | "running" | "done" | "failed";
             /** Error Message */
             error_message: string | null;
+        };
+        /** ThumbnailFrameIn */
+        ThumbnailFrameIn: {
+            /**
+             * Time
+             * @description Segundo del vídeo del que sale el fotograma.
+             */
+            time: number;
+            /**
+             * Image
+             * @description JPEG en base64.
+             */
+            image: string;
+        };
+        /**
+         * ThumbnailIn
+         * @description Miniatura sin subir el vídeo: el navegador envía unos fotogramas.
+         */
+        ThumbnailIn: {
+            /** Filename */
+            filename: string;
+            /**
+             * Topic
+             * @description De qué trata el vídeo (opcional; mejora el texto).
+             * @default
+             */
+            topic: string;
+            /**
+             * Language
+             * @default es
+             */
+            language: string;
+            /**
+             * Branding
+             * @default true
+             */
+            branding: boolean;
+            /** Frames */
+            frames: components["schemas"]["ThumbnailFrameIn"][];
         };
         /** UploadCompleteIn */
         UploadCompleteIn: {
@@ -2483,6 +2559,66 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["JobCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_thumbnail_jobs_thumbnail_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThumbnailIn"];
             };
         };
         responses: {

@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { ApiError, type Clip, type ClipCover, type CoverInput } from "@/lib/api/client";
 import { useCoverActions } from "@/lib/api/hooks";
 import { formatTime } from "@/lib/captions";
@@ -15,7 +16,8 @@ import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Template = ClipCover["template"];
-const TEMPLATES: Template[] = ["impacto", "caja", "titular", "limpia"];
+// «limpia» (sin texto) no es una tarjeta más: se elige con el interruptor «Texto encima».
+const TEXT_TEMPLATES: Template[] = ["impacto", "caja", "titular"];
 
 /**
  * Dibuja fotogramas del vídeo ligero del editor en canvas (solo para elegir: la portada final se
@@ -90,6 +92,7 @@ export function CoverEditor({
   previewUrl,
   canChangeFrame,
   frameMessage,
+  large = false,
 }: {
   clip: Clip;
   jobId: string;
@@ -97,6 +100,8 @@ export function CoverEditor({
   canChangeFrame: boolean;
   /** Qué decir cuando aquí no se puede cambiar el fotograma. */
   frameMessage?: string;
+  /** Vista grande (pantalla de una miniatura): la 16:9 en grande y la 9:16 al lado. */
+  large?: boolean;
 }) {
   const { t } = useI18n();
   const c = t.cover;
@@ -106,6 +111,8 @@ export function CoverEditor({
   const [highlight, setHighlight] = useState<number | null>(cover.highlight ?? null);
   const [template, setTemplate] = useState<Template>(cover.template);
   const [time, setTime] = useState(cover.time);
+  const [lastTextTemplate, setLastTextTemplate] = useState<Template>(
+    cover.template === "limpia" ? "impacto" : cover.template);
   const [seen, setSeen] = useState(cover);
   // Si llega una portada nueva (otra propuesta de la IA), el formulario se pone al día.
   if (seen !== cover) {
@@ -118,7 +125,12 @@ export function CoverEditor({
 
   const candidates = Array.from(new Set([cover.time, ...cover.candidates].map((x) => Math.round(x * 100) / 100)))
     .sort((a, b) => a - b);
-  const frames = useFrames(previewUrl, candidates);
+  // Miniaturas hechas sin subir el vídeo: los fotogramas propuestos están guardados como imágenes.
+  const imageAt = new Map(cover.candidates.map((ct, i) => [Math.round(ct * 100) / 100,
+                                                            cover.candidate_images?.[i] ?? null]));
+  const hasImages = [...imageAt.values()].some(Boolean);
+  const canPickFrame = canChangeFrame || hasImages;
+  const frames = useFrames(hasImages ? null : previewUrl, candidates);
   // El fotograma elegido con la barra se dibuja cuando se deja de arrastrar.
   const [shownTime, setShownTime] = useState(time);
   useEffect(() => {
@@ -126,16 +138,18 @@ export function CoverEditor({
     return () => window.clearTimeout(id);
   }, [time]);
   const custom = useFrames(previewUrl, candidates.includes(shownTime) ? [] : [shownTime]);
+  const textOn = template !== "limpia";
   const words = text.split(/\s+/).filter(Boolean);
   const dirty = text.trim() !== cover.text || (highlight ?? null) !== (cover.highlight ?? null)
     || template !== cover.template || Math.abs(time - cover.time) > 0.05;
   const busy = actions.save.isPending || cover.pending || actions.regenerate.isPending;
 
-  async function save() {
+  async function save(templateOverride?: Template) {
     const body: CoverInput = {};
-    if (text.trim() !== cover.text) body.text = text.trim();
+    const nextTemplate = templateOverride ?? template;
+    if (text.trim() !== cover.text && text.trim()) body.text = text.trim();
     if ((highlight ?? null) !== (cover.highlight ?? null)) body.highlight = highlight ?? -1;
-    if (template !== cover.template) body.template = template;
+    if (nextTemplate !== cover.template) body.template = nextTemplate;
     if (Math.abs(time - cover.time) > 0.05) body.time = time;
     try {
       await actions.save.mutateAsync(body);
@@ -154,14 +168,34 @@ export function CoverEditor({
     }
   }
 
+  /** El interruptor aplica al momento: con texto o imagen limpia. */
+  function toggleText(on: boolean) {
+    const next = on ? lastTextTemplate : "limpia";
+    if (!on) setLastTextTemplate(template === "limpia" ? lastTextTemplate : template);
+    setTemplate(next);
+    save(next);
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-xs text-muted-foreground">{c.lead}</p>
+      {!large && <p className="text-xs text-muted-foreground">{c.lead}</p>}
 
-      <div className="relative grid gap-4 sm:grid-cols-[minmax(0,180px)_1fr]">
-        <Preview url={cover.vertical_url} downloadUrl={cover.vertical_download_url} label={c.vertical} />
-        <Preview url={cover.horizontal_url} downloadUrl={cover.horizontal_download_url} label={c.horizontal}
-                 className="self-start" />
+      <div className={cn("relative grid gap-4",
+                         large ? "lg:grid-cols-[1fr_220px]" : "sm:grid-cols-[minmax(0,180px)_1fr]")}>
+        {large ? (
+          <>
+            <Preview url={cover.horizontal_url} downloadUrl={cover.horizontal_download_url} label={c.horizontal}
+                     className="self-start" />
+            <Preview url={cover.vertical_url} downloadUrl={cover.vertical_download_url} label={c.vertical}
+                     className="mx-auto w-full max-w-[220px]" />
+          </>
+        ) : (
+          <>
+            <Preview url={cover.vertical_url} downloadUrl={cover.vertical_download_url} label={c.vertical} />
+            <Preview url={cover.horizontal_url} downloadUrl={cover.horizontal_download_url} label={c.horizontal}
+                     className="self-start" />
+          </>
+        )}
         {busy && (
           <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-xl bg-background/70 text-sm backdrop-blur-sm">
             <Loader2Icon className="size-4 animate-spin" /> {cover.pending ? c.aiWorking : c.applying}
@@ -169,13 +203,22 @@ export function CoverEditor({
         )}
       </div>
 
+      <div className="flex items-center justify-between gap-4 rounded-xl border bg-muted/40 p-4">
+        <div>
+          <Label htmlFor="cover-text-on" className="text-base">{c.textOn}</Label>
+          <p className="text-xs text-muted-foreground">{textOn ? c.textOnHint : c.textOffHint}</p>
+        </div>
+        <Switch id="cover-text-on" checked={textOn} disabled={busy} onCheckedChange={(v: boolean) => toggleText(v)} />
+      </div>
+
+      {textOn && (
       <div className="flex flex-col gap-2">
         <Label htmlFor="cover-text">{c.text}</Label>
         <Input id="cover-text" value={text} maxLength={42} disabled={busy} onChange={(e) => {
           setText(e.target.value);
           setHighlight(null);
         }} />
-        {template !== "limpia" && words.length > 0 && (
+        {words.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">{c.highlight}</span>
             {words.map((w, i) => (
@@ -196,11 +239,13 @@ export function CoverEditor({
           </div>
         )}
       </div>
+      )}
 
+      {textOn && (
       <div className="flex flex-col gap-2">
         <Label>{c.template}</Label>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label={c.template}>
-          {TEMPLATES.map((tpl) => (
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={c.template}>
+          {TEXT_TEMPLATES.map((tpl) => (
             <button
               key={tpl}
               type="button"
@@ -219,10 +264,11 @@ export function CoverEditor({
           ))}
         </div>
       </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <Label>{c.frame}</Label>
-        {canChangeFrame ? (
+        {canPickFrame ? (
           <>
             <div className="flex gap-2 overflow-x-auto pb-1" role="radiogroup" aria-label={c.frame}>
               {candidates.map((ct, i) => (
@@ -239,8 +285,12 @@ export function CoverEditor({
                     Math.abs(time - ct) < 0.05 ? "ring-2 ring-primary" : "opacity-80 hover:opacity-100",
                   )}
                 >
-                  <canvas ref={frames(i)} width={72} height={128}
-                          className="h-24 w-[54px] bg-muted object-cover" />
+                  {imageAt.get(ct) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageAt.get(ct)!} alt="" className="h-20 w-36 bg-muted object-cover" />
+                  ) : (
+                    <canvas ref={frames(i)} width={72} height={128} className="h-24 w-[54px] bg-muted object-cover" />
+                  )}
                   <span className="absolute inset-x-0 bottom-0 bg-black/55 text-[10px] text-white tabular-nums">
                     {formatTime(ct)}
                   </span>
@@ -256,6 +306,7 @@ export function CoverEditor({
                 </div>
               )}
             </div>
+            {canChangeFrame && previewUrl && (
             <div className="flex items-center gap-3">
               <span className="shrink-0 text-xs text-muted-foreground">{c.otherMoment}</span>
               <Slider
@@ -269,6 +320,7 @@ export function CoverEditor({
               />
               <span className="w-10 shrink-0 text-right text-xs tabular-nums">{formatTime(time)}</span>
             </div>
+            )}
           </>
         ) : (
           <p className="text-xs text-muted-foreground">{frameMessage ?? c.noSource}</p>
@@ -276,10 +328,10 @@ export function CoverEditor({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={save} disabled={!dirty || busy || !text.trim() && template !== "limpia"}>
+        <Button type="button" onClick={() => save()} disabled={!dirty || busy || !text.trim() && textOn}>
           {actions.save.isPending ? <Loader2Icon className="animate-spin" /> : <ImageIcon />} {c.apply}
         </Button>
-        {canChangeFrame && (
+        {canPickFrame && (
           <Button type="button" variant="outline" onClick={regenerate} disabled={busy}>
             <SparklesIcon /> {c.regenerate}
           </Button>

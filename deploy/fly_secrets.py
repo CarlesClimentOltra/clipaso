@@ -3,7 +3,8 @@
     .venv\\Scripts\\python deploy\\fly_secrets.py
 
 La API necesita: base de datos, Supabase, R2, Sentry y un token de Modal (para enviar
-los vídeos al worker). No necesita la clave de Anthropic: la IA corre en el worker.
+los vídeos al worker) y la clave de Anthropic para las miniaturas sin subir el vídeo
+(la IA de los clips corre en el worker).
 Ningún valor se imprime.
 """
 
@@ -28,6 +29,7 @@ COPY = [
     "CLIPASO_STORAGE__R2_SECRET_ACCESS_KEY",
     "CLIPASO_STORAGE__R2_BUCKET",
     "CLIPASO_SENTRY_DSN",
+    "ANTHROPIC_API_KEY",  # miniaturas sin subir el vídeo: la API elige el fotograma y escribe el texto
 ]
 REQUIRED = ["CLIPASO_DATABASE__URL", "CLIPASO_AUTH__SUPABASE_URL", "CLIPASO_STORAGE__R2_ACCESS_KEY_ID"]
 

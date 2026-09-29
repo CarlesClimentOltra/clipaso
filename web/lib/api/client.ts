@@ -72,6 +72,7 @@ export type ClipExport = Schemas["ExportOut"];
 export type ExportRequest = Schemas["ExportIn"];
 export type ClipCover = Schemas["CoverOut"];
 export type CoverInput = Schemas["CoverIn"];
+export type ThumbnailRequest = Schemas["ThumbnailIn"];
 export type UserStyles = Schemas["StylesOut"];
 export type BrandingPrefs = Schemas["BrandingPrefs"];
 export type Preferences = Schemas["PreferencesOut"];

@@ -506,3 +506,49 @@ def test_cover_without_ai_uses_the_title(client, sample_video, monkeypatch):
     job_id, _ = processed_job(client, sample_video, monkeypatch)
     clip = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]
     assert clip["cover"]["text"] == "Gran momento"
+
+
+def _frames_b64(video, times):
+    import base64
+
+    from clipaso.saas import covers
+
+    out = []
+    for t in times:
+        img = covers.grab_frame(video, t, max_width=640)
+        out.append({"time": t, "image": base64.b64encode(covers.to_jpeg(img)).decode()})
+    return out
+
+
+def test_thumbnail_without_uploading_the_video(client, sample_video, cover_llm, monkeypatch):
+    frames = _frames_b64(sample_video, [0.2, 0.8, 1.4, 2.0, 2.6])
+    r = client.post("/jobs/thumbnail", json={"filename": "mi-viaje.mp4", "topic": "Viaje a la India",
+                                             "language": "es", "frames": frames}, headers=AUTH)
+    assert r.status_code == 201, r.text
+    job = r.json()
+    assert job["status"] == "done" and job["video_minutes"] == 0 and job["options"]["mode"] == "thumbnail"
+    assert job["title"] == "mi-viaje" and client.get("/me", headers=AUTH).json()["usage"]["used_minutes"] == 0
+    cover = job["clips"][0]["cover"]
+    assert cover["text"] == "Esto lo cambia todo" and all(cover["candidate_images"])
+    assert "Viaje a la India" in cover_llm.calls[-1]["user"] and cover_llm.calls[-1]["images"] >= 2
+    summary = next(j for j in client.get("/jobs", headers=AUTH).json() if j["id"] == job["id"])
+    assert summary["mode"] == "thumbnail" and summary["thumbnail_url"]
+
+    clip_id = job["clips"][0]["id"]
+    other = next(t for t in cover["candidates"] if abs(t - cover["time"]) > 0.05)
+    r = client.put(f"/clips/{clip_id}/cover", json={"time": other, "template": "limpia"}, headers=AUTH)
+    assert r.status_code == 200 and r.json()["cover"]["time"] == other  # sin vídeo: con los fotogramas guardados
+    r = client.post(f"/clips/{clip_id}/cover/regenerate", headers=AUTH)
+    assert r.status_code == 202 and not r.json()["cover"]["pending"]  # al momento, sin worker
+    assert r.json()["cover"]["template"] == "limpia"
+
+    # No se puede crear por la vía normal, y hay límite diario
+    assert client.post("/jobs", json={"upload_id": "x", "mode": "thumbnail"}, headers=AUTH).status_code == 400
+    from clipaso.saas import thumbnails
+
+    monkeypatch.setattr(thumbnails, "DAILY_LIMIT", 1)
+    r = client.post("/jobs/thumbnail", json={"filename": "b.mp4", "frames": frames[:1]}, headers=AUTH)
+    assert r.status_code == 429
+    bad = client.post("/jobs/thumbnail", json={"filename": "c.mp4", "frames": [{"time": 0, "image": "no"}]},
+                      headers=AUTH)
+    assert bad.status_code in (400, 429)

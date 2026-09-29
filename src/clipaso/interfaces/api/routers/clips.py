@@ -21,11 +21,11 @@ from clipaso.interfaces.api.schemas import (
     RatingIn,
     RenderIn,
 )
-from clipaso.saas import cover_service, editing, exports
+from clipaso.saas import cover_service, editing, exports, thumbnails
 from clipaso.saas.artifacts import preview_key
 from clipaso.saas.db import utcnow
 from clipaso.saas.dispatch import dispatch_job
-from clipaso.saas.errors import AppError, user_message
+from clipaso.saas.errors import user_message
 from clipaso.saas.models import Clip, Job, Upload
 from clipaso.saas.rendering import result_frame
 
@@ -165,10 +165,8 @@ def update_cover(
 ) -> ClipOut:
     """Cambia el texto, la palabra resaltada, la plantilla o el fotograma de la portada (se recompone al momento)."""
     clip, job = editing.get_owned_clip(session, user, clip_id)
-    source = None
-    if body.time is not None:
-        if not editing.source_available(session, job):
-            raise AppError("source_unavailable", 409)
+    source = None  # sin original, solo se puede elegir entre los fotogramas guardados (lo decide el servicio)
+    if body.time is not None and editing.source_available(session, job):
         upload = session.get(Upload, job.upload_id)
         source = storage.local_path(upload.storage_key) or storage.signed_url(upload.storage_key, expires=900)
     logo, position = cover_service.branding_logo(storage, user, job.options or {})
@@ -188,6 +186,9 @@ def regenerate_cover(
     """Otra propuesta de portada con IA (otro fotograma y otro texto)."""
     now = utcnow()
     clip, job = editing.get_owned_clip(session, user, clip_id)
+    if (job.options or {}).get("mode") == "thumbnail":  # sin vídeo: con los fotogramas guardados, al momento
+        thumbnails.regenerate(session, storage, settings, user, job, clip)
+        return clip_out(clip, job, storage, settings.api.signed_url_ttl_seconds)
     task = editing.request_cover(session, user, clip, job, now=now)
     session.commit()
     if dispatch_job(dispatcher, task, now):

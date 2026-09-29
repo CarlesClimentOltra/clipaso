@@ -16,6 +16,7 @@ import {
   type UserStyles,
   type ExportRequest,
   type CoverInput,
+  type ThumbnailRequest,
   type Editor,
 } from "@/lib/api/client";
 import { uploadFile, type UploadProgress } from "@/lib/api/multipart-upload";
@@ -140,6 +141,16 @@ export function useCreateProject() {
       qc.invalidateQueries({ queryKey: ["jobs"] });
       qc.invalidateQueries({ queryKey: ["me"] });
     },
+  });
+}
+
+/** Miniatura sin subir el vídeo: se envían solo unos fotogramas sacados en el navegador. */
+export function useCreateThumbnail() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ThumbnailRequest) => unwrap(api.POST("/jobs/thumbnail", { body })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["jobs"] }),
   });
 }
 

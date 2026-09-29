@@ -1404,6 +1404,78 @@
         }
       }
     },
+    "/jobs/thumbnail": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Create Thumbnail",
+        "description": "Miniatura y portada de un vídeo sin subirlo: el navegador envía unos fotogramas y la IA elige y escribe.",
+        "operationId": "create_thumbnail_jobs_thumbnail_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThumbnailIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobs/{job_id}": {
       "get": {
         "tags": [
@@ -2926,6 +2998,21 @@
             "title": "Candidates",
             "description": "Otros momentos que propuso la IA."
           },
+          "candidate_images": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Candidate Images",
+            "description": "Imagen de cada momento propuesto (miniaturas hechas sin subir el vídeo)."
+          },
           "vertical_url": {
             "type": "string",
             "title": "Vertical Url"
@@ -3293,7 +3380,8 @@
             "type": "string",
             "enum": [
               "clips",
-              "subtitle"
+              "subtitle",
+              "thumbnail"
             ],
             "title": "Mode",
             "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.",
@@ -3419,7 +3507,8 @@
             "type": "string",
             "enum": [
               "clips",
-              "subtitle"
+              "subtitle",
+              "thumbnail"
             ],
             "title": "Mode",
             "description": "clips: la IA elige los mejores momentos · subtitle: el vídeo entero con subtítulos.",
@@ -3504,6 +3593,16 @@
           "title": {
             "type": "string",
             "title": "Title"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "clips",
+              "subtitle",
+              "thumbnail"
+            ],
+            "title": "Mode",
+            "default": "clips"
           },
           "status": {
             "type": "string",
@@ -3674,6 +3773,16 @@
           "title": {
             "type": "string",
             "title": "Title"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "clips",
+              "subtitle",
+              "thumbnail"
+            ],
+            "title": "Mode",
+            "default": "clips"
           },
           "status": {
             "type": "string",
@@ -4208,6 +4317,71 @@
           "error_message"
         ],
         "title": "TaskOut"
+      },
+      "ThumbnailFrameIn": {
+        "properties": {
+          "time": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Time",
+            "description": "Segundo del vídeo del que sale el fotograma."
+          },
+          "image": {
+            "type": "string",
+            "maxLength": 1200000,
+            "title": "Image",
+            "description": "JPEG en base64."
+          }
+        },
+        "type": "object",
+        "required": [
+          "time",
+          "image"
+        ],
+        "title": "ThumbnailFrameIn"
+      },
+      "ThumbnailIn": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Filename"
+          },
+          "topic": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Topic",
+            "description": "De qué trata el vídeo (opcional; mejora el texto).",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$",
+            "title": "Language",
+            "default": "es"
+          },
+          "branding": {
+            "type": "boolean",
+            "title": "Branding",
+            "default": true
+          },
+          "frames": {
+            "items": {
+              "$ref": "#/components/schemas/ThumbnailFrameIn"
+            },
+            "type": "array",
+            "maxItems": 24,
+            "minItems": 1,
+            "title": "Frames"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "frames"
+        ],
+        "title": "ThumbnailIn",
+        "description": "Miniatura sin subir el vídeo: el navegador envía unos fotogramas."
       },
       "UploadCompleteIn": {
         "properties": {

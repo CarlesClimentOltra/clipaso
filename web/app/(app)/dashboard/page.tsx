@@ -3,9 +3,11 @@
 import Link from "next/link";
 import {
   AlertCircleIcon,
+  CaptionsIcon,
   ClockIcon,
   FilmIcon,
   FolderIcon,
+  ImageIcon,
   LoaderCircleIcon,
   PlusIcon,
   ScissorsIcon,
@@ -72,7 +74,7 @@ function Stats({ me, jobs }: { me: Me; jobs: JobSummary[] }) {
   const { t } = useI18n();
   const d = t.dashboard;
   const fm = t.common.minutes;
-  const clips = jobs.reduce((n, j) => n + (j.status === "done" ? j.clip_count : 0), 0);
+  const clips = jobs.reduce((n, j) => n + (j.status === "done" && j.mode !== "thumbnail" ? j.clip_count : 0), 0);
   const active = jobs.filter(isActive).length;
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -125,7 +127,13 @@ function ProjectCard({ job }: { job: JobSummary }) {
         </span>
         {job.status === "done" && (
           <span className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-xs text-white backdrop-blur">
-            <ScissorsIcon className="size-3" /> {job.clip_count}
+            {job.mode === "thumbnail" ? (
+              <><ImageIcon className="size-3" /> {t.thumbnail.badge}</>
+            ) : job.mode === "subtitle" ? (
+              <><CaptionsIcon className="size-3" /> {t.project.subtitledBadge(null)}</>
+            ) : (
+              <><ScissorsIcon className="size-3" /> {job.clip_count}</>
+            )}
           </span>
         )}
       </div>

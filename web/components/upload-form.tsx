@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CaptionsIcon, FileVideoIcon, ScissorsIcon, UploadCloudIcon, XIcon } from "lucide-react";
+import { CaptionsIcon, FileVideoIcon, ImageIcon, ScissorsIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
+import { ThumbnailForm } from "@/components/thumbnail-form";
 import { TrimSelector, type TrimRange } from "@/components/trim-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -193,7 +194,7 @@ export function UploadForm({ me }: { me: Me }) {
     setProgress(null);
   }
 
-  function setMode(mode: "clips" | "subtitle") {
+  function setMode(mode: "clips" | "subtitle" | "thumbnail") {
     setOptionsDraft((d) => ({
       ...d,
       mode,
@@ -206,38 +207,53 @@ export function UploadForm({ me }: { me: Me }) {
   const MODES = [
     { id: "clips" as const, icon: ScissorsIcon, title: u.modes.clips[0], text: u.modes.clips[1] },
     { id: "subtitle" as const, icon: CaptionsIcon, title: u.modes.subtitle[0], text: u.modes.subtitle[1] },
+    { id: "thumbnail" as const, icon: ImageIcon, title: u.modes.thumbnail[0], text: u.modes.thumbnail[1] },
   ];
+
+  const modeCards = (
+    <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label={u.modeLabel}>
+      {MODES.map((m) => {
+        const selected = optionsDraft.mode === m.id;
+        return (
+          <button
+            key={m.id}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            disabled={busy}
+            onClick={() => setMode(m.id)}
+            className={cn(
+              "flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              selected ? "border-primary bg-brand-soft/60 ring-1 ring-primary" : "hover:bg-muted/50",
+            )}
+          >
+            <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl",
+                                selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+              <m.icon className="size-5" />
+            </span>
+            <span>
+              <span className="block font-medium">{m.title}</span>
+              <span className="block text-sm text-muted-foreground">{m.text}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // Miniatura: otro flujo (el vídeo no se sube, no gasta minutos).
+  if (optionsDraft.mode === "thumbnail") {
+    return (
+      <div className="flex flex-col gap-6">
+        {modeCards}
+        <ThumbnailForm />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={u.modeLabel}>
-        {MODES.map((m) => {
-          const selected = optionsDraft.mode === m.id;
-          return (
-            <button
-              key={m.id}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              disabled={busy}
-              onClick={() => setMode(m.id)}
-              className={cn(
-                "flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                selected ? "border-primary bg-brand-soft/60 ring-1 ring-primary" : "hover:bg-muted/50",
-              )}
-            >
-              <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl",
-                                  selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                <m.icon className="size-5" />
-              </span>
-              <span>
-                <span className="block font-medium">{m.title}</span>
-                <span className="block text-sm text-muted-foreground">{m.text}</span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {modeCards}
 
       {outOfMinutes && (
         <Alert variant="destructive">

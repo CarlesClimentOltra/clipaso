@@ -104,19 +104,26 @@ def update(
         info["template"] = template
 
     if time is not None and abs(time - float(current.get("time", -1))) > 0.05:
-        if source is None:
-            raise AppError("source_unavailable", 409)
-        time = min(max(time, clip.start), clip.end)
-        frame = covers.grab_frame(source, time, max_width=1920)
+        # Fotogramas guardados (miniaturas sin vídeo): se usan tal cual.
+        stored = next((c for c in current.get("candidates", [])
+                       if c.get("key") and abs(c["time"] - time) < 0.05), None)
+        if stored is not None:
+            data = storage.read_bytes(stored["key"])
+            frame = covers.from_jpeg(data) if data else None
+            face_x = stored.get("face_x")
+        else:
+            if source is None:
+                raise AppError("source_unavailable", 409)
+            time = min(max(time, clip.start), clip.end)
+            frame = covers.grab_frame(source, time, max_width=1920)
+            # La cara de ese momento: la de un candidato cercano o, si no, se detecta ahora.
+            near = next((c for c in current.get("candidates", []) if abs(c["time"] - time) < 0.3), None)
+            if near is not None or frame is None:
+                face_x = near.get("face_x") if near else None
+            else:
+                face_x = covers.score_frame(frame, covers.face_detector(model_dir))[1]
         if frame is None:
             raise AppError("validation_error", key="cover_frame")
-        # La cara de ese momento: la de un candidato cercano o, si no, se detecta ahora.
-        near = next((c for c in current.get("candidates", []) if abs(c["time"] - time) < 0.3), None)
-        if near is not None:
-            face_x = near.get("face_x")
-        else:
-            detector = covers.face_detector(model_dir)
-            face_x = covers.score_frame(frame, detector)[1]
         info["time"], info["face_x"] = round(time, 2), face_x
         base_v = covers.to_jpeg(covers.fit(frame, covers.SIZES["vertical"], face_x))
         base_h = covers.to_jpeg(covers.fit(frame, covers.SIZES["horizontal"], face_x))

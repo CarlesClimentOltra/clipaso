@@ -20,8 +20,9 @@ from clipaso.interfaces.api.schemas import (
     JobSummary,
     MoreClipsIn,
     TaskOut,
+    ThumbnailIn,
 )
-from clipaso.saas import editing, services
+from clipaso.saas import editing, services, thumbnails
 from clipaso.saas.db import utcnow
 from clipaso.saas.dispatch import dispatch_job
 from clipaso.saas.errors import AppError, NotFound, translate, user_message
@@ -41,8 +42,10 @@ def clip_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> ClipOut:
         hashtags=list(clip.hashtags or []), rating=clip.rating, start=clip.start, end=clip.end,
         duration=round(clip.end - clip.start, 2), score=clip.score, status=clip.status,
         render_error=translate(clip.render_error), version=clip.version,
-        video_url=storage.signed_url(clip.video_key, expires=ttl),
-        download_url=storage.signed_url(clip.video_key, expires=ttl, download_name=clip_filename(job, clip, "mp4")),
+        # Las miniaturas hechas sin subir el vídeo no tienen vídeo.
+        video_url=storage.signed_url(clip.video_key, expires=ttl) if clip.video_key else "",
+        download_url=storage.signed_url(clip.video_key, expires=ttl, download_name=clip_filename(job, clip, "mp4"))
+        if clip.video_key else "",
         thumbnail_url=storage.signed_url(clip.thumb_key, expires=ttl) if clip.thumb_key else None,
         cover=cover_out(clip, job, storage, ttl),
     )
@@ -56,6 +59,8 @@ def cover_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> CoverOut | No
     return CoverOut(
         text=c.get("text", ""), highlight=c.get("highlight"), template=c.get("template", "impacto"),
         time=c.get("time", clip.start), candidates=[x["time"] for x in c.get("candidates", [])],
+        candidate_images=[storage.signed_url(x["key"], expires=ttl) if x.get("key") else None
+                          for x in c.get("candidates", [])],
         vertical_url=storage.signed_url(c["vertical"], expires=ttl),
         horizontal_url=storage.signed_url(c["horizontal"], expires=ttl),
         vertical_download_url=storage.signed_url(c["vertical"], expires=ttl, download_name=f"{base}-portada-9x16.jpg"),
@@ -66,10 +71,17 @@ def cover_out(clip: Clip, job: Job, storage: Storage, ttl: int) -> CoverOut | No
 
 
 def _summary_fields(job: Job, storage: Storage, ttl: int) -> dict:
-    first = next((c for c in job.clips if c.thumb_key), None)
+    covered = next((c for c in job.clips if (c.cover or {}).get("horizontal")), None)
+    if (job.options or {}).get("mode") == "thumbnail" and covered is not None:
+        return {**_summary_base(job, storage, ttl, None),
+                "thumbnail_url": storage.signed_url(covered.cover["horizontal"], expires=ttl)}
+    return _summary_base(job, storage, ttl, next((c for c in job.clips if c.thumb_key), None))
+
+
+def _summary_base(job: Job, storage: Storage, ttl: int, first: Clip | None) -> dict:
     return dict(
-        id=job.id, title=job.title, status=job.status, stage=job.stage, progress=job.progress,
-        video_minutes=job.video_minutes, clip_count=len(job.clips),
+        id=job.id, title=job.title, mode=(job.options or {}).get("mode", "clips"), status=job.status,
+        stage=job.stage, progress=job.progress, video_minutes=job.video_minutes, clip_count=len(job.clips),
         thumbnail_url=storage.signed_url(first.thumb_key, expires=ttl) if first else None,
         created_at=job.created_at, finished_at=job.finished_at, expires_at=job.expires_at,
     )
@@ -98,6 +110,8 @@ def create_job(
     settings: SettingsDep, dispatcher: DispatcherDep,
 ) -> JobOut:
     now = utcnow()
+    if body.mode == "thumbnail":  # las miniaturas no suben vídeo: van por POST /thumbnails
+        raise AppError("validation_error")
     options = body.model_dump(include=set(JobOptions.model_fields))
     if options["caption_style"] is None:  # el estilo por defecto del usuario
         options["caption_style"] = editing.get_preferences(user)[0].model_dump()
@@ -108,6 +122,18 @@ def create_job(
     session.commit()  # el job debe existir antes de que un worker lo busque
     if dispatch_job(dispatcher, job, now):
         session.commit()
+    return job_out(session, job, user, storage, settings.api.signed_url_ttl_seconds)
+
+
+@router.post("/thumbnail", response_model=JobOut, status_code=201)
+def create_thumbnail(
+    body: ThumbnailIn, user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep,
+) -> JobOut:
+    """Miniatura y portada de un vídeo sin subirlo: el navegador envía unos fotogramas y la IA elige y escribe."""
+    job = thumbnails.create(
+        session, storage, settings, user, filename=body.filename, topic=body.topic, language=body.language,
+        branding=body.branding, frames=[(f.time, f.image) for f in body.frames], now=utcnow(),
+    )
     return job_out(session, job, user, storage, settings.api.signed_url_ttl_seconds)
 
 

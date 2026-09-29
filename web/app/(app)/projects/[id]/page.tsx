@@ -8,6 +8,7 @@ import {
   CalendarClockIcon,
   ClockIcon,
   FolderDownIcon,
+  ImageIcon,
   Loader2Icon,
   RotateCcwIcon,
   ScissorsIcon,
@@ -17,6 +18,7 @@ import {
 import { toast } from "sonner";
 
 import { ClipCard } from "@/components/clip-card";
+import { CoverEditor } from "@/components/editor/cover-editor";
 import { JobProgress } from "@/components/job-progress";
 import { MoreClipsDialog } from "@/components/more-clips-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -79,6 +81,7 @@ export default function ProjectPage() {
 
   const active = job.status === "queued" || job.status === "running";
   const subtitle = job.options.mode === "subtitle";
+  const thumbnail = job.options.mode === "thumbnail";
   const moreTask = job.more_clips_task;
   const searchingMore = !!moreTask && (moreTask.status === "queued" || moreTask.status === "running");
 
@@ -111,14 +114,22 @@ export default function ProjectPage() {
             <span className="text-sm font-medium text-brand-ink">{p.eyebrow}</span>
             <h1 className="truncate text-3xl font-semibold tracking-tight">{job.title}</h1>
             <div className="flex flex-wrap gap-2 text-xs">
-              <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
-                <ClockIcon className="size-3.5 text-brand-ink" /> {p.ofVideo(t.common.minutes(job.video_minutes))}
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
-                <SmartphoneIcon className="size-3.5 text-brand-ink" />
-                {t.options.formats[job.options.format ?? "vertical"]?.[0]}
-              </span>
-              {job.status === "done" && (
+              {thumbnail ? (
+                <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                  <ImageIcon className="size-3.5 text-brand-ink" /> {t.thumbnail.badge}
+                </span>
+              ) : (
+                <>
+                  <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                    <ClockIcon className="size-3.5 text-brand-ink" /> {p.ofVideo(t.common.minutes(job.video_minutes))}
+                  </span>
+                  <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
+                    <SmartphoneIcon className="size-3.5 text-brand-ink" />
+                    {t.options.formats[job.options.format ?? "vertical"]?.[0]}
+                  </span>
+                </>
+              )}
+              {job.status === "done" && !thumbnail && (
                 <span className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1">
                   <ScissorsIcon className="size-3.5 text-brand-ink" />
                   {subtitle ? p.subtitledBadge(job.options.subtitle_language) : t.common.clips(job.clips.length)}
@@ -132,7 +143,7 @@ export default function ProjectPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {job.status === "done" && job.clips.length > 0 && !subtitle && (
+            {job.status === "done" && job.clips.length > 0 && !subtitle && !thumbnail && (
               <Button size="sm" className="h-9 rounded-full px-4" onClick={onDownloadAll} disabled={downloadAll.isPending}>
                 <FolderDownIcon /> {p.downloadAll}
               </Button>
@@ -209,13 +220,19 @@ export default function ProjectPage() {
           <AlertDescription>{moreTask.error_message}</AlertDescription>
         </Alert>
       )}
-      {job.status === "done" && !job.can_edit && (
+      {job.status === "done" && !job.can_edit && !thumbnail && (
         <p className="text-sm text-muted-foreground">
           {p.notEditable}
         </p>
       )}
 
-      {job.status === "done" && (
+      {job.status === "done" && thumbnail && job.clips[0]?.cover && (
+        <section className="rounded-[2rem] border bg-card p-5 sm:p-8" aria-label={t.thumbnail.badge}>
+          <CoverEditor clip={job.clips[0]} jobId={job.id} previewUrl={null} canChangeFrame={false} large />
+        </section>
+      )}
+
+      {job.status === "done" && !thumbnail && (
         <section className="flex flex-col gap-4" aria-labelledby="clips-title">
           <h2 id="clips-title" className="text-xl font-semibold tracking-tight">
             {subtitle ? p.subtitledTitle : p.clipsTitle(job.clips.length)}
