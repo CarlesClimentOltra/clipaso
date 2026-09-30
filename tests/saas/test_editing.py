@@ -607,6 +607,18 @@ def test_reframe_mode_uses_the_chosen_format_and_fit(client, sample_video, monke
     assert r.status_code == 400
 
 
+def test_watermark_follows_the_current_plan(client, sample_video, monkeypatch):
+    from clipaso.saas.models import Plan
+
+    _, pipeline = processed_job(client, sample_video, monkeypatch)
+    assert pipeline.calls[0]["opts"].branding is None  # sin marca personal ni marca de agua
+    with session_scope(client.app.state.sessions) as s:
+        s.get(Plan, "free").watermark = True
+    _, pipeline = processed_job(client, sample_video, monkeypatch, branding=False)
+    branding = pipeline.calls[0]["opts"].branding
+    assert branding is not None and branding.watermark and not branding.active
+
+
 def test_subtitles_are_off_by_default_except_in_subtitle_mode(client, sample_video, monkeypatch):
     _, pipeline = processed_job(client, sample_video, monkeypatch)
     assert not pipeline.calls[0]["opts"].profile.subtitles.enabled

@@ -99,6 +99,46 @@ function fromSupabase(s: SbSession | null): Session | null {
 
 const origin = () => window.location.origin;
 
+const SESSION_TIMEOUT_MS = 4000;
+// Último token de acceso conocido (y cuándo caduca), actualizado cada vez que Supabase cambia la sesión.
+let memToken: { token: string; expiresAt: number } | null = null;
+let memSession: SbSession | null = null;
+
+function rememberToken(s: SbSession | null) {
+  memSession = s;
+  memToken = s ? { token: s.access_token, expiresAt: (s.expires_at ?? 0) * 1000 || Date.now() + 3_600_000 } : null;
+}
+
+/** La sesión conocida o, si Supabase aún no ha respondido, la que guarda él mismo en el navegador. */
+function currentSession(): SbSession | null {
+  if (memSession) return memSession;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) ?? "";
+      if (!/^sb-.+-auth-token$/.test(key)) continue;
+      const stored = JSON.parse(localStorage.getItem(key) ?? "null") as SbSession | null;
+      if (stored?.access_token && (stored.expires_at ?? 0) * 1000 > Date.now()) return stored;
+    }
+  } catch {
+    // sin almacenamiento: se espera a onAuthStateChange
+  }
+  return null;
+}
+
+/** La promesa, o `null` si tarda más de `ms`. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(null), ms);
+    promise.then((v) => {
+      clearTimeout(timer);
+      resolve(v);
+    }, (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+  });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const isDev = config.authMode === "dev";
   // En el servidor no hay localStorage: `undefined` significa "todavía cargando".
@@ -110,11 +150,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isDev) return;
     const sb = getSupabase();
-    sb.auth.getSession().then(({ data }) => {
-      setSbSession(fromSupabase(data.session));
+    const apply = (s: SbSession | null) => {
+      rememberToken(s);
+      setSbSession(fromSupabase(s));
       setSbLoading(false);
-    });
-    const { data } = sb.auth.onAuthStateChange((_event, s) => setSbSession(fromSupabase(s)));
+    };
+    // getSession() puede quedarse bloqueado (cerrojo interno de Supabase mientras renueva el token): con un
+    // tiempo máximo la app nunca se queda cargando; onAuthStateChange trae la sesión en cuanto esté.
+    withTimeout(sb.auth.getSession(), SESSION_TIMEOUT_MS)
+      .then((r) => {
+        if (r) return apply(r.data.session);
+        // Supabase no contesta: la sesión guardada vale mientras no caduque; si no hay, se sigue esperando.
+        const stored = currentSession();
+        if (stored) apply(stored);
+      })
+      .catch(() => setSbLoading(false));
+    const { data } = sb.auth.onAuthStateChange((_event, s) => apply(s));
     return () => data.subscription.unsubscribe();
   }, [isDev]);
 
@@ -182,11 +233,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await getSupabase().auth.signOut();
   }, []);
 
-  // Supabase renueva el token por su cuenta; se pide en cada llamada para no usar uno caducado.
+  // Supabase renueva el token por su cuenta y avisa (onAuthStateChange): se usa el que tenemos en memoria.
+  // Solo si está a punto de caducar se le pregunta, y nunca se espera más de unos segundos: pedir la sesión
+  // en cada llamada hacía que varias peticiones a la vez se quedaran esperando para siempre.
   const getToken = useCallback(async () => {
     if (config.authMode === "dev") return parseDev(getDevRaw())?.token ?? null;
-    const { data } = await getSupabase().auth.getSession();
-    return data.session?.access_token ?? null;
+    if (memToken && memToken.expiresAt - Date.now() > 60_000) return memToken.token;
+    const r = await withTimeout(getSupabase().auth.getSession(), SESSION_TIMEOUT_MS).catch(() => null);
+    if (r) rememberToken(r.data.session);
+    return memToken?.token ?? null;
   }, []);
 
   const value = useMemo(

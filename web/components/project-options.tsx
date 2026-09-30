@@ -172,12 +172,12 @@ export function ProjectOptions({
             {hasBrand ? (
               <>
                 {o.brandingOn(prefs!.branding.handle || o.yourLogo)}{" "}
-                <Link href="/account" className="underline underline-offset-4">{o.change}</Link>
+                <Link href="/customize" className="underline underline-offset-4">{o.change}</Link>
               </>
             ) : (
               <>
                 {o.brandingOffStart}{" "}
-                <Link href="/account" className="underline underline-offset-4">{t.header.account}</Link>.
+                <Link href="/customize" className="underline underline-offset-4">{t.header.customize}</Link>.
               </>
             )}
           </p>

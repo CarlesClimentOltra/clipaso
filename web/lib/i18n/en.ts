@@ -262,6 +262,7 @@ export const en: Dict = {
   header: {
     projects: "Projects",
     account: "My account",
+    customize: "Customize",
     myProjects: "My projects",
     newProject: "New project",
     available: "available",
@@ -303,6 +304,8 @@ export const en: Dict = {
     projects: "Projects",
     search: "Search projects",
     filterLabel: "Filter projects",
+    modeFilter: "Filter by mode",
+    allModes: "All modes",
     filters: { all: "All", ready: "Ready", active: "In progress", other: "Other" },
     noMatch: "No project matches your search.",
     status: { queued: "Queued", running: "Processing", done: "Ready", failed: "Error", expired: "Expired" },
@@ -917,10 +920,15 @@ export const en: Dict = {
       resetBreaks: "Automatic splits",
     },
   },
+  customize: {
+    eyebrow: "Customize",
+    title: "Your style and brand",
+    lead: "Your caption styles and personal brand. Use them in any project and adjust them for each video whenever you want.",
+  },
   account: {
     eyebrow: "My account",
     title: "Settings",
-    lead: "Your plan, your style and brand, the language and access to your account.",
+    lead: "Your details, your plan, the language and access to your account.",
     dataTitle: "Account details",
     dataLead: "The email you sign in with, your current plan and language.",
     email: "Email",

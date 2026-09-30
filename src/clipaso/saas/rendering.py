@@ -60,16 +60,16 @@ def project_profile(settings: Settings, options: dict, style_override: dict | No
 
 
 def project_branding(storage: Storage, user: User, options: dict, work_dir: Path) -> Branding | None:
-    """Marca actual del usuario si el proyecto la lleva activada (el logo se descarga a `work_dir`)."""
-    if not options.get("branding"):
-        return None
+    """Marca del vídeo: la del usuario si el proyecto la lleva activada (el logo se descarga a `work_dir`) y
+    la marca de agua de Clipaso si su plan actual la tiene (al subir de plan y regenerar, desaparece)."""
+    watermark = bool(user.plan and user.plan.watermark)
     prefs = BrandingPrefs.model_validate((user.preferences or {}).get("branding", {}))
-    if not prefs.enabled:
-        return None
-    logo: Path | None = None
-    if prefs.has_logo and (data := storage.read_bytes(logo_key(user.id))):
-        work_dir.mkdir(parents=True, exist_ok=True)
-        logo = work_dir / "logo.png"
-        logo.write_bytes(data)
-    branding = Branding(handle=prefs.handle, logo_path=logo, position=prefs.position)
-    return branding if branding.active else None
+    branding = Branding(position=prefs.position, watermark=watermark)
+    if options.get("branding") and prefs.enabled:
+        logo: Path | None = None
+        if prefs.has_logo and (data := storage.read_bytes(logo_key(user.id))):
+            work_dir.mkdir(parents=True, exist_ok=True)
+            logo = work_dir / "logo.png"
+            logo.write_bytes(data)
+        branding = Branding(handle=prefs.handle, logo_path=logo, position=prefs.position, watermark=watermark)
+    return branding if branding.active or branding.watermark else None

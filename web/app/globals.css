@@ -132,6 +132,17 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  /* En oscuro, los controles nativos (desplegables, barras de scroll, calendarios) también van en oscuro. */
+  html.dark {
+    color-scheme: dark;
+  }
+  /* La lista de un <select> la dibuja el navegador: sin esto, en oscuro sale texto claro sobre fondo claro. */
+  select option,
+  select optgroup {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
   }
 }
 /* Páginas legales: tipografía de documento largo. */

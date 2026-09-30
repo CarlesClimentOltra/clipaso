@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from clipaso.adapters.exporters import watermark
 from clipaso.adapters.exporters.subtitles import FONTS_DIR, build_ass
 from clipaso.domain.models import Branding, OutputProfile
 from clipaso.domain.ports import ExportRequest
@@ -105,6 +106,17 @@ class FFmpegExporter:
                 + f";[vsub][logo]overlay={x}:{y}[vout]"
             )
 
+        if branding.watermark:
+            # Marca de agua de Clipaso (según el plan): abajo, en la esquina que no usa la marca del usuario.
+            short = min(profile.width, profile.height)
+            wm_w, wm_h = watermark.render(work / "watermark.png", int(short * watermark.WIDTH_RATIO))
+            x, y = _logo_xy(watermark.corner(branding.position), wm_w, wm_h, margin)
+            index = 2 if logo else 1
+            filter_complex = (
+                filter_complex.replace("[vout]", "[vwm]")
+                + f";[{index}:v]format=rgba,colorchannelmixer=aa=0.85[wm];[vwm][wm]overlay={x}:{y}[vout]"
+            )
+
         (work / "filter.txt").write_text(filter_complex, encoding="utf-8")  # para depurar
         request.output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -113,6 +125,7 @@ class FFmpegExporter:
             "-ss", f"{clip.start:.3f}", "-t", f"{clip.duration:.3f}",
             "-i", str(request.source.path),
             *(["-i", "logo.png"] if logo else []),
+            *(["-i", "watermark.png"] if branding.watermark else []),
             "-filter_complex", filter_complex,
             "-map", "[vout]", "-map", "0:a:0?",
             *video_codec_args(profile),

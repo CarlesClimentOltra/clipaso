@@ -27,7 +27,7 @@ export function OnboardingChecklist({ jobs, prefs }: { jobs: JobSummary[]; prefs
     jobs.length > 0,
     reviewed && jobs.some((j) => j.status === "done"),
   ];
-  const hrefs = ["/account", "/new", "/dashboard#projects-title"];
+  const hrefs = ["/customize", "/new", "/dashboard#projects-title"];
   const completed = done.filter(Boolean).length;
   if (dismissed || completed === done.length) return null;
 

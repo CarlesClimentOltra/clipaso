@@ -166,9 +166,11 @@ class Branding(BaseModel):
     handle: str = Field("", description="Texto fijo, p. ej. @usuario.")
     logo_path: Path | None = None
     position: Literal["top-left", "top-right", "bottom-left", "bottom-right"] = "top-right"
+    watermark: bool = Field(False, description="Marca de agua de Clipaso (según el plan del usuario).")
 
     @property
     def active(self) -> bool:
+        """Hay marca personal (logo o @usuario); la marca de agua va aparte."""
         return bool(self.handle.strip() or self.logo_path)
 
 

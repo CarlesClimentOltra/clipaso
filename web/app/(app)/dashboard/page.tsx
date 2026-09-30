@@ -11,6 +11,7 @@ import {
   FileTextIcon,
   FilmIcon,
   FolderIcon,
+  LayoutGridIcon,
   ImageIcon,
   LoaderCircleIcon,
   PlusIcon,
@@ -33,6 +34,7 @@ import type { JobSummary, Me } from "@/lib/api/client";
 import { useJobs, useMe, usePreferences } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { MODES, type Mode } from "@/lib/modes";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "ready" | "active" | "other";
@@ -105,7 +107,7 @@ function ProjectCard({ job }: { job: JobSummary }) {
   return (
     <Link
       href={`/projects/${job.id}`}
-      className="group flex flex-col overflow-hidden rounded-3xl border bg-card outline-none transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group flex flex-col overflow-hidden rounded-2xl border bg-card outline-none transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <div className="relative aspect-16/10 overflow-hidden bg-muted">
         {job.thumbnail_url ? (
@@ -154,8 +156,8 @@ function ProjectCard({ job }: { job: JobSummary }) {
           </span>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <p className="line-clamp-1 font-medium">{job.title}</p>
+      <div className="flex flex-1 flex-col gap-1.5 p-3">
+        <p className="line-clamp-1 text-sm font-medium">{job.title}</p>
         {active ? (
           <div className="flex items-center gap-3">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
@@ -183,10 +185,10 @@ function NewProjectTile() {
   return (
     <Link
       href="/new"
-      className="group flex min-h-64 flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-primary/50 bg-brand-soft/40 p-6 text-center outline-none transition-colors hover:border-primary hover:bg-brand-soft focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/50 bg-brand-soft/40 p-5 text-center outline-none transition-colors hover:border-primary hover:bg-brand-soft focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <span className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground transition-transform group-hover:scale-110">
-        <PlusIcon className="size-6" />
+      <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform group-hover:scale-110">
+        <PlusIcon className="size-5" />
       </span>
       <span className="font-medium">{t.dashboard.newTitle}</span>
       <span className="text-sm text-muted-foreground">{t.dashboard.newText}</span>
@@ -232,18 +234,26 @@ export default function DashboardPage() {
   const d = t.dashboard;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [mode, setMode] = useState<string>("all");
+  // Solo los modos con algún proyecto, con cuántos hay de cada uno (en el orden de «Nuevo proyecto»).
+  const modeCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const j of jobs ?? []) counts.set(j.mode ?? "clips", (counts.get(j.mode ?? "clips") ?? 0) + 1);
+    return MODES.filter((m) => counts.has(m.id)).map((m) => ({ ...m, count: counts.get(m.id)! }));
+  }, [jobs]);
   const name = firstName(session?.email);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (jobs ?? []).filter((j) => {
       if (q && !j.title.toLowerCase().includes(q)) return false;
+      if (mode !== "all" && (j.mode ?? "clips") !== mode) return false;
       if (filter === "ready") return j.status === "done";
       if (filter === "active") return isActive(j);
       if (filter === "other") return j.status === "failed" || j.status === "expired";
       return true;
     });
-  }, [jobs, query, filter]);
+  }, [jobs, query, filter, mode]);
 
   return (
     <div className="flex flex-col gap-10">
@@ -266,8 +276,8 @@ export default function DashboardPage() {
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
       {isPending ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="aspect-4/3 rounded-3xl" />)}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="aspect-4/3 rounded-3xl" />)}
         </div>
       ) : jobs && jobs.length > 0 ? (
         <section className="flex flex-col gap-5" aria-labelledby="projects-title">
@@ -292,8 +302,35 @@ export default function DashboardPage() {
               />
             </div>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filter === "all" && !query && <NewProjectTile />}
+          {modeCounts.length > 1 && (
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="radiogroup"
+                 aria-label={d.modeFilter}>
+              {[{ id: "all", icon: LayoutGridIcon, count: jobs.length }, ...modeCounts].map((m) => {
+                const selected = mode === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setMode(m.id)}
+                    className={cn(
+                      "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      selected ? "border-foreground bg-foreground text-background" : "bg-card hover:bg-muted",
+                    )}
+                  >
+                    <m.icon className="size-4" />
+                    {m.id === "all" ? d.allModes : t.newProject.modes[m.id as Mode].title}
+                    <span className={cn("text-xs tabular-nums", selected ? "text-background/70" : "text-muted-foreground")}>
+                      {m.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filter === "all" && mode === "all" && !query && <NewProjectTile />}
             {visible.map((job) => <ProjectCard key={job.id} job={job} />)}
           </div>
           {visible.length === 0 && (

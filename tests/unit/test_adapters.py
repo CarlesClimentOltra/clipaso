@@ -157,7 +157,7 @@ def test_exporter_renders_logo_handle_and_styled_subtitles(tmp_path):
         rank=1, profile=profile,
         reframe=ReframePlan(mode="center", filter_complex="[0:v]scale=-2:640,crop=360:640[vout]"),
         transcript=transcript, output_path=out, work_dir=tmp_path / "work",
-        branding=Branding(handle="@ana", logo_path=logo, position="top-left"),
+        branding=Branding(handle="@ana", logo_path=logo, position="top-left", watermark=True),
     ))
     frame = tmp_path / "frame.png"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", "0.3", "-i", str(out), "-frames:v", "1", str(frame)],
@@ -165,6 +165,14 @@ def test_exporter_renders_logo_handle_and_styled_subtitles(tmp_path):
     pixels = cv2.imread(str(frame))
     b, g, r = pixels[20:40, 20:40].mean(axis=(0, 1))  # esquina superior izquierda: el logo
     assert r > 200 and g < 60 and b < 60
+    # Marca de agua de Clipaso abajo a la derecha: el icono lima.
+    corner = pixels[560:640, 180:360].reshape(-1, 3)
+    lime = (corner[:, 1] > 170) & (corner[:, 2] > 120) & (corner[:, 0] < 120)
+    assert lime.sum() > 30
+    # Sin marca de agua, esa esquina es gris.
+    from clipaso.adapters.exporters.watermark import corner as wm_corner
+
+    assert wm_corner("bottom-right") == "bottom-left" and wm_corner("top-left") == "bottom-right"
 
 
 def test_chunk_words_respects_user_breaks():

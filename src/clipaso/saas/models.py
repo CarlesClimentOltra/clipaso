@@ -6,7 +6,19 @@ import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from sqlalchemy import JSON, BigInteger, DateTime, Float, ForeignKey, Index, Integer, String, Text, TypeDecorator
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    TypeDecorator,
+    false,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from clipaso.saas.db import Base, utcnow
@@ -76,6 +88,8 @@ class Plan(Base):
     max_concurrent_jobs: Mapped[int] = mapped_column(Integer)
     max_upload_mb: Mapped[int] = mapped_column(Integer)
     retention_days: Mapped[int] = mapped_column(Integer)
+    # Marca de agua de Clipaso en los vídeos (los planes de pago la quitan).
+    watermark: Mapped[bool] = mapped_column(default=False, server_default=false())
     price_eur_cents: Mapped[int] = mapped_column(Integer, default=0)
     is_public: Mapped[bool] = mapped_column(default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)

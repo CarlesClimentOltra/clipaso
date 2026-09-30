@@ -262,6 +262,7 @@ export const es = {
   header: {
     projects: "Proyectos",
     account: "Mi cuenta",
+    customize: "Personalizar",
     myProjects: "Mis proyectos",
     newProject: "Nuevo proyecto",
     available: "disponibles",
@@ -303,6 +304,8 @@ export const es = {
     projects: "Proyectos",
     search: "Buscar proyecto",
     filterLabel: "Filtrar proyectos",
+    modeFilter: "Filtrar por modo",
+    allModes: "Todos los modos",
     filters: { all: "Todos", ready: "Listos", active: "En curso", other: "Otros" },
     noMatch: "Ningún proyecto coincide con la búsqueda.",
     status: { queued: "En cola", running: "Procesando", done: "Listo", failed: "Error", expired: "Caducado" },
@@ -918,10 +921,15 @@ export const es = {
       resetBreaks: "Cortes automáticos",
     },
   },
+  customize: {
+    eyebrow: "Personalizar",
+    title: "Tu estilo y tu marca",
+    lead: "Tus estilos de subtítulos y tu marca personal. Los usas en cualquier proyecto y siempre puedes ajustarlos en cada vídeo.",
+  },
   account: {
     eyebrow: "Mi cuenta",
     title: "Ajustes",
-    lead: "Tu plan, tu estilo y tu marca, el idioma y el acceso a tu cuenta.",
+    lead: "Tus datos, tu plan, el idioma y el acceso a tu cuenta.",
     dataTitle: "Datos de la cuenta",
     dataLead: "Email con el que inicias sesión, plan actual e idioma.",
     email: "Email",

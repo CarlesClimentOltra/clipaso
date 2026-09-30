@@ -189,7 +189,7 @@ function StyleChooser({
             <SaveIcon /> {s.saveAsNew}
           </Button>
         )}
-        <Link href="/account#estilos"
+        <Link href="/customize#estilos"
               className="ml-auto flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:underline">
           <Settings2Icon className="size-3.5" /> {s.manage}
         </Link>

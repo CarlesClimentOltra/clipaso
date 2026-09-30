@@ -7,8 +7,6 @@ import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AccountSecurity } from "@/components/account-security";
-import { BrandSettings } from "@/components/brand-settings";
-import { CaptionStylesSettings } from "@/components/caption-styles-settings";
 import { PageHeader } from "@/components/page-header";
 import { UsageMeter } from "@/components/usage-meter";
 import { Badge } from "@/components/ui/badge";
@@ -95,10 +93,6 @@ export default function AccountPage() {
           </div>
         </CardContent>
       </Card>
-
-      <CaptionStylesSettings />
-
-      <BrandSettings />
 
       {config.authMode === "supabase" && <AccountSecurity />}
 

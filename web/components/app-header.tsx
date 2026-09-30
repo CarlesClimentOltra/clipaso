@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FolderIcon, LogOutIcon, PlusIcon, UserIcon } from "lucide-react";
+import { FolderIcon, LogOutIcon, PaletteIcon, PlusIcon, UserIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
 import { LanguageSwitcher, ThemeToggle } from "@/components/preferences-controls";
@@ -33,6 +33,7 @@ export function AppHeader() {
   const { t } = useI18n();
   const nav = [
     { href: "/dashboard", label: t.header.projects, match: ["/dashboard", "/projects"] },
+    { href: "/customize", label: t.header.customize, match: ["/customize"] },
     { href: "/account", label: t.header.account, match: ["/account"] },
   ];
 
@@ -100,6 +101,9 @@ export function AppHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push("/dashboard")}>
                 <FolderIcon /> {t.header.myProjects}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/customize")}>
+                <PaletteIcon /> {t.header.customize}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/account")}>
                 <UserIcon /> {t.header.account}

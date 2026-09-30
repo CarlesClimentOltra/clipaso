@@ -26,8 +26,18 @@ export class ApiError extends Error {
   }
 }
 
+// Ninguna llamada a la API se queda esperando para siempre (p. ej. mientras el servidor arranca tras estar
+// parado): pasado este tiempo falla con «sin conexión» y React Query la reintenta.
+const REQUEST_TIMEOUT_MS = 45_000;
+
+function fetchWithTimeout(input: Request): Promise<Response> {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const signal = typeof AbortSignal.any === "function" ? AbortSignal.any([input.signal, timeout]) : timeout;
+  return fetch(new Request(input, { signal }));
+}
+
 export function createApi(getToken: () => Promise<string | null>) {
-  const client = createClient<paths>({ baseUrl: config.apiUrl });
+  const client = createClient<paths>({ baseUrl: config.apiUrl, fetch: fetchWithTimeout });
   client.use({
     async onRequest({ request }) {
       const token = await getToken();
