@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckIcon, FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
+import { CheckIcon, FileAudioIcon, FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
@@ -115,6 +115,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
   const language = languageChoice ?? locale;
   const busy = phase !== "idle";
   const outOfMinutes = me.usage.remaining_minutes <= 0;
+  const audioFile = !!file && (file.type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|oga|flac|opus)$/i.test(file.name));
   const maxBytes = me.plan.max_upload_mb * 1024 * 1024;
   const maxSeconds = me.plan.max_video_minutes * 60;
   const partial = !!(file && duration && trim && (trim.start > 0.5 || trim.end < duration - 0.5));
@@ -285,7 +286,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
         {file ? (
           <>
             <span className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-              <FileVideoIcon className="size-7" />
+              {audioFile ? <FileAudioIcon className="size-7" /> : <FileVideoIcon className="size-7" />}
             </span>
             <div>
               <p className="font-medium break-all">{file.name}</p>
@@ -307,7 +308,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
                   if (inputRef.current) inputRef.current.value = "";
                 }}
               >
-                <XIcon /> {u.changeVideo}
+                <XIcon /> {audioFile ? u.changeAudio : u.changeVideo}
               </Button>
             )}
           </>
@@ -330,6 +331,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
       {file && fileUrl && (
         <TrimSelector
           src={fileUrl}
+          audio={audioFile}
           duration={duration}
           value={trim}
           onChange={setTrim}

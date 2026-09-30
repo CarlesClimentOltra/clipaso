@@ -482,6 +482,7 @@ export const es = {
     outOfMinutesTitle: "Has agotado los minutos de este mes",
     outOfMinutesText: "Tu plan se renueva a principios de mes. Pronto podrás ampliar tu plan desde aquí.",
     selectVideo: "Seleccionar vídeo",
+    changeAudio: "Cambiar audio",
     changeVideo: "Cambiar vídeo",
     drop: "Arrastra tu vídeo aquí o haz clic para elegirlo",
     dropHintAudio: (size: string, minutes: number) =>

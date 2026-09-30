@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sentry_sdk import capture_exception
+from sqlalchemy import text
 
 from clipaso.bootstrap import build_storage
 from clipaso.infra.config import Settings, get_settings
@@ -81,7 +82,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     async def rate_limit(request: Request, call_next):
         # Por sesión (token) y por IP; crear subidas y proyectos, más estricto. Dentro de CORS para que el
         # navegador pueda leer el 429.
-        if request.method == "OPTIONS" or request.url.path == "/health":
+        if request.method == "OPTIONS" or request.url.path.startswith("/health"):
             return await call_next(request)
         limits = settings.abuse
         ip = client_ip(request.headers, request.client and request.client.host)
@@ -119,6 +120,17 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     @app.get("/health", tags=["meta"])
     def health() -> dict:
         return {"status": "ok"}
+
+    @app.get("/health/ready", tags=["meta"])
+    def ready() -> JSONResponse:
+        """Para el monitor de disponibilidad: la API responde y llega a la base de datos."""
+        try:
+            with app.state.sessions() as s:
+                s.execute(text("SELECT 1"))
+        except Exception as exc:
+            log.warning("api.not_ready", error=str(exc))
+            return JSONResponse({"status": "db_unavailable"}, status_code=503)
+        return JSONResponse({"status": "ok"})
 
     app.include_router(account.router)
     app.include_router(uploads.router)

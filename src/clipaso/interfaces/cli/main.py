@@ -322,6 +322,30 @@ def cleanup() -> None:
     )
 
 
+@app.command()
+def backup() -> None:
+    """Copia de seguridad de la base de datos en el almacenamiento (el worker la hace cada noche)."""
+    _setup()
+    from clipaso.bootstrap import build_storage
+    from clipaso.saas.backup import run_backup
+    from clipaso.saas.db import session_factory, utcnow
+
+    s = get_settings()
+    typer.secho(f"✓ {run_backup(session_factory(s), build_storage(s), utcnow())}", fg=typer.colors.GREEN)
+
+
+@app.command()
+def restore(path: Annotated[Path, typer.Argument(help="Copia .json.gz descargada del almacenamiento.")]) -> None:
+    """Restaura una copia en una base de datos vacía (con las migraciones ya aplicadas)."""
+    _setup()
+    from clipaso.saas.backup import restore as restore_backup
+    from clipaso.saas.db import session_factory, session_scope
+
+    with session_scope(session_factory(get_settings())) as session:
+        counts = restore_backup(session, path.read_bytes())
+    typer.secho("✓ " + " · ".join(f"{k}: {v}" for k, v in counts.items() if v), fg=typer.colors.GREEN)
+
+
 @app.command("db-upgrade")
 def db_upgrade() -> None:
     """Aplica las migraciones pendientes de la base de datos."""

@@ -139,6 +139,16 @@ def cleanup() -> None:
     run_cleanup(*_context("cleanup"))
 
 
+@app.function(region=REGION, secrets=[secret], schedule=modal.Cron("30 3 * * *"), timeout=900)
+def backup() -> None:
+    """Copia diaria de la base de datos en R2 (se guardan 30 días). Si falla, avisa en Sentry."""
+    from clipaso.saas.backup import run_backup
+    from clipaso.saas.db import utcnow
+
+    _, sessions, storage = _context("backup")
+    run_backup(sessions, storage, utcnow())
+
+
 @app.function(gpu=GPU, region=REGION, timeout=600)
 def smoke() -> dict:
     """Diagnóstico de la imagen, sin tocar base de datos ni almacenamiento."""

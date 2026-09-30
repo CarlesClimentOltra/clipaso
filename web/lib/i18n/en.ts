@@ -481,6 +481,7 @@ export const en: Dict = {
     outOfMinutesTitle: "You've used up this month's minutes",
     outOfMinutesText: "Your plan renews at the start of the month. Soon you'll be able to upgrade from here.",
     selectVideo: "Select video",
+    changeAudio: "Change audio",
     changeVideo: "Change video",
     drop: "Drag your video here or click to choose it",
     dropHintAudio: (size: string, minutes: number) =>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { PauseIcon, PlayIcon, ScissorsIcon } from "lucide-react";
+import { AudioLinesIcon, PauseIcon, PlayIcon, ScissorsIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -92,6 +92,7 @@ export function TrimSelector({
   onDuration,
   maxSeconds,
   minutesFactor = 1,
+  audio = false,
   disabled,
 }: {
   src: string;
@@ -102,6 +103,8 @@ export function TrimSelector({
   maxSeconds: number;
   /** Los vídeos de más de 1080p cuentan el doble de minutos. */
   minutesFactor?: number;
+  /** Archivo de audio (podcast): sin imagen, solo reproductor. */
+  audio?: boolean;
   disabled?: boolean;
 }) {
   const { t, intl } = useI18n();
@@ -164,13 +167,16 @@ export function TrimSelector({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-xl bg-black">
+      <div className={cn("relative overflow-hidden rounded-xl bg-black", audio && "h-28 bg-brand-ink/90")}>
+        {audio && (
+          <AudioLinesIcon aria-hidden="true" className="absolute top-1/2 left-1/2 size-10 -translate-1/2 text-brand" />
+        )}
         <video
           ref={video}
           src={src}
           preload="metadata"
           playsInline
-          className="mx-auto max-h-72 w-full object-contain"
+          className={cn("mx-auto max-h-72 w-full object-contain", audio && "hidden")}
           onLoadedMetadata={(e) => {
             const v = e.currentTarget;
             if (Number.isFinite(v.duration) && v.duration > 0) onDuration(v.duration, v.videoWidth, v.videoHeight);
