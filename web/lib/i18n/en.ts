@@ -71,7 +71,7 @@ export const en: Dict = {
     lead:
       "Clipaso finds the best moments in your videos and turns them into clips ready for TikTok, Instagram Reels and YouTube Shorts. It also captions whole videos, removes silences and fillers, changes the format, cuts trailers, creates audiograms and thumbnails, and turns your videos into text. No manual editing.",
     howButton: "How it works",
-    trust: ["30 free minutes a month", "No card required", "Data in the EU"],
+    trust: ["20 free minutes a month", "No card required", "Data in the EU"],
     marqueeLabel: "Clipaso benefits",
     marquee: [
       ["AI that picks", "The best moments"],
@@ -194,7 +194,7 @@ export const en: Dict = {
         ["Can I edit the clips?", "Yes. In the editor you can move the start and end, fix caption words, add or remove captions, change the style and the cover, and generate the clip again. You can also ask for more clips from the same video without using minutes."],
         ["Which languages does it support?", "Spanish, English, Portuguese, French, Italian and German, among others, and it can detect the language automatically. Captions can be translated into Spanish, English, Portuguese, French, Italian, German or Catalan."],
         ["Do you use my videos to train AI?", "No. Your videos are processed on servers in the European Union only to give you the result, and the original and everything generated are deleted automatically when the project expires (or sooner, if you delete it). The AI that picks moments and writes copy only receives the transcribed text and a few frames, and doesn't use them for training."],
-        ["Do I need a card to try it?", "No. The Free plan includes 30 minutes of video a month, with no card and no commitment."],
+        ["Do I need a card to try it?", "No. The Free plan includes 20 minutes of video a month, with no card and no commitment."],
       ],
     },
     cta: {
@@ -220,11 +220,26 @@ export const en: Dict = {
     thumbnails: (n: number) => `${n} thumbnails a day`,
     concurrent: (n: number) => `${n} ${plural(n, "video", "videos")} at a time`,
     retention: (n: number) => `Clips available for ${n} days`,
+    daily: (r: number, m: number, e: number, c: number) =>
+      `Every day: ${r} clip edits, ${m} «More clips», ${e} downloads in another quality and ${c} new covers`,
+  },
+  plansPage: {
+    title: "Plans",
+    lead: "Pick the plan that fits how much video you create. You can change anytime.",
+    current: "Your plan",
+    currentButton: "Your current plan",
+    upgrade: "Upgrade",
+    soon: "Coming soon",
+    soonHint: "Payments are coming very soon: you'll be able to upgrade from here.",
+    dev: "You have the developer account: no minute or daily limits.",
+    seePlans: "See plans",
+    minutesNote: "Videos above 1080p (like 4K) count double minutes. Editing, asking for more clips, downloading in another quality and creating covers don't use minutes, but have a daily cap.",
+    blockedTitle: "We can't activate this account",
   },
   login: {
     titles: {
       login: ["Sign in to your account", "Welcome back.", "Sign in"],
-      signup: ["Create your free account", "30 free minutes of video a month. No card required.", "Create account"],
+      signup: ["Create your free account", "20 free minutes of video a month. No card required.", "Create account"],
       forgot: ["Reset your password", "We'll send you a link to choose a new password.", "Send link"],
     },
     google: "Continue with Google",
@@ -266,6 +281,7 @@ export const en: Dict = {
     error: "Couldn't change the password.",
   },
   header: {
+    plans: "Plans",
     projects: "Projects",
     account: "My account",
     customize: "Customize",
@@ -306,7 +322,6 @@ export const en: Dict = {
     statClips: "Results ready",
     statClipsHint: "Videos, clips and thumbnails",
     statPlan: "Your plan",
-    statPlanHint: (days: number) => `Projects kept for ${days} days`,
     projects: "Projects",
     search: "Search projects",
     filterLabel: "Filter projects",

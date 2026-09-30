@@ -91,6 +91,30 @@ MESSAGES: dict[str, dict[str, str]] = {
                      "en": "You have videos processing. Wait for them to finish before deleting your account."},
     # subidas
     "plan_required": {"es": "Tu plan no incluye esta opción.", "en": "Your plan doesn't include this option."},
+    "daily_renders": {"es": "Has llegado a las {limit} ediciones de clip diarias de tu plan. Vuelve mañana o mejora "
+                            "tu plan.",
+                      "en": "You've reached your plan's {limit} clip edits per day. Come back tomorrow or upgrade."},
+    "daily_more_clips": {"es": "Has llegado a las {limit} peticiones de «Más clips» diarias de tu plan. Vuelve "
+                               "mañana o mejora tu plan.",
+                         "en": "You've reached your plan's {limit} «More clips» requests per day. Come back tomorrow "
+                               "or upgrade."},
+    "daily_exports": {"es": "Has llegado a las {limit} descargas en otra calidad diarias de tu plan. Vuelve mañana o "
+                            "mejora tu plan.",
+                      "en": "You've reached your plan's {limit} downloads in another quality per day. Come back "
+                            "tomorrow or upgrade."},
+    "daily_covers": {"es": "Has llegado a las {limit} portadas nuevas diarias de tu plan. Vuelve mañana o mejora tu "
+                           "plan.",
+                     "en": "You've reached your plan's {limit} new covers per day. Come back tomorrow or upgrade."},
+    "email_disposable": {"es": "No admitimos correos temporales. Regístrate con tu correo habitual.",
+                         "en": "Temporary email addresses aren't allowed. Sign up with your usual email."},
+    "too_many_accounts": {"es": "Se han creado demasiadas cuentas desde esta conexión. Si crees que es un error, "
+                                "escríbenos.",
+                          "en": "Too many accounts have been created from this connection. If you think this is a "
+                                "mistake, contact us."},
+    "captcha_failed": {"es": "No hemos podido comprobar que eres una persona. Vuelve a intentarlo.",
+                       "en": "We couldn't verify you're human. Please try again."},
+    "rate_limited": {"es": "Demasiadas peticiones seguidas. Espera un momento y vuelve a intentarlo.",
+                     "en": "Too many requests in a row. Wait a moment and try again."},
     "plan_quality": {"es": "La descarga en {quality} está disponible en el plan Ultra.",
                      "en": "The {quality} download is available on the Ultra plan."},
     "audio_needs_audio_mode": {"es": "Con un archivo de audio puedes crear un audiograma o pasarlo a texto.",

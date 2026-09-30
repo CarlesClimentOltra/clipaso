@@ -41,6 +41,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/signup-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Signup Check
+         * @description Antes de registrarse: avisa si el correo es temporal o si desde esta conexión ya hay demasiadas cuentas.
+         */
+        post: operations["signup_check_signup_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -577,6 +597,25 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminDuplicateOut */
+        AdminDuplicateOut: {
+            /** Title */
+            title: string;
+            /** Minutes */
+            minutes: number;
+            /**
+             * Users
+             * @description Cuentas gratis que han procesado el mismo vídeo.
+             */
+            users: string[];
+            /** Jobs */
+            jobs: number;
+            /**
+             * Last At
+             * Format: date-time
+             */
+            last_at: string;
+        };
         /** AdminJobOut */
         AdminJobOut: {
             /** Id */
@@ -658,6 +697,8 @@ export interface components {
             modes: components["schemas"]["AdminModeOut"][];
             /** Recent */
             recent: components["schemas"]["AdminJobOut"][];
+            /** Duplicates */
+            duplicates?: components["schemas"]["AdminDuplicateOut"][];
             /** Rates */
             rates: {
                 [key: string]: unknown;
@@ -1476,6 +1517,26 @@ export interface components {
              */
             daily_thumbnails: number;
             /**
+             * Daily Renders
+             * @description Ediciones de clip (volver a renderizar) por día.
+             */
+            daily_renders: number;
+            /**
+             * Daily More Clips
+             * @description Peticiones de «Más clips» por día.
+             */
+            daily_more_clips: number;
+            /**
+             * Daily Exports
+             * @description Descargas en otra calidad por día.
+             */
+            daily_exports: number;
+            /**
+             * Daily Covers
+             * @description Portadas nuevas con IA por día.
+             */
+            daily_covers: number;
+            /**
              * Unlimited
              * @description Cuenta de desarrollo: sin cuota ni límites.
              * @default false
@@ -1513,6 +1574,11 @@ export interface components {
                 [key: string]: string;
             };
             caption_style?: components["schemas"]["CaptionStyle"] | null;
+        };
+        /** SignupCheckIn */
+        SignupCheckIn: {
+            /** Email */
+            email: string;
         };
         /** StyleIn */
         StyleIn: {
@@ -1828,6 +1894,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    signup_check_signup_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignupCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

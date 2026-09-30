@@ -75,7 +75,7 @@ def billable_minutes(seconds: float) -> float:
 # --------------------------------------------------------------------------- usuarios
 
 
-def get_or_create_user(session: Session, subject: str, email: str) -> User:
+def get_or_create_user(session: Session, subject: str, email: str, *, signup_ip: str | None = None) -> User:
     user = session.get(User, subject)
     if user is None:
         # El primer acceso suele lanzar varias peticiones en paralelo (/me, /jobs…): inserción
@@ -83,7 +83,7 @@ def get_or_create_user(session: Session, subject: str, email: str) -> User:
         insert = pg_insert if session.get_bind().dialect.name == "postgresql" else sqlite_insert
         result = session.execute(
             insert(User)
-            .values(id=subject, email=email, plan_code=DEFAULT_PLAN, created_at=utcnow())
+            .values(id=subject, email=email, plan_code=DEFAULT_PLAN, signup_ip=signup_ip, created_at=utcnow())
             .on_conflict_do_nothing(index_elements=["id"])
         )
         if result.rowcount:
@@ -98,9 +98,13 @@ def is_admin(user: User) -> bool:
     return bool(user.plan and user.plan.unlimited)
 
 
+def is_admin_email(email: str | None, admin_emails: list[str]) -> bool:
+    return bool(email) and email.lower() in {e.strip().lower() for e in admin_emails}
+
+
 def apply_admin(session: Session, user: User, admin_emails: list[str]) -> None:
     """Las cuentas de desarrollo (por email, en la configuración) pasan al plan sin límites."""
-    if user.email and user.email.lower() in {e.strip().lower() for e in admin_emails} and user.plan_code != DEV_PLAN:
+    if is_admin_email(user.email, admin_emails) and user.plan_code != DEV_PLAN:
         user.plan_code = DEV_PLAN
         session.flush()
         session.expire(user, ["plan"])
@@ -326,6 +330,8 @@ def create_job(
     minutes = billable_minutes(seconds) * minutes_factor(upload)
     if minutes != billable_minutes(seconds):
         options["minutes_factor"] = minutes_factor(upload)
+    # Huella del vídeo (peso + duración): el panel de costes marca el mismo vídeo en varias cuentas gratis.
+    options["source_fp"] = f"{upload.size_bytes}:{upload.duration_seconds:.1f}"
     usage = usage_for(session, user, now)
     if minutes > usage.remaining_minutes and not user.plan.unlimited:
         raise AppError(

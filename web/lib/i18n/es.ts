@@ -71,7 +71,7 @@ export const es = {
     lead:
       "Clipaso encuentra los mejores momentos de tus vídeos y los convierte en clips listos para TikTok, Instagram Reels y YouTube Shorts. Y también subtitula vídeos enteros, quita silencios y muletillas, cambia el formato, monta tráileres, crea audiogramas y miniaturas, y convierte tus vídeos en texto. Sin editar a mano.",
     howButton: "Cómo funciona",
-    trust: ["30 min gratis al mes", "Sin tarjeta", "Datos en la UE"],
+    trust: ["20 min gratis al mes", "Sin tarjeta", "Datos en la UE"],
     marqueeLabel: "Ventajas de Clipaso",
     marquee: [
       ["IA que elige", "Los mejores momentos"],
@@ -194,7 +194,7 @@ export const es = {
         ["¿Puedo editar los clips?", "Sí. Desde el editor puedes mover el inicio y el final, corregir palabras de los subtítulos, añadir o quitar subtítulos, cambiar el estilo y la portada, y volver a generar el clip. También puedes pedir más clips del mismo vídeo sin gastar minutos."],
         ["¿En qué idiomas funciona?", "En español, inglés, portugués, francés, italiano y alemán, entre otros, y puede detectar el idioma automáticamente. Los subtítulos se pueden traducir a español, inglés, portugués, francés, italiano, alemán o catalán."],
         ["¿Usáis mis vídeos para entrenar IA?", "No. Tus vídeos se procesan en servidores de la Unión Europea solo para darte el resultado, y el original y todo lo generado se borran solos cuando caduca el proyecto (o antes, si lo borras tú). La IA que elige los momentos y escribe los textos solo recibe el texto transcrito y unos pocos fotogramas, y no los usa para entrenar."],
-        ["¿Necesito tarjeta para probarlo?", "No. El plan Gratis incluye 30 minutos de vídeo al mes, sin tarjeta y sin compromiso."],
+        ["¿Necesito tarjeta para probarlo?", "No. El plan Gratis incluye 20 minutos de vídeo al mes, sin tarjeta y sin compromiso."],
       ],
     },
     cta: {
@@ -220,11 +220,26 @@ export const es = {
     thumbnails: (n: number) => `${n} miniaturas al día`,
     concurrent: (n: number) => `${n} ${plural(n, "vídeo", "vídeos")} a la vez`,
     retention: (n: number) => `Clips disponibles ${n} días`,
+    daily: (r: number, m: number, e: number, c: number) =>
+      `Cada día: ${r} ediciones de clip, ${m} «Más clips», ${e} descargas en otra calidad y ${c} portadas nuevas`,
+  },
+  plansPage: {
+    title: "Planes",
+    lead: "Elige el plan que encaja con cuánto vídeo creas. Puedes cambiar cuando quieras.",
+    current: "Tu plan",
+    currentButton: "Tu plan actual",
+    upgrade: "Mejorar",
+    soon: "Próximamente",
+    soonHint: "Los pagos llegan muy pronto: podrás mejorar tu plan desde aquí.",
+    dev: "Tienes la cuenta de desarrollo: sin límites de minutos ni diarios.",
+    seePlans: "Ver planes",
+    minutesNote: "Los vídeos de más de 1080p (como el 4K) cuentan el doble de minutos. Editar, pedir más clips, descargar en otra calidad y crear portadas no gasta minutos, pero tiene un tope diario.",
+    blockedTitle: "No podemos activar esta cuenta",
   },
   login: {
     titles: {
       login: ["Entra en tu cuenta", "Bienvenido de nuevo.", "Entrar"],
-      signup: ["Crea tu cuenta gratis", "30 minutos de vídeo al mes gratis. Sin tarjeta.", "Crear cuenta"],
+      signup: ["Crea tu cuenta gratis", "20 minutos de vídeo al mes gratis. Sin tarjeta.", "Crear cuenta"],
       forgot: ["Recupera tu contraseña", "Te enviaremos un enlace para elegir una contraseña nueva.", "Enviar enlace"],
     } as Record<"login" | "signup" | "forgot", [string, string, string]>,
     google: "Continuar con Google",
@@ -266,6 +281,7 @@ export const es = {
     error: "No se pudo cambiar la contraseña.",
   },
   header: {
+    plans: "Planes",
     projects: "Proyectos",
     account: "Mi cuenta",
     customize: "Personalizar",
@@ -306,7 +322,6 @@ export const es = {
     statClips: "Resultados listos",
     statClipsHint: "Vídeos, clips y miniaturas",
     statPlan: "Tu plan",
-    statPlanHint: (days: number) => `Proyectos guardados ${days} días`,
     projects: "Proyectos",
     search: "Buscar proyecto",
     filterLabel: "Filtrar proyectos",

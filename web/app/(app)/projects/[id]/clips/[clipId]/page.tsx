@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
+import { toastError } from "@/components/error-toast";
 import { slug } from "@/components/clip-card";
 import { ClipDownloads } from "@/components/clip-downloads";
 import { CLIP_ASPECT, ClipPlayer } from "@/components/clip-player";
@@ -122,7 +123,7 @@ function EditorForm({ data, jobId }: { data: Editor; jobId: string }) {
       toast.success(e.started);
       router.push(`/projects/${jobId}`);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : e.renderError);
+      toastError(err, e.renderError);
     }
   }
 

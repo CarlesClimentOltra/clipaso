@@ -57,15 +57,17 @@ function firstName(email: string | undefined) {
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : "";
 }
 
-function StatCard({ icon, label, value, hint, children }: {
+function StatCard({ icon, label, value, hint, href, children }: {
   icon: React.ReactNode;
+  href?: string;
   label: string;
   value: React.ReactNode;
   hint?: React.ReactNode;
   children?: React.ReactNode;
 }) {
-  return (
-    <div className="flex flex-col gap-3 rounded-3xl border bg-card p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5">
+  const className = "flex flex-col gap-3 rounded-3xl border bg-card p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-5";
+  const body = (
+    <>
       {children ?? (
         <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand-ink">{icon}</span>
       )}
@@ -74,7 +76,12 @@ function StatCard({ icon, label, value, hint, children }: {
         <p className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">{value}</p>
         {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
       </div>
-    </div>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={cn(className, "transition-colors hover:border-primary/60")}>{body}</Link>
+  ) : (
+    <div className={className}>{body}</div>
   );
 }
 
@@ -88,7 +95,7 @@ function Stats({ me, jobs }: { me: Me; jobs: JobSummary[] }) {
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <StatCard label={d.statMinutes} value={fm(Math.max(0, me.usage.remaining_minutes))}
                 hint={d.statMinutesHint(fm(me.usage.used_minutes), fm(me.usage.limit_minutes))}
-                icon={null}>
+                icon={null} href="/plans">
         <UsageRing me={me} size={44} stroke={5} />
       </StatCard>
       <StatCard icon={<FolderIcon className="size-5" />} label={d.statProjects} value={jobs.length}
@@ -96,7 +103,7 @@ function Stats({ me, jobs }: { me: Me; jobs: JobSummary[] }) {
       <StatCard icon={<ScissorsIcon className="size-5" />} label={d.statClips} value={clips}
                 hint={d.statClipsHint} />
       <StatCard icon={<SparklesIcon className="size-5" />} label={d.statPlan} value={t.plans[me.plan.code] ?? me.plan.name}
-                hint={d.statPlanHint(me.plan.retention_days)} />
+                hint={t.plansPage.seePlans} href="/plans" />
     </div>
   );
 }

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -20,6 +21,7 @@ from clipaso.infra.observability import init_sentry
 from clipaso.infra.tls import use_system_trust_store
 from clipaso.interfaces.api.routers import account, admin, clips, dev_storage, jobs, uploads
 from clipaso.interfaces.api.schemas import ErrorResponse
+from clipaso.saas.abuse import RateLimiter, client_ip
 from clipaso.saas.db import session_factory, session_scope
 from clipaso.saas.dispatch import get_dispatcher
 from clipaso.saas.errors import AppError, normalize_lang, request_lang, user_message
@@ -71,6 +73,27 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
             return JSONResponse(
                 {"error": {"code": "internal_error", "message": user_message("internal_error")}}, status_code=500
             )
+
+    limiter = RateLimiter()
+    heavy = {("POST", "/uploads"), ("POST", "/jobs"), ("POST", "/jobs/thumbnail"), ("POST", "/signup-check")}
+
+    @app.middleware("http")
+    async def rate_limit(request: Request, call_next):
+        # Por sesión (token) y por IP; crear subidas y proyectos, más estricto. Dentro de CORS para que el
+        # navegador pueda leer el 429.
+        if request.method == "OPTIONS" or request.url.path == "/health":
+            return await call_next(request)
+        limits = settings.abuse
+        ip = client_ip(request.headers, request.client and request.client.host)
+        token = request.headers.get("authorization", "")
+        who = hashlib.sha256(token.encode()).hexdigest()[:24] if token else f"ip:{ip}"
+        checks = [(f"ip:{ip}", limits.requests_per_minute_ip), (f"u:{who}", limits.requests_per_minute)]
+        if (request.method, request.url.path.rstrip("/")) in heavy:
+            checks.append((f"heavy:{who}", limits.heavy_per_minute))
+        if not all(limiter.allow(key, limit) for key, limit in checks):
+            return JSONResponse({"error": {"code": "rate_limited", "message": user_message("rate_limited")}},
+                                status_code=429, headers={"Retry-After": "60"})
+        return await call_next(request)
 
     app.add_middleware(
         CORSMiddleware,

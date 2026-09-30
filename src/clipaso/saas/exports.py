@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from clipaso.domain.models import OutputProfile
 from clipaso.domain.ports import Storage
 from clipaso.infra import ffmpeg
-from clipaso.saas.editing import MAX_ACTIVE_TASKS, _active_tasks, source_available
+from clipaso.saas.editing import MAX_ACTIVE_TASKS, _active_tasks, check_daily_limit, source_available
 from clipaso.saas.errors import AppError
 from clipaso.saas.models import Clip, Job, Task, TaskKind, TaskStatus, Upload, User
 from clipaso.saas.services import clips_prefix
@@ -119,6 +119,7 @@ def request_quality(session: Session, user: User, job: Job, clip: Clip, quality:
         raise AppError("source_unavailable", 409)
     if _active_tasks(session, user) >= MAX_ACTIVE_TASKS:
         raise AppError("too_many_tasks", 429)
+    check_daily_limit(session, user, TaskKind.EXPORT_CLIP, now)
     task = Task(user_id=user.id, job_id=job.id, clip_id=clip.id, kind=TaskKind.EXPORT_CLIP,
                 payload={"quality": quality, "version": clip.version}, created_at=now)
     session.add(task)

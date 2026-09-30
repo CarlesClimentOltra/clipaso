@@ -8,7 +8,7 @@ import hmac
 import re
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -38,6 +38,13 @@ MIN_CLIP_SECONDS = 3.0
 MAX_CLIP_SECONDS = 180.0
 EDITOR_MARGIN_SECONDS = 30.0  # contexto que muestra el editor antes y después del clip
 MAX_ACTIVE_TASKS = 3
+# Tope diario por plan de cada tarea que usa GPU sin gastar minutos (campo de `Plan`).
+DAILY_LIMITS = {
+    TaskKind.RENDER_CLIP: "daily_renders",
+    TaskKind.MORE_CLIPS: "daily_more_clips",
+    TaskKind.EXPORT_CLIP: "daily_exports",
+    TaskKind.COVER_CLIP: "daily_covers",
+}
 MORE_CLIPS_FACTOR = 3  # un proyecto admite hasta 3 veces los clips por vídeo del plan
 LOGO_MAX_BYTES = 1024 * 1024
 LOGO_MAX_SIDE = 512
@@ -68,6 +75,23 @@ def _active_tasks(session: Session, user: User) -> int:
             Task.user_id == user.id, Task.status.in_([TaskStatus.QUEUED, TaskStatus.RUNNING])
         )
     ) or 0
+
+
+def check_daily_limit(session: Session, user: User, kind: TaskKind, now: datetime) -> None:
+    """429 si el usuario ya ha pedido hoy (últimas 24 h) todas las tareas de este tipo que permite su plan."""
+    plan = user.plan
+    if plan is None or plan.unlimited:
+        return
+    field = DAILY_LIMITS[kind]
+    limit = getattr(plan, field)
+    used = session.scalar(
+        select(func.count()).select_from(Task).where(
+            Task.user_id == user.id, Task.kind == kind, Task.created_at >= now - timedelta(days=1),
+            Task.status != TaskStatus.FAILED,  # lo que falla no cuenta
+        )
+    ) or 0
+    if used >= limit:
+        raise AppError("daily_limit", 429, key=field, params={"limit": str(limit)})
 
 
 def is_subtitle_job(job: Job) -> bool:
@@ -197,6 +221,7 @@ def request_render(
         raise AppError("clip_busy", 409)
     if _active_tasks(session, user) >= MAX_ACTIVE_TASKS:
         raise AppError("too_many_tasks", 429)
+    check_daily_limit(session, user, TaskKind.RENDER_CLIP, now)
     upload = session.get(Upload, job.upload_id)
     duration = upload.duration_seconds or 0
     start, end = round(max(0.0, start), 3), round(min(end, duration), 3)
@@ -227,6 +252,7 @@ def request_cover(session: Session, user: User, clip: Clip, job: Job, *, now: da
         raise AppError("cover_busy", 409)
     if _active_tasks(session, user) >= MAX_ACTIVE_TASKS:
         raise AppError("too_many_tasks", 429)
+    check_daily_limit(session, user, TaskKind.COVER_CLIP, now)
     clip.cover = {**(clip.cover or {}), "pending": True}
     task = Task(user_id=user.id, job_id=job.id, clip_id=clip.id, kind=TaskKind.COVER_CLIP, payload={},
                 created_at=now)
@@ -243,6 +269,7 @@ def request_more_clips(session: Session, user: User, job: Job, *, count: int, to
         raise AppError("more_clips_busy", 409)
     if _active_tasks(session, user) >= MAX_ACTIVE_TASKS:
         raise AppError("too_many_tasks", 429)
+    check_daily_limit(session, user, TaskKind.MORE_CLIPS, now)
     available = more_clips_available(job, user)
     if available <= 0:
         raise AppError("too_many_clips", key="project_clip_limit")

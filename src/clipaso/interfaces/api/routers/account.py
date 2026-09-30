@@ -14,12 +14,13 @@ from clipaso.interfaces.api.schemas import (
     PlanOut,
     PreferencesIn,
     PreferencesOut,
+    SignupCheckIn,
     StyleIn,
     StylesOut,
     StyleUpdateIn,
     UsageOut,
 )
-from clipaso.saas import editing, services, styles
+from clipaso.saas import abuse, editing, services, styles
 from clipaso.saas.artifacts import logo_key
 from clipaso.saas.db import utcnow
 from clipaso.saas.errors import AppError
@@ -33,6 +34,16 @@ router = APIRouter(tags=["account"])
 def list_plans(session: SessionDep) -> list[Plan]:
     """Planes públicos (página de precios)."""
     return list(session.scalars(select(Plan).where(Plan.is_public).order_by(Plan.sort_order)))
+
+
+@router.post("/signup-check", status_code=204)
+def signup_check(body: SignupCheckIn, request: Request, session: SessionDep, settings: SettingsDep) -> Response:
+    """Antes de registrarse: avisa si el correo es temporal o si desde esta conexión ya hay demasiadas cuentas."""
+    ip_hash = abuse.ip_fingerprint(abuse.client_ip(request.headers, request.client and request.client.host),
+                                   settings.api.secret_key)
+    if not services.is_admin_email(body.email, settings.admin_emails):
+        abuse.check_signup(session, body.email, ip_hash, settings.abuse, utcnow())
+    return Response(status_code=204)
 
 
 @router.get("/me", response_model=MeOut)

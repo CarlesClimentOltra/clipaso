@@ -71,7 +71,12 @@ export default function AccountPage() {
             <>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-muted-foreground">{a.plan}</span>
-                <Badge variant="secondary">{t.plans[me.plan.code] ?? me.plan.name}</Badge>
+                <span className="flex items-center gap-2">
+                  <Badge variant="secondary">{t.plans[me.plan.code] ?? me.plan.name}</Badge>
+                  <Link href="/plans" className="text-sm font-medium text-brand-ink underline-offset-4 hover:underline">
+                    {t.plansPage.seePlans}
+                  </Link>
+                </span>
               </div>
               <UsageMeter me={me} />
             </>

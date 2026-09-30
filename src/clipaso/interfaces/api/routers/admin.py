@@ -8,11 +8,12 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select
 
 from clipaso.interfaces.api.deps import SessionDep, SettingsDep, UserDep
-from clipaso.interfaces.api.schemas import AdminJobOut, AdminModeOut, AdminUsageOut
+from clipaso.interfaces.api.schemas import AdminDuplicateOut, AdminJobOut, AdminModeOut, AdminUsageOut
 from clipaso.saas import services
 from clipaso.saas.db import utcnow
 from clipaso.saas.errors import NotFound
 from clipaso.saas.models import Job, Task, User
+from clipaso.saas.plans import DEFAULT_PLAN
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -26,7 +27,8 @@ def usage(user: UserDep, session: SessionDep, settings: SettingsDep,
     costs = settings.costs
     jobs = session.scalars(select(Job).where(Job.created_at >= since).order_by(Job.created_at.desc())).all()
     tasks = session.scalars(select(Task).where(Task.created_at >= since)).all()
-    emails = {u.id: u.email for u in session.scalars(select(User).where(User.id.in_({j.user_id for j in jobs})))}
+    owners = {u.id: u for u in session.scalars(select(User).where(User.id.in_({j.user_id for j in jobs})))}
+    emails = {uid: u.email for uid, u in owners.items()}
 
     modes: dict[str, dict] = {}
     rows: list[AdminJobOut] = []
@@ -60,5 +62,22 @@ def usage(user: UserDep, session: SessionDep, settings: SettingsDep,
         days=days, jobs=len(jobs), tasks=len(tasks),
         compute_usd=round(sum(a["compute_usd"] for a in modes.values()) + task_usd, 4),
         llm_usd=round(sum(a["llm_usd"] for a in modes.values()), 4), task_compute_usd=round(task_usd, 4),
-        modes=out_modes, recent=rows[:100], rates=costs.model_dump(),
+        modes=out_modes, recent=rows[:100], duplicates=duplicates(jobs, owners), rates=costs.model_dump(),
     )
+
+
+def duplicates(jobs: list[Job], owners: dict[str, User]) -> list[AdminDuplicateOut]:
+    """Mismo vídeo (peso y duración) procesado por varias cuentas gratis: posible abuso del plan gratis."""
+    groups: dict[str, list[Job]] = {}
+    for job in jobs:
+        fp = (job.options or {}).get("source_fp")
+        owner = owners.get(job.user_id)
+        if fp and owner is not None and owner.plan_code == DEFAULT_PLAN:
+            groups.setdefault(fp, []).append(job)
+    out = []
+    for group in groups.values():
+        users = sorted({owners[j.user_id].email for j in group})
+        if len(users) >= 2:
+            out.append(AdminDuplicateOut(title=group[0].title, minutes=group[0].video_minutes or 0.0, users=users,
+                                         jobs=len(group), last_at=max(j.created_at for j in group)))
+    return sorted(out, key=lambda d: d.last_at, reverse=True)

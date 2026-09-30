@@ -13,21 +13,24 @@ from clipaso.saas.models import Plan
 PLANS: list[dict] = [
     {
         "code": "free", "name": "Gratis", "price_eur_cents": 0, "sort_order": 0,
-        "monthly_minutes": 30, "max_video_minutes": 20, "max_clips_per_job": 3,
-        "max_concurrent_jobs": 1, "max_upload_mb": 2048, "retention_days": 7,
+        "monthly_minutes": 20, "max_video_minutes": 10, "max_clips_per_job": 3,
+        "max_concurrent_jobs": 1, "max_upload_mb": 1024, "retention_days": 7,
         "watermark": True, "max_export_quality": "1080p", "daily_thumbnails": 5,
+        "daily_renders": 10, "daily_more_clips": 2, "daily_exports": 5, "daily_covers": 5,
     },
     {
         "code": "pro", "name": "Pro", "price_eur_cents": 1900, "sort_order": 1,
         "monthly_minutes": 300, "max_video_minutes": 90, "max_clips_per_job": 10,
         "max_concurrent_jobs": 2, "max_upload_mb": 10240, "retention_days": 30,
         "watermark": False, "max_export_quality": "1080p", "daily_thumbnails": 40,
+        "daily_renders": 100, "daily_more_clips": 20, "daily_exports": 50, "daily_covers": 50,
     },
     {
         "code": "ultra", "name": "Ultra", "price_eur_cents": 4900, "sort_order": 2,
         "monthly_minutes": 1000, "max_video_minutes": 180, "max_clips_per_job": 20,
         "max_concurrent_jobs": 4, "max_upload_mb": 25600, "retention_days": 60,
         "watermark": False, "max_export_quality": "2160p", "daily_thumbnails": 150,
+        "daily_renders": 300, "daily_more_clips": 50, "daily_exports": 150, "daily_covers": 150,
     },
     {
         # Cuenta de desarrollo (no se vende): sin cuota ni límites, para probarlo todo. Se asigna a los emails
@@ -36,6 +39,7 @@ PLANS: list[dict] = [
         "monthly_minutes": 100_000, "max_video_minutes": 600, "max_clips_per_job": 50,
         "max_concurrent_jobs": 10, "max_upload_mb": 51200, "retention_days": 90,
         "watermark": False, "max_export_quality": "2160p", "daily_thumbnails": 10_000, "unlimited": True,
+        "daily_renders": 10_000, "daily_more_clips": 10_000, "daily_exports": 10_000, "daily_covers": 10_000,
     },
 ]
 

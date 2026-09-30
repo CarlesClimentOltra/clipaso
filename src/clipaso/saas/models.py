@@ -93,6 +93,11 @@ class Plan(Base):
     # Calidad máxima de las descargas (el 4K cuesta mucho más de generar).
     max_export_quality: Mapped[str] = mapped_column(String(8), default="1080p", server_default="1080p")
     daily_thumbnails: Mapped[int] = mapped_column(Integer, default=10, server_default="10")
+    # Trabajo de GPU que no gasta minutos (editar un clip, «más clips», otra calidad, nueva portada IA): tope diario.
+    daily_renders: Mapped[int] = mapped_column(Integer, default=10, server_default="10")
+    daily_more_clips: Mapped[int] = mapped_column(Integer, default=2, server_default="2")
+    daily_exports: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+    daily_covers: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
     # Cuenta de desarrollo: sin cuota de minutos ni límites (se asigna por email en la configuración).
     unlimited: Mapped[bool] = mapped_column(default=False, server_default=false())
     price_eur_cents: Mapped[int] = mapped_column(Integer, default=0)
@@ -112,6 +117,8 @@ class User(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(128))
     # Estilo de subtítulos por defecto y marca personal (ver saas/presets.py).
     preferences: Mapped[dict] = mapped_column(JSON, default=dict)
+    # Huella (HMAC) de la IP desde la que se creó la cuenta, para limitar cuentas gratis por red.
+    signup_ip: Mapped[str | None] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
     plan: Mapped[Plan] = relationship(lazy="joined")

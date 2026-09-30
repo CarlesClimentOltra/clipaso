@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ApiError, unwrap } from "@/lib/api/client";
+import { useApi } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
 import { config } from "@/lib/config";
 import { useI18n } from "@/lib/i18n";
@@ -33,6 +35,21 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const { session, loading, signIn, signUp, signInWithGoogle, requestPasswordReset } = useAuth();
+  const api = useApi();
+
+  /** Correo temporal o demasiadas cuentas desde esta conexión: se avisa antes de crear la cuenta. */
+  async function signupAllowed(): Promise<boolean> {
+    try {
+      await unwrap(api.POST("/signup-check", { body: { email } }));
+    } catch (err) {
+      if (err instanceof ApiError && err.status > 0 && err.status < 500) {
+        setError(err.message);
+        return false;
+      }
+      // Si la API no responde no se bloquea el registro: la API lo vuelve a comprobar al entrar.
+    }
+    return true;
+  }
   const router = useRouter();
   const { t } = useI18n();
   const l = t.login;
@@ -69,7 +86,7 @@ export default function LoginPage() {
         setNotice(l.resetSent);
       } else if (mode === "login" || devMode) {
         await signIn(email, password, token);
-      } else {
+      } else if (await signupAllowed()) {
         const { needsConfirmation } = await signUp(email, password, token);
         if (needsConfirmation) setNotice(l.confirmSent);
       }

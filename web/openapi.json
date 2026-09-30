@@ -114,6 +114,71 @@
         }
       }
     },
+    "/signup-check": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Signup Check",
+        "description": "Antes de registrarse: avisa si el correo es temporal o si desde esta conexión ya hay demasiadas cuentas.",
+        "operationId": "signup_check_signup_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me": {
       "get": {
         "tags": [
@@ -2715,6 +2780,44 @@
   },
   "components": {
     "schemas": {
+      "AdminDuplicateOut": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "minutes": {
+            "type": "number",
+            "title": "Minutes"
+          },
+          "users": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Users",
+            "description": "Cuentas gratis que han procesado el mismo vídeo."
+          },
+          "jobs": {
+            "type": "integer",
+            "title": "Jobs"
+          },
+          "last_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "minutes",
+          "users",
+          "jobs",
+          "last_at"
+        ],
+        "title": "AdminDuplicateOut"
+      },
       "AdminJobOut": {
         "properties": {
           "id": {
@@ -2933,6 +3036,13 @@
             },
             "type": "array",
             "title": "Recent"
+          },
+          "duplicates": {
+            "items": {
+              "$ref": "#/components/schemas/AdminDuplicateOut"
+            },
+            "type": "array",
+            "title": "Duplicates"
           },
           "rates": {
             "additionalProperties": true,
@@ -4849,6 +4959,26 @@
             "title": "Daily Thumbnails",
             "description": "Miniaturas sin subir el vídeo por día."
           },
+          "daily_renders": {
+            "type": "integer",
+            "title": "Daily Renders",
+            "description": "Ediciones de clip (volver a renderizar) por día."
+          },
+          "daily_more_clips": {
+            "type": "integer",
+            "title": "Daily More Clips",
+            "description": "Peticiones de «Más clips» por día."
+          },
+          "daily_exports": {
+            "type": "integer",
+            "title": "Daily Exports",
+            "description": "Descargas en otra calidad por día."
+          },
+          "daily_covers": {
+            "type": "integer",
+            "title": "Daily Covers",
+            "description": "Portadas nuevas con IA por día."
+          },
           "unlimited": {
             "type": "boolean",
             "title": "Unlimited",
@@ -4869,7 +4999,11 @@
           "retention_days",
           "watermark",
           "max_export_quality",
-          "daily_thumbnails"
+          "daily_thumbnails",
+          "daily_renders",
+          "daily_more_clips",
+          "daily_exports",
+          "daily_covers"
         ],
         "title": "PlanOut"
       },
@@ -4969,6 +5103,20 @@
           "end"
         ],
         "title": "RenderIn"
+      },
+      "SignupCheckIn": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "SignupCheckIn"
       },
       "StyleIn": {
         "properties": {

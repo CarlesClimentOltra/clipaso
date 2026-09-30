@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PauseIcon, PlayIcon, ScissorsIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -234,7 +235,12 @@ export function TrimSelector({
               {minutesFactor > 1 && <span className="text-xs text-brand-ink">{tt.highRes}</span>}
             </div>
           </div>
-          {tooLong && <p className="text-sm text-destructive" role="alert">{tt.tooLong(Math.round(maxSeconds / 60))}</p>}
+          {tooLong && (
+            <p className="text-sm text-destructive" role="alert">
+              {tt.tooLong(Math.round(maxSeconds / 60))}{" "}
+              <Link href="/plans" className="font-medium underline underline-offset-4">{t.plansPage.seePlans}</Link>
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">{partial ? tt.partialNote : tt.wholeNote}</p>
             {partial && (

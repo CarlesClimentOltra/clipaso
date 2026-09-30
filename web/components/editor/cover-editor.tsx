@@ -5,11 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { toastError } from "@/components/error-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { ApiError, type Clip, type ClipCover, type CoverInput } from "@/lib/api/client";
+import { type Clip, type ClipCover, type CoverInput } from "@/lib/api/client";
 import { useCoverActions } from "@/lib/api/hooks";
 import { formatTime } from "@/lib/captions";
 import { useI18n } from "@/lib/i18n";
@@ -155,7 +156,7 @@ export function CoverEditor({
       await actions.save.mutateAsync(body);
       toast.success(c.saved);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : c.error);
+      toastError(err, c.error);
     }
   }
 
@@ -164,7 +165,7 @@ export function CoverEditor({
       await actions.regenerate.mutateAsync();
       toast.info(c.regenerating);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : c.error);
+      toastError(err, c.error);
     }
   }
 

@@ -31,6 +31,10 @@ class ErrorResponse(BaseModel):
     error: ErrorBody
 
 
+class SignupCheckIn(BaseModel):
+    email: str = Field(max_length=320)
+
+
 class PlanOut(BaseModel):
     code: str
     name: str
@@ -44,6 +48,10 @@ class PlanOut(BaseModel):
     watermark: bool = Field(description="Los vídeos llevan la marca de agua de Clipaso.")
     max_export_quality: str = Field(description="Calidad máxima de descarga (1080p o 2160p).")
     daily_thumbnails: int = Field(description="Miniaturas sin subir el vídeo por día.")
+    daily_renders: int = Field(description="Ediciones de clip (volver a renderizar) por día.")
+    daily_more_clips: int = Field(description="Peticiones de «Más clips» por día.")
+    daily_exports: int = Field(description="Descargas en otra calidad por día.")
+    daily_covers: int = Field(description="Portadas nuevas con IA por día.")
     unlimited: bool = Field(False, description="Cuenta de desarrollo: sin cuota ni límites.")
 
 
@@ -449,6 +457,14 @@ class AdminJobOut(BaseModel):
     stages: dict[str, float]
 
 
+class AdminDuplicateOut(BaseModel):
+    title: str
+    minutes: float
+    users: list[str] = Field(description="Cuentas gratis que han procesado el mismo vídeo.")
+    jobs: int
+    last_at: datetime
+
+
 class AdminUsageOut(BaseModel):
     days: int
     jobs: int
@@ -458,4 +474,5 @@ class AdminUsageOut(BaseModel):
     task_compute_usd: float
     modes: list[AdminModeOut]
     recent: list[AdminJobOut]
+    duplicates: list[AdminDuplicateOut] = Field(default_factory=list)
     rates: dict

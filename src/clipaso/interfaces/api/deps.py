@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from clipaso.domain.ports import Storage
 from clipaso.infra.config import Settings
 from clipaso.interfaces.api.auth import verify_token
-from clipaso.saas import services
+from clipaso.saas import abuse, services
+from clipaso.saas.db import utcnow
 from clipaso.saas.dispatch import JobDispatcher
 from clipaso.saas.errors import AppError
 from clipaso.saas.models import User
@@ -53,7 +54,13 @@ def current_user(request: Request, session: SessionDep, settings: SettingsDep) -
     if scheme.lower() != "bearer" or not token:
         raise AppError("auth_required", 401)
     identity = verify_token(token.strip(), settings.auth)
-    user = services.get_or_create_user(session, identity.subject, identity.email)
+    signup_ip = None
+    if session.get(User, identity.subject) is None:  # cuenta nueva: filtros antiabuso (salvo desarrollo)
+        signup_ip = abuse.ip_fingerprint(abuse.client_ip(request.headers, request.client and request.client.host),
+                                         settings.api.secret_key)
+        if not services.is_admin_email(identity.email, settings.admin_emails):
+            abuse.check_signup(session, identity.email, signup_ip, settings.abuse, utcnow())
+    user = services.get_or_create_user(session, identity.subject, identity.email, signup_ip=signup_ip)
     services.apply_admin(session, user, settings.admin_emails)
     return user
 

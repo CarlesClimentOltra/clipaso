@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
 
 import type { ClipFormat } from "@/components/caption-preview";
+import { PlansLink } from "@/components/error-toast";
 import { AudiogramOptions } from "@/components/audiogram-options";
 import { ProjectOptions, type ProjectOptionsValue } from "@/components/project-options";
 import { ReframeFitPicker } from "@/components/reframe-fit-picker";
@@ -247,7 +248,10 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
       {outOfMinutes && (
         <Alert variant="destructive">
           <AlertTitle>{u.outOfMinutesTitle}</AlertTitle>
-          <AlertDescription>{u.outOfMinutesText}</AlertDescription>
+          <AlertDescription className="flex flex-col items-start gap-2">
+            {u.outOfMinutesText}
+            <PlansLink />
+          </AlertDescription>
         </Alert>
       )}
 
@@ -350,7 +354,8 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
         <p className="-mt-3 text-sm text-destructive" role="alert">
           {partial
             ? u.tooBigPart(formatBytes(estimatedBytes), formatBytes(maxBytes))
-            : u.tooBigWhole(formatBytes(file!.size), formatBytes(maxBytes))}
+            : u.tooBigWhole(formatBytes(file!.size), formatBytes(maxBytes))}{" "}
+          <Link href="/plans" className="font-medium underline underline-offset-4">{t.plansPage.seePlans}</Link>
         </p>
       )}
 

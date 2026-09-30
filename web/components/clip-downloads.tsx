@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { buttonVariants } from "@/components/ui/button";
+import { PlansLink, toastError } from "@/components/error-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,7 +93,7 @@ export function ClipDownloads({
     }
     if (item.status === "pending") return;
     if (item.status === "locked") {
-      toast.info(d.lockedHint(label(item)));
+      toast.info(d.lockedHint(label(item)), { action: <PlansLink className="ml-auto" /> });
       return;
     }
     try {
@@ -104,7 +105,7 @@ export function ClipDownloads({
         toast.info(d.preparing(label(item)));
       }
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : d.failed);
+      toastError(err, d.failed);
     }
   }
 

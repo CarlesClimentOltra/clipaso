@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Segmented } from "@/components/segmented";
+import { toastError } from "@/components/error-toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, type Job } from "@/lib/api/client";
+import type { Job } from "@/lib/api/client";
 import { useMoreClips } from "@/lib/api/hooks";
 import { useI18n } from "@/lib/i18n";
 
@@ -38,7 +39,7 @@ export function MoreClipsDialog({ job, maxPerRequest }: { job: Job; maxPerReques
       setOpen(false);
       setTopic("");
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : t.more.error);
+      toastError(err, t.more.error);
     }
   }
 

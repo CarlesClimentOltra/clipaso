@@ -116,6 +116,17 @@ class AuthSettings(BaseModel):
     audience: str = "authenticated"
 
 
+class AbuseSettings(BaseModel):
+    # Cuentas gratis nuevas desde la misma conexión (IP guardada solo como huella HMAC) en la ventana de días.
+    accounts_per_ip: int = 3
+    accounts_window_days: int = 30
+    # Peticiones por minuto a la API: por sesión y por IP; las que crean subidas o proyectos, más estrictas.
+    requests_per_minute: int = 120
+    requests_per_minute_ip: int = 300
+    heavy_per_minute: int = 15
+    blocked_email_domains: list[str] = Field(default_factory=list)  # se suman a la lista de correos temporales
+
+
 class StorageSettings(BaseModel):
     backend: Literal["local", "r2"] = "local"
     local_root: Path | None = None  # por defecto data/storage
@@ -191,6 +202,7 @@ class Settings(BaseSettings):
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
+    abuse: AbuseSettings = Field(default_factory=AbuseSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
     worker: WorkerSettings = Field(default_factory=WorkerSettings)

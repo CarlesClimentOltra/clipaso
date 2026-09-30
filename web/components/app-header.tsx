@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FolderIcon, GaugeIcon, LogOutIcon, PaletteIcon, PlusIcon, UserIcon } from "lucide-react";
+import { FolderIcon, GaugeIcon, LogOutIcon, PaletteIcon, PlusIcon, SparklesIcon, UserIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
 import { LanguageSwitcher, ThemeToggle } from "@/components/preferences-controls";
@@ -61,7 +61,7 @@ export function AppHeader() {
         </nav>
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {me && (
-            <Link href="/account" className="hidden items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs hover:bg-muted md:flex"
+            <Link href="/plans" className="hidden items-center gap-2 rounded-full py-1 pr-3 pl-1 text-xs hover:bg-muted md:flex"
                   title={t.header.usageTitle}>
               <UsageRing me={me} size={30} />
               <span className="leading-tight">
@@ -107,6 +107,9 @@ export function AppHeader() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/account")}>
                 <UserIcon /> {t.header.account}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/plans")}>
+                <SparklesIcon /> {t.header.plans}
               </DropdownMenuItem>
               {me?.is_admin && (
                 <DropdownMenuItem onClick={() => router.push("/admin")}>
