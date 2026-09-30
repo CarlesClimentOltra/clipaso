@@ -1936,6 +1936,70 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Delete Clip",
+        "description": "Borra un clip del proyecto (p. ej. uno de los que propuso la IA y no te sirve).",
+        "operationId": "delete_clip_clips__clip_id__delete",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/clips/{clip_id}/rating": {
@@ -3656,7 +3720,7 @@
           "keep_source": {
             "type": "boolean",
             "title": "Keep Source",
-            "description": "Conservar el original para editar clips y pedir más.",
+            "description": "Obsoleto: el original se conserva siempre (salvo en «text»); este valor se ignora al crear el proyecto.",
             "default": true
           },
           "branding": {
@@ -3861,7 +3925,7 @@
           "keep_source": {
             "type": "boolean",
             "title": "Keep Source",
-            "description": "Conservar el original para editar clips y pedir más.",
+            "description": "Obsoleto: el original se conserva siempre (salvo en «text»); este valor se ignora al crear el proyecto.",
             "default": true
           },
           "branding": {

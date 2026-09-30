@@ -16,6 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { ClipDownloads } from "@/components/clip-downloads";
+import { DeleteClipButton, DeleteProjectButton } from "@/components/delete-buttons";
 import { CoverEditor } from "@/components/editor/cover-editor";
 import { CLIP_ASPECT, ClipPlayer } from "@/components/clip-player";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -266,6 +267,12 @@ export function ClipCard({ clip, job }: { clip: Clip; job: Job }) {
           <Button variant="secondary" className="flex-1" onClick={() => setEditing(true)}>
             <PencilIcon /> {c.texts}
           </Button>
+        )}
+        {/* Con varios clips se borra solo este; si es el único resultado del proyecto, el proyecto entero. */}
+        {job.clips.length > 1 && (job.options.mode ?? "clips") === "clips" ? (
+          <DeleteClipButton jobId={job.id} clipId={clip.id} className={cn(rendering && "pointer-events-none opacity-50")} />
+        ) : (
+          <DeleteProjectButton jobId={job.id} redirect />
         )}
       </CardFooter>
       {editing && <EditTextsDialog clip={clip} jobId={job.id} open={editing} onOpenChange={setEditing} />}

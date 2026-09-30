@@ -177,8 +177,9 @@ def create_job(
         options["caption_style"] = {**editing.get_preferences(user)[0].model_dump(), "enabled": False}
     if body.mode == "subtitle":  # en «Solo subtitular» los subtítulos son el propio modo
         options["caption_style"]["enabled"] = True
-    if body.mode == "text":  # no hay vídeo que editar: el original se borra al terminar
-        options["keep_source"] = False
+    # El original se guarda siempre mientras el proyecto esté disponible (editor, más clips, otras calidades);
+    # se borra al caducar o al borrar el proyecto. En «del vídeo al texto» no hay vídeo que editar.
+    options["keep_source"] = body.mode != "text"
     if body.mode in ("audiogram", "text") and options.get("format") == "original":
         options["format"] = "vertical"  # un audio no tiene formato propio
     image = audiogram_image(body.audiogram_image) if body.mode == "audiogram" and body.audiogram_image else None

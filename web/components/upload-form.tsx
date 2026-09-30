@@ -490,7 +490,6 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
 
       {options && !textMode && (
         <ProjectOptions
-          me={me}
           value={options}
           onChange={setOptionsDraft}
           disabled={busy}
@@ -577,9 +576,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
           {u.rightsTerms}
         </Link>
         ).{" "}
-        {optionsDraft.keep_source && !textMode
-          ? u.keepNote(me.plan.retention_days)
-          : u.purgeNote}
+        {textMode ? u.purgeNote : u.keepNote(me.plan.retention_days)}
       </p>
     </div>
   );

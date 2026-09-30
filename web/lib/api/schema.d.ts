@@ -401,7 +401,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Clip
+         * @description Borra un clip del proyecto (p. ej. uno de los que propuso la IA y no te sirve).
+         */
+        delete: operations["delete_clip_clips__clip_id__delete"];
         options?: never;
         head?: never;
         /**
@@ -1025,7 +1029,7 @@ export interface components {
             topic: string;
             /**
              * Keep Source
-             * @description Conservar el original para editar clips y pedir más.
+             * @description Obsoleto: el original se conserva siempre (salvo en «text»); este valor se ignora al crear el proyecto.
              * @default true
              */
             keep_source: boolean;
@@ -1144,7 +1148,7 @@ export interface components {
             topic: string;
             /**
              * Keep Source
-             * @description Conservar el original para editar clips y pedir más.
+             * @description Obsoleto: el original se conserva siempre (salvo en «text»); este valor se ignora al crear el proyecto.
              * @default true
              */
             keep_source: boolean;
@@ -3108,6 +3112,62 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ArchiveOut"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_clip_clips__clip_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {

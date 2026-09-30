@@ -6,11 +6,10 @@ import { FrameIcon, MonitorIcon, SmartphoneIcon, SquareIcon } from "lucide-react
 import { CaptionPreview, type ClipFormat } from "@/components/caption-preview";
 import { Segmented } from "@/components/segmented";
 import { StylePicker } from "@/components/style-picker";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import type { CaptionStyle, JobOptions, Me } from "@/lib/api/client";
+import type { CaptionStyle, JobOptions } from "@/lib/api/client";
 import { useClipOptions, usePreferences } from "@/lib/api/hooks";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -20,7 +19,7 @@ const FORMAT_ICON = { vertical: SmartphoneIcon, square: SquareIcon, horizontal: 
 export type ProjectOptionsValue = Required<Omit<JobOptions, "caption_style">> & { caption_style: CaptionStyle };
 
 export function ProjectOptions({
-  me,
+
   value,
   onChange,
   disabled,
@@ -30,7 +29,6 @@ export function ProjectOptions({
   sameFormat,
   fitPicker,
 }: {
-  me: Me;
   value: ProjectOptionsValue;
   onChange: (value: ProjectOptionsValue) => void;
   disabled?: boolean;
@@ -190,18 +188,6 @@ export function ProjectOptions({
         />
       </div>
 
-      <label className="flex items-start gap-3 text-sm">
-        <Checkbox
-          checked={value.keep_source}
-          disabled={disabled}
-          onCheckedChange={(c: boolean) => set({ keep_source: c })}
-          className="mt-0.5"
-        />
-        <span>
-          <span className="font-medium">{o.keepTitle}</span>
-          <span className="block text-xs text-muted-foreground">{o.keepText(me.plan.retention_days)}</span>
-        </span>
-      </label>
     </div>
   );
 }

@@ -175,7 +175,7 @@ export const es = {
       formatsText: "Vertical para TikTok y Reels, cuadrado para el feed y horizontal para YouTube.",
       privacyTitle: "Privacidad de verdad",
       privacyText: "Tus vídeos se guardan y procesan en la Unión Europea y nunca se usan para entrenar IA.",
-      privacyItems: ["Servidores en la UE", "El original se borra cuando tú decides", "Elimina tu cuenta en un clic"],
+      privacyItems: ["Servidores en la UE", "Todo se borra solo al caducar", "Elimina tu cuenta en un clic"],
       gdpr: "Cumple el RGPD",
     },
     pricing: {
@@ -193,7 +193,7 @@ export const es = {
         ["¿Cuánto tarda?", "Unos pocos minutos para un vídeo de media hora. Te avisamos por email cuando está listo, así que puedes cerrar la pestaña."],
         ["¿Puedo editar los clips?", "Sí. Desde el editor puedes mover el inicio y el final, corregir palabras de los subtítulos, añadir o quitar subtítulos, cambiar el estilo y la portada, y volver a generar el clip. También puedes pedir más clips del mismo vídeo sin gastar minutos."],
         ["¿En qué idiomas funciona?", "En español, inglés, portugués, francés, italiano y alemán, entre otros, y puede detectar el idioma automáticamente. Los subtítulos se pueden traducir a español, inglés, portugués, francés, italiano, alemán o catalán."],
-        ["¿Usáis mis vídeos para entrenar IA?", "No. Tus vídeos se procesan en servidores de la Unión Europea solo para darte el resultado, y el original se borra cuando termina el proyecto (o antes, si lo prefieres). La IA que elige los momentos y escribe los textos solo recibe el texto transcrito y unos pocos fotogramas, y no los usa para entrenar."],
+        ["¿Usáis mis vídeos para entrenar IA?", "No. Tus vídeos se procesan en servidores de la Unión Europea solo para darte el resultado, y el original y todo lo generado se borran solos cuando caduca el proyecto (o antes, si lo borras tú). La IA que elige los momentos y escribe los textos solo recibe el texto transcrito y unos pocos fotogramas, y no los usa para entrenar."],
         ["¿Necesito tarjeta para probarlo?", "No. El plan Gratis incluye 30 minutos de vídeo al mes, sin tarjeta y sin compromiso."],
       ],
     },
@@ -489,7 +489,7 @@ export const es = {
       "Al subir un vídeo confirmas que tienes los derechos necesarios sobre su contenido y el permiso de las personas que aparecen en él (ver",
     rightsTerms: "Términos",
     keepNote: (days: number) =>
-      `El vídeo original se guarda ${days} días para que puedas editar el resultado y después se borra.`,
+      `El vídeo original se guarda mientras el proyecto esté disponible (${days} días) para que puedas editarlo, y después se borra. También puedes borrar el proyecto cuando quieras.`,
     purgeNote: "El vídeo original se borra al terminar de procesarlo.",
   },
   trim: {
@@ -532,9 +532,6 @@ export const es = {
     yourLogo: "Tu logo",
     change: "Cambiar",
     brandingOffStart: "Añade tu logo o tu @usuario desde",
-    keepTitle: "Guardar el vídeo original para poder editar después",
-    keepText: (days: number) =>
-      `Se guarda mientras el proyecto esté disponible (${days} días) y después se borra. Si lo desmarcas, se borra en cuanto termine el procesamiento.`,
   },
   styles: {
     label: "Estilo de subtítulos",
@@ -858,6 +855,11 @@ export const es = {
     srt: "Subtítulos SRT",
     vtt: "Subtítulos VTT",
     editClip: "Editar clip",
+    delete: "Borrar clip",
+    deleteTitle: "¿Borrar este clip?",
+    deleteText: "Se borrarán el clip, su portada y sus descargas. El resto de clips del proyecto se quedan. No se puede deshacer.",
+    deleted: "Clip borrado",
+    deleteError: "No se pudo borrar el clip.",
     editVideo: "Editar vídeo",
     texts: "Textos",
     captionsError: "No se pudieron descargar los subtítulos.",

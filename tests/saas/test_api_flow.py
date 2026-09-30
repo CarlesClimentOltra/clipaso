@@ -320,11 +320,12 @@ def test_abort_upload_removes_parts(client, sample_video, small_parts):
     assert r.status_code == 409
 
 
-def test_original_is_purged_after_success_if_not_kept(client, sample_video, monkeypatch):
+def test_original_is_always_kept_until_the_project_expires(client, sample_video, monkeypatch):
     from clipaso.saas.maintenance import run_cleanup
     from clipaso.saas.models import Upload, UploadStatus
 
     upload_id = upload_video(client, sample_video)
+    # «keep_source» ya no se puede desactivar: el original se guarda siempre para poder editar.
     job_id = client.post("/jobs", json={"upload_id": upload_id, "keep_source": False}, headers=AUTH).json()["id"]
     run_worker(client, monkeypatch, FakePipeline())
     app = client.app
@@ -332,7 +333,7 @@ def test_original_is_purged_after_success_if_not_kept(client, sample_video, monk
 
     with session_scope(app.state.sessions) as s:
         upload = s.get(Upload, upload_id)
-        assert upload.status == UploadStatus.PURGED and storage.size(upload.storage_key) is None
+        assert upload.status == UploadStatus.READY and storage.size(upload.storage_key)
         job = s.get(Job, job_id)
         video_key = job.clips[0].video_key
         assert storage.size(video_key)  # el clip sigue disponible

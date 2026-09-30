@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 from fastapi.responses import PlainTextResponse
 
 from clipaso.interfaces.api.deps import DispatcherDep, SessionDep, SettingsDep, StorageDep, UserDep
@@ -40,6 +40,14 @@ def update_clip(
     clip, job = editing.get_owned_clip(session, user, clip_id)
     editing.update_texts(clip, title=body.title, description=body.description, hashtags=body.hashtags)
     return clip_out(clip, job, storage, settings.api.signed_url_ttl_seconds)
+
+
+@router.delete("/{clip_id}", status_code=204)
+def delete_clip(clip_id: str, user: UserDep, session: SessionDep, storage: StorageDep) -> Response:
+    """Borra un clip del proyecto (p. ej. uno de los que propuso la IA y no te sirve)."""
+    clip, _ = editing.get_owned_clip(session, user, clip_id)
+    editing.delete_clip(session, storage, clip)
+    return Response(status_code=204)
 
 
 @router.put("/{clip_id}/rating", response_model=ClipOut)

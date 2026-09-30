@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from clipaso.adapters.exporters.subtitles import build_captions
@@ -88,6 +88,24 @@ def latest_task(session: Session, job: Job, kind: TaskKind) -> Task | None:
 
 
 # --------------------------------------------------------------------------- textos y valoración
+
+
+def delete_clip(session: Session, storage: Storage, clip: Clip) -> None:
+    """Borra un clip y todos sus archivos (vídeo, miniatura, portada, fotogramas y descargas)."""
+    busy = session.scalar(select(func.count()).select_from(Task).where(
+        Task.clip_id == clip.id, Task.status.in_([TaskStatus.QUEUED, TaskStatus.RUNNING])))
+    if clip.status == ClipStatus.RENDERING or busy:
+        raise AppError("clip_busy", 409)
+    cover = clip.cover or {}
+    keys = [clip.video_key, clip.thumb_key,
+            *(cover.get(k) for k in ("base_vertical", "base_horizontal", "vertical", "horizontal")),
+            *(c.get("key") for c in cover.get("candidates", [])),
+            *(item.get("key") for item in (clip.exports or {}).values())]
+    for key in keys:
+        if key:
+            storage.delete_prefix(key)
+    session.execute(delete(Task).where(Task.clip_id == clip.id))
+    session.delete(clip)
 
 
 def update_texts(clip: Clip, *, title: str | None, description: str | None, hashtags: list[str] | None) -> None:

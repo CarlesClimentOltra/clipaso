@@ -157,10 +157,11 @@ export default function PrivacyPage() {
       <h2>7. Cuánto tiempo conservamos los datos</h2>
       <ul>
         <li>
-          <strong>Vídeo original:</strong> tú decides al subirlo. Si eliges guardarlo (para editar el resultado y pedir
-          más clips), se conserva mientras el proyecto esté disponible y se borra al caducar o si borras el proyecto. En
-          «Quitar silencios y muletillas» lo que se guarda es la versión ya limpia. Si no lo guardas, se borra en cuanto
-          termina el procesamiento. Una subida que no llega a procesarse se borra en un máximo de 24 horas.
+          <strong>Vídeo o audio original:</strong> se conserva mientras el proyecto esté disponible, para que puedas
+          editar el resultado, pedir más clips o descargarlo en otras calidades, y se borra al caducar o en cuanto
+          borras el proyecto. En los modos que montan un vídeo nuevo (quitar silencios, tráiler o audiograma) lo que se
+          guarda es ese vídeo ya montado. En «Del vídeo al texto» se borra al terminar, porque no hay nada que editar.
+          Una subida que no llega a procesarse se borra en un máximo de 24 horas.
         </li>
         <li>
           <strong>Transcripción y vista previa del editor:</strong> se guardan junto al proyecto (para corregir y

@@ -175,7 +175,7 @@ export const en: Dict = {
       formatsText: "Vertical for TikTok and Reels, square for the feed and horizontal for YouTube.",
       privacyTitle: "Privacy that's real",
       privacyText: "Your videos are stored and processed in the European Union and never used to train AI.",
-      privacyItems: ["Servers in the EU", "The original is deleted when you decide", "Delete your account in one click"],
+      privacyItems: ["Servers in the EU", "Everything is deleted automatically", "Delete your account in one click"],
       gdpr: "GDPR compliant",
     },
     pricing: {
@@ -193,7 +193,7 @@ export const en: Dict = {
         ["How long does it take?", "A few minutes for a half-hour video. We email you when it's ready, so you can close the tab."],
         ["Can I edit the clips?", "Yes. In the editor you can move the start and end, fix caption words, add or remove captions, change the style and the cover, and generate the clip again. You can also ask for more clips from the same video without using minutes."],
         ["Which languages does it support?", "Spanish, English, Portuguese, French, Italian and German, among others, and it can detect the language automatically. Captions can be translated into Spanish, English, Portuguese, French, Italian, German or Catalan."],
-        ["Do you use my videos to train AI?", "No. Your videos are processed on servers in the European Union only to give you the result, and the original is deleted when the project ends (or sooner, if you prefer). The AI that picks moments and writes copy only receives the transcribed text and a few frames, and doesn't use them for training."],
+        ["Do you use my videos to train AI?", "No. Your videos are processed on servers in the European Union only to give you the result, and the original and everything generated are deleted automatically when the project expires (or sooner, if you delete it). The AI that picks moments and writes copy only receives the transcribed text and a few frames, and doesn't use them for training."],
         ["Do I need a card to try it?", "No. The Free plan includes 30 minutes of video a month, with no card and no commitment."],
       ],
     },
@@ -488,7 +488,7 @@ export const en: Dict = {
       "By uploading a video you confirm you have the necessary rights to its content and permission from the people who appear in it (see",
     rightsTerms: "Terms",
     keepNote: (days: number) =>
-      `The original video is kept for ${days} days so you can edit the result, then it's deleted.`,
+      `The original video is kept while the project is available (${days} days) so you can edit it, then it's deleted. You can also delete the project whenever you want.`,
     purgeNote: "The original video is deleted once processing finishes.",
   },
   trim: {
@@ -531,9 +531,6 @@ export const en: Dict = {
     yourLogo: "Your logo",
     change: "Change",
     brandingOffStart: "Add your logo or @handle from",
-    keepTitle: "Keep the original video so you can edit later",
-    keepText: (days: number) =>
-      `It's kept while the project is available (${days} days) and then deleted. If you untick this, it's deleted as soon as processing finishes.`,
   },
   styles: {
     label: "Caption style",
@@ -857,6 +854,11 @@ export const en: Dict = {
     srt: "SRT captions",
     vtt: "VTT captions",
     editClip: "Edit clip",
+    delete: "Delete clip",
+    deleteTitle: "Delete this clip?",
+    deleteText: "The clip, its cover and its downloads will be deleted. The other clips in the project stay. This can't be undone.",
+    deleted: "Clip deleted",
+    deleteError: "Couldn't delete the clip.",
     editVideo: "Edit video",
     texts: "Copy",
     captionsError: "Couldn't download the captions.",

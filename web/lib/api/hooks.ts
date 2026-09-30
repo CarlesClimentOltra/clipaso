@@ -96,6 +96,19 @@ export function useDeleteJob() {
   });
 }
 
+/** Borra un clip del proyecto (con su vídeo, portada y descargas). */
+export function useDeleteClip(jobId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (clipId: string) => unwrap(api.DELETE("/clips/{clip_id}", { params: { path: { clip_id: clipId } } })),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["job", jobId] });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
 export type CreateProjectInput = {
   file: File;
   maxClips: number;

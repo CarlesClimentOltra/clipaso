@@ -35,6 +35,7 @@ import { useJobs, useMe, usePreferences } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MODES, type Mode } from "@/lib/modes";
+import { DeleteProjectButton } from "@/components/delete-buttons";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "ready" | "active" | "other";
@@ -105,9 +106,10 @@ function ProjectCard({ job }: { job: JobSummary }) {
   const active = isActive(job);
   const pct = Math.round(job.progress * 100);
   return (
+    <div className="group/card relative">
     <Link
       href={`/projects/${job.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border bg-card outline-none transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card outline-none transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <div className="relative aspect-16/10 overflow-hidden bg-muted">
         {job.thumbnail_url ? (
@@ -177,6 +179,14 @@ function ProjectCard({ job }: { job: JobSummary }) {
         )}
       </div>
     </Link>
+    {/* Borrar sin entrar al proyecto: en el ordenador aparece al pasar el ratón; en el móvil, siempre. */}
+    {!active && (
+      <DeleteProjectButton
+        jobId={job.id}
+        className="absolute right-2.5 bottom-2.5 size-8 rounded-full bg-card text-muted-foreground hover:text-destructive sm:opacity-0 sm:group-hover/card:opacity-100 sm:focus-visible:opacity-100"
+      />
+    )}
+    </div>
   );
 }
 

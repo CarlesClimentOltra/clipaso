@@ -45,6 +45,14 @@ def processed_job(client, sample_video, monkeypatch, pipeline=None, **options) -
     return r.json()["id"], pipeline
 
 
+def purge_original(client, job_id: str) -> None:
+    """El original ya no está (proyectos antiguos o borrado): el editor no puede volver a generar."""
+    from clipaso.saas.services import purge_upload
+
+    with session_scope(client.app.state.sessions) as s:
+        purge_upload(client.app.state.storage, s.get(Upload, s.get(Job, job_id).upload_id))
+
+
 def run_tasks(client) -> None:
     app = client.app
     runner = TaskRunner(app.state.settings, app.state.sessions, app.state.storage)
@@ -119,7 +127,8 @@ def test_editor_render_applies_trim_word_fixes_and_style(client, sample_video, m
 
 
 def test_render_validation(client, sample_video, monkeypatch):
-    job_id, _ = processed_job(client, sample_video, monkeypatch, keep_source=False)
+    job_id, _ = processed_job(client, sample_video, monkeypatch)
+    purge_original(client, job_id)
     clip_id = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["id"]
     r = client.post(f"/clips/{clip_id}/render", json={"start": 0, "end": 3}, headers=AUTH)
     assert r.status_code == 409 and r.json()["error"]["code"] == "source_unavailable"
@@ -395,7 +404,8 @@ def test_exports_other_qualities_and_mp3(client, sample_video, monkeypatch):
 
 
 def test_exports_without_source_downscale_the_clip(client, sample_video, monkeypatch):
-    job_id, pipeline = processed_job(client, sample_video, monkeypatch, keep_source=False)
+    job_id, pipeline = processed_job(client, sample_video, monkeypatch)
+    purge_original(client, job_id)
     clip_id = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"][0]["id"]
     client.post(f"/clips/{clip_id}/exports", json={"format": "mp4", "quality": "480p"}, headers=AUTH)
     renders = len([c for c in pipeline.calls if c["kind"] == "render"])
@@ -605,6 +615,28 @@ def test_reframe_mode_uses_the_chosen_format_and_fit(client, sample_video, monke
     upload_id = upload_video(client, sample_video)
     r = client.post("/jobs", json={"upload_id": upload_id, "mode": "reframe", "format": "original"}, headers=AUTH)
     assert r.status_code == 400
+
+
+def test_delete_a_clip_with_all_its_files(client, sample_video, monkeypatch):
+    storage = client.app.state.storage
+    job_id, _ = processed_job(client, sample_video, monkeypatch, pipeline=FakePipeline(clips=2))
+    clips = client.get(f"/jobs/{job_id}", headers=AUTH).json()["clips"]
+    row = _clip_row(client, clips[0]["id"])
+    keys = [row.video_key, row.thumb_key, row.cover["vertical"], row.cover["base_vertical"]]
+    assert all(storage.size(k) for k in keys)
+
+    other = {"Authorization": "Bearer dev:otro@example.com"}
+    assert client.delete(f"/clips/{clips[0]['id']}", headers=other).status_code == 404  # solo el dueño
+    assert client.delete(f"/clips/{clips[0]['id']}", headers=AUTH).status_code == 204
+    job = client.get(f"/jobs/{job_id}", headers=AUTH).json()
+    assert [c["id"] for c in job["clips"]] == [clips[1]["id"]]
+    assert all(storage.size(k) is None for k in keys)
+    assert client.delete(f"/clips/{clips[0]['id']}", headers=AUTH).status_code == 404
+
+    # Mientras se genera una nueva versión no se puede borrar.
+    client.post(f"/clips/{clips[1]['id']}/render", json={"start": 0, "end": 3}, headers=AUTH)
+    r = client.delete(f"/clips/{clips[1]['id']}", headers=AUTH)
+    assert r.status_code == 409 and r.json()["error"]["code"] == "clip_busy"
 
 
 def test_watermark_follows_the_current_plan(client, sample_video, monkeypatch):

@@ -137,7 +137,8 @@ class JobOptions(BaseModel):
     format: FormatT = "vertical"
     duration: DurationT = "auto"
     topic: str = Field("", max_length=200, description="Tema opcional: «momentos donde hablo de dinero».")
-    keep_source: bool = Field(True, description="Conservar el original para editar clips y pedir más.")
+    keep_source: bool = Field(True, description="Obsoleto: el original se conserva siempre (salvo en «text»); "
+                                                "este valor se ignora al crear el proyecto.")
     branding: bool = Field(True, description="Añadir la marca personal del usuario (si la tiene).")
     caption_style: CaptionStyle | None = Field(None, description="Si falta, el estilo por defecto del usuario.")
 
