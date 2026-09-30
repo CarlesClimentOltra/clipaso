@@ -41,6 +41,16 @@ export function useMe() {
   });
 }
 
+/** Panel de costes (solo cuentas de desarrollo). */
+export function useAdminUsage(days: number, enabled: boolean) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ["admin-usage", days],
+    queryFn: () => unwrap(api.GET("/admin/usage", { params: { query: { days } } })),
+    enabled,
+  });
+}
+
 export function usePlans() {
   const api = useApi();
   return useQuery({ queryKey: ["plans"], queryFn: () => unwrap(api.GET("/plans")), staleTime: 60 * 60_000 });

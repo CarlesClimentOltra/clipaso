@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FolderIcon, LogOutIcon, PaletteIcon, PlusIcon, UserIcon } from "lucide-react";
+import { FolderIcon, GaugeIcon, LogOutIcon, PaletteIcon, PlusIcon, UserIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
 import { LanguageSwitcher, ThemeToggle } from "@/components/preferences-controls";
@@ -108,6 +108,11 @@ export function AppHeader() {
               <DropdownMenuItem onClick={() => router.push("/account")}>
                 <UserIcon /> {t.header.account}
               </DropdownMenuItem>
+              {me?.is_admin && (
+                <DropdownMenuItem onClick={() => router.push("/admin")}>
+                  <GaugeIcon /> Costes (desarrollo)
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={async () => {

@@ -43,6 +43,7 @@ def me(user: UserDep, session: SessionDep) -> MeOut:
         email=user.email,
         locale=(user.preferences or {}).get("locale"),
         plan=PlanOut.model_validate(user.plan, from_attributes=True),
+        is_admin=services.is_admin(user),
         usage=UsageOut(period=usage.period, used_minutes=usage.used_minutes,
                        limit_minutes=usage.limit_minutes, remaining_minutes=usage.remaining_minutes),
     )

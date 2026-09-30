@@ -50,8 +50,9 @@ def check_limit(session: Session, user: User, now: datetime) -> None:
             Job.options["mode"].as_string() == "thumbnail",
         )
     ) or 0
-    if recent >= DAILY_LIMIT:
-        raise AppError("too_many_thumbnails", 429, params={"max": str(DAILY_LIMIT)})
+    limit = user.plan.daily_thumbnails if user.plan else DAILY_LIMIT
+    if recent >= limit and not (user.plan and user.plan.unlimited):
+        raise AppError("too_many_thumbnails", 429, params={"max": str(limit)})
 
 
 def create(

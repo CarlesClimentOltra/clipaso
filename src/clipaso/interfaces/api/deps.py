@@ -53,7 +53,9 @@ def current_user(request: Request, session: SessionDep, settings: SettingsDep) -
     if scheme.lower() != "bearer" or not token:
         raise AppError("auth_required", 401)
     identity = verify_token(token.strip(), settings.auth)
-    return services.get_or_create_user(session, identity.subject, identity.email)
+    user = services.get_or_create_user(session, identity.subject, identity.email)
+    services.apply_admin(session, user, settings.admin_emails)
+    return user
 
 
 UserDep = Annotated[User, Depends(current_user)]

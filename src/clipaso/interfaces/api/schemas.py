@@ -41,6 +41,10 @@ class PlanOut(BaseModel):
     max_concurrent_jobs: int
     max_upload_mb: int
     retention_days: int
+    watermark: bool = Field(description="Los vídeos llevan la marca de agua de Clipaso.")
+    max_export_quality: str = Field(description="Calidad máxima de descarga (1080p o 2160p).")
+    daily_thumbnails: int = Field(description="Miniaturas sin subir el vídeo por día.")
+    unlimited: bool = Field(False, description="Cuenta de desarrollo: sin cuota ni límites.")
 
 
 class UsageOut(BaseModel):
@@ -56,6 +60,7 @@ class MeOut(BaseModel):
     locale: Literal["es", "en"] | None = Field(description="Idioma elegido; null si aún no se ha fijado.")
     plan: PlanOut
     usage: UsageOut
+    is_admin: bool = Field(False, description="Cuenta de desarrollo: ve el panel de costes.")
 
 
 class LocaleIn(BaseModel):
@@ -269,8 +274,9 @@ QualityT = Literal["480p", "720p", "1080p", "2160p"]
 class ExportOut(BaseModel):
     format: Literal["mp4", "mp3"]
     quality: QualityT | None
-    status: Literal["ready", "pending", "failed", "available"] = Field(
-        description="ready: se puede descargar · pending: generándose · available: se puede pedir")
+    status: Literal["ready", "pending", "failed", "available", "locked"] = Field(
+        description="ready: se puede descargar · pending: generándose · available: se puede pedir · "
+                    "locked: la incluye un plan superior")
     url: str | None = None
     size_bytes: int | None = None
     error_message: str | None = None
@@ -412,3 +418,44 @@ class JobOut(JobSummary):
     more_clips_available: int
     more_clips_task: TaskOut | None
     clips: list[ClipOut]
+
+
+class AdminModeOut(BaseModel):
+    mode: str
+    jobs: int
+    measured: int = Field(description="Proyectos con consumo medido (los anteriores a la medición no lo tienen).")
+    minutes: float
+    worker_s: float
+    compute_usd: float
+    llm_usd: float
+    source_mb: float
+    usd_per_minute: float | None = Field(description="Coste medio (cómputo + IA) por minuto de vídeo.")
+
+
+class AdminJobOut(BaseModel):
+    id: str
+    created_at: datetime
+    user: str
+    mode: str
+    status: str
+    title: str
+    minutes: float
+    source_mb: float | None
+    source_res: str | None
+    worker_s: float | None
+    cpu_s: float | None
+    compute_usd: float | None
+    llm_usd: float
+    stages: dict[str, float]
+
+
+class AdminUsageOut(BaseModel):
+    days: int
+    jobs: int
+    tasks: int
+    compute_usd: float
+    llm_usd: float
+    task_compute_usd: float
+    modes: list[AdminModeOut]
+    recent: list[AdminJobOut]
+    rates: dict

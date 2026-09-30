@@ -20,7 +20,7 @@ from clipaso.infra.logging import get_logger
 from clipaso.saas.db import utcnow
 from clipaso.saas.errors import AppError, NotFound
 from clipaso.saas.models import Job, JobStatus, Plan, Upload, UploadStatus, UsageEvent, User
-from clipaso.saas.plans import DEFAULT_PLAN
+from clipaso.saas.plans import DEFAULT_PLAN, DEV_PLAN
 
 log = get_logger(__name__)
 
@@ -57,6 +57,16 @@ def period_of(moment: datetime) -> str:
 MIN_TRIM_SECONDS = 5.0
 
 
+HIGH_RES_FACTOR = 2  # medido: procesar 4K cuesta entre 1,7 y 3,4 veces más que 1080p (deploy/benchmark.py)
+
+
+def minutes_factor(upload: Upload) -> int:
+    """Los vídeos de más de 1080p (2.7K, 4K…) cuentan el doble: decodificarlos es lo que más cuesta."""
+    if upload.width and upload.height and min(upload.width, upload.height) > 1080:
+        return HIGH_RES_FACTOR
+    return 1
+
+
 def billable_minutes(seconds: float) -> float:
     """Minutos facturables, redondeados hacia arriba a la décima."""
     return math.ceil(seconds / 6) / 10
@@ -82,6 +92,19 @@ def get_or_create_user(session: Session, subject: str, email: str) -> User:
     elif email and user.email != email:
         user.email = email
     return user
+
+
+def is_admin(user: User) -> bool:
+    return bool(user.plan and user.plan.unlimited)
+
+
+def apply_admin(session: Session, user: User, admin_emails: list[str]) -> None:
+    """Las cuentas de desarrollo (por email, en la configuración) pasan al plan sin límites."""
+    if user.email and user.email.lower() in {e.strip().lower() for e in admin_emails} and user.plan_code != DEV_PLAN:
+        user.plan_code = DEV_PLAN
+        session.flush()
+        session.expire(user, ["plan"])
+        log.info("user.admin", user_id=user.id)
 
 
 # --------------------------------------------------------------------------- cuotas
@@ -300,9 +323,11 @@ def create_job(
         if start > 0.5 or end < upload.duration_seconds - 0.5:  # si es casi todo, no merece la pena recortar
             options["trim"] = [start, end]
             seconds = end - start
-    minutes = billable_minutes(seconds)
+    minutes = billable_minutes(seconds) * minutes_factor(upload)
+    if minutes != billable_minutes(seconds):
+        options["minutes_factor"] = minutes_factor(upload)
     usage = usage_for(session, user, now)
-    if minutes > usage.remaining_minutes:
+    if minutes > usage.remaining_minutes and not user.plan.unlimited:
         raise AppError(
             "quota_exceeded", 402, key="quota_detail",
             params={"needed": f"{minutes:g}", "remaining": f"{usage.remaining_minutes:g}"},

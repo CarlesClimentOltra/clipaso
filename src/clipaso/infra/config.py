@@ -65,6 +65,25 @@ class SelectionSettings(BaseModel):
     min_gap_seconds: float = 2.0
 
 
+class CostSettings(BaseModel):
+    """Tarifas para estimar lo que cuesta cada proyecto (panel de administración y límites de los planes).
+
+    Precios de septiembre de 2026; mantener al día con modal.com/pricing y la web de Cloudflare R2.
+    """
+
+    gpu_usd_s: float = Field(0.000164, description="T4 en Modal, por segundo.")
+    cpu_usd_core_s: float = Field(0.0000131, description="Modal, por núcleo físico y segundo.")
+    mem_usd_gib_s: float = Field(0.00000222, description="Modal, por GiB y segundo.")
+    mem_gib: float = Field(3.0, description="Memoria media que usa el worker (para estimar su coste).")
+    region_multiplier: float = Field(1.15, description="Recargo de Modal por fijar la región «eu».")
+    storage_usd_gb_month: float = Field(0.015, description="Cloudflare R2 (la descarga es gratis).")
+
+    def compute_usd(self, wall_s: float, cpu_s: float) -> float:
+        """Coste de cómputo en Modal: GPU mientras dura + CPU realmente usada + memoria."""
+        return (wall_s * (self.gpu_usd_s + self.mem_gib * self.mem_usd_gib_s)
+                + cpu_s * self.cpu_usd_core_s) * self.region_multiplier
+
+
 class BudgetSettings(BaseModel):
     max_usd_per_job: float = 1.50
     # USD por millón de tokens (entrada, salida). Mantener al día con la web de precios.
@@ -166,6 +185,9 @@ class Settings(BaseSettings):
     llm: LLMSettings = Field(default_factory=LLMSettings)
     selection: SelectionSettings = Field(default_factory=SelectionSettings)
     budget: BudgetSettings = Field(default_factory=BudgetSettings)
+    # Cuentas de desarrollo: plan «dev» sin límites y acceso al panel de costes (JSON: ["a@b.com"]).
+    admin_emails: list[str] = Field(default_factory=list)
+    costs: CostSettings = Field(default_factory=CostSettings)
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)

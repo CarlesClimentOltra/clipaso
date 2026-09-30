@@ -124,14 +124,16 @@ def render_clip(
 # --------------------------------------------------------------------------- otras calidades y MP3
 
 
-def _exports_out(session, storage, job: Job, clip: Clip, ttl: int) -> ExportsOut:
+def _exports_out(session, storage, job: Job, clip: Clip, ttl: int, user) -> ExportsOut:
     items = []
+    locked = set(exports.locked_qualities(session, job, user))
     for e in exports.states(session, job, clip):
         name = clip_filename(job, clip, e.format)
         if e.quality and e.quality != exports.BASE_QUALITY:
             name = name.replace(".mp4", f"-{e.quality}.mp4")
         url = storage.signed_url(e.key, expires=ttl, download_name=name) if e.status == "ready" and e.key else None
-        items.append(ExportOut(format=e.format, quality=e.quality, status=e.status, url=url, size_bytes=e.size,
+        status = "locked" if e.quality in locked and e.status != "ready" else e.status
+        items.append(ExportOut(format=e.format, quality=e.quality, status=status, url=url, size_bytes=e.size,
                                error_message=user_message(e.error_code)))
     return ExportsOut(items=items)
 
@@ -142,7 +144,7 @@ def clip_exports(
 ) -> ExportsOut:
     """Descargas disponibles del clip: MP4 en varias calidades y el audio en MP3."""
     clip, job = editing.get_owned_clip(session, user, clip_id)
-    return _exports_out(session, storage, job, clip, settings.api.signed_url_ttl_seconds)
+    return _exports_out(session, storage, job, clip, settings.api.signed_url_ttl_seconds, user)
 
 
 @router.post("/{clip_id}/exports", response_model=ExportsOut)
@@ -161,7 +163,7 @@ def request_export(
             session.commit()
             if dispatch_job(dispatcher, task, now):
                 session.commit()
-    return _exports_out(session, storage, job, clip, settings.api.signed_url_ttl_seconds)
+    return _exports_out(session, storage, job, clip, settings.api.signed_url_ttl_seconds, user)
 
 
 # --------------------------------------------------------------------------- portada

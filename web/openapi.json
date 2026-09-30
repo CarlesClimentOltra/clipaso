@@ -2636,10 +2636,324 @@
           }
         }
       }
+    },
+    "/admin/usage": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Usage",
+        "operationId": "usage_admin_usage_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUsageOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AdminJobOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "user": {
+            "type": "string",
+            "title": "User"
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "minutes": {
+            "type": "number",
+            "title": "Minutes"
+          },
+          "source_mb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Mb"
+          },
+          "source_res": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Res"
+          },
+          "worker_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker S"
+          },
+          "cpu_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu S"
+          },
+          "compute_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute Usd"
+          },
+          "llm_usd": {
+            "type": "number",
+            "title": "Llm Usd"
+          },
+          "stages": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Stages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "user",
+          "mode",
+          "status",
+          "title",
+          "minutes",
+          "source_mb",
+          "source_res",
+          "worker_s",
+          "cpu_s",
+          "compute_usd",
+          "llm_usd",
+          "stages"
+        ],
+        "title": "AdminJobOut"
+      },
+      "AdminModeOut": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "title": "Mode"
+          },
+          "jobs": {
+            "type": "integer",
+            "title": "Jobs"
+          },
+          "measured": {
+            "type": "integer",
+            "title": "Measured",
+            "description": "Proyectos con consumo medido (los anteriores a la medición no lo tienen)."
+          },
+          "minutes": {
+            "type": "number",
+            "title": "Minutes"
+          },
+          "worker_s": {
+            "type": "number",
+            "title": "Worker S"
+          },
+          "compute_usd": {
+            "type": "number",
+            "title": "Compute Usd"
+          },
+          "llm_usd": {
+            "type": "number",
+            "title": "Llm Usd"
+          },
+          "source_mb": {
+            "type": "number",
+            "title": "Source Mb"
+          },
+          "usd_per_minute": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usd Per Minute",
+            "description": "Coste medio (cómputo + IA) por minuto de vídeo."
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "jobs",
+          "measured",
+          "minutes",
+          "worker_s",
+          "compute_usd",
+          "llm_usd",
+          "source_mb",
+          "usd_per_minute"
+        ],
+        "title": "AdminModeOut"
+      },
+      "AdminUsageOut": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "jobs": {
+            "type": "integer",
+            "title": "Jobs"
+          },
+          "tasks": {
+            "type": "integer",
+            "title": "Tasks"
+          },
+          "compute_usd": {
+            "type": "number",
+            "title": "Compute Usd"
+          },
+          "llm_usd": {
+            "type": "number",
+            "title": "Llm Usd"
+          },
+          "task_compute_usd": {
+            "type": "number",
+            "title": "Task Compute Usd"
+          },
+          "modes": {
+            "items": {
+              "$ref": "#/components/schemas/AdminModeOut"
+            },
+            "type": "array",
+            "title": "Modes"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/AdminJobOut"
+            },
+            "type": "array",
+            "title": "Recent"
+          },
+          "rates": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Rates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "jobs",
+          "tasks",
+          "compute_usd",
+          "llm_usd",
+          "task_compute_usd",
+          "modes",
+          "recent",
+          "rates"
+        ],
+        "title": "AdminUsageOut"
+      },
       "ArchiveOut": {
         "properties": {
           "url": {
@@ -3521,10 +3835,11 @@
               "ready",
               "pending",
               "failed",
-              "available"
+              "available",
+              "locked"
             ],
             "title": "Status",
-            "description": "ready: se puede descargar · pending: generándose · available: se puede pedir"
+            "description": "ready: se puede descargar · pending: generándose · available: se puede pedir · locked: la incluye un plan superior"
           },
           "url": {
             "anyOf": [
@@ -4329,6 +4644,12 @@
           },
           "usage": {
             "$ref": "#/components/schemas/UsageOut"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "description": "Cuenta de desarrollo: ve el panel de costes.",
+            "default": false
           }
         },
         "type": "object",
@@ -4512,6 +4833,27 @@
           "retention_days": {
             "type": "integer",
             "title": "Retention Days"
+          },
+          "watermark": {
+            "type": "boolean",
+            "title": "Watermark",
+            "description": "Los vídeos llevan la marca de agua de Clipaso."
+          },
+          "max_export_quality": {
+            "type": "string",
+            "title": "Max Export Quality",
+            "description": "Calidad máxima de descarga (1080p o 2160p)."
+          },
+          "daily_thumbnails": {
+            "type": "integer",
+            "title": "Daily Thumbnails",
+            "description": "Miniaturas sin subir el vídeo por día."
+          },
+          "unlimited": {
+            "type": "boolean",
+            "title": "Unlimited",
+            "description": "Cuenta de desarrollo: sin cuota ni límites.",
+            "default": false
           }
         },
         "type": "object",
@@ -4524,7 +4866,10 @@
           "max_clips_per_job",
           "max_concurrent_jobs",
           "max_upload_mb",
-          "retention_days"
+          "retention_days",
+          "watermark",
+          "max_export_quality",
+          "daily_thumbnails"
         ],
         "title": "PlanOut"
       },

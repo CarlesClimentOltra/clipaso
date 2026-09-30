@@ -98,7 +98,9 @@ def _context(component: str):
     region=REGION,
     secrets=[secret],
     timeout=2 * 60 * 60,  # vídeos de hasta 3 h en el plan Pro
-    scaledown_window=120,  # si llega otro vídeo enseguida, reutiliza la GPU con Whisper ya cargado
+    # Si llega otro vídeo en el minuto siguiente, reutiliza la GPU con Whisper cargado. Medido (banco de costes):
+    # cada minuto encendida sin trabajo cuesta ~0,012 $ y un arranque en frío apenas unos segundos.
+    scaledown_window=60,
     max_containers=5,  # techo de GPUs simultáneas (control de gasto)
 )
 class Worker:

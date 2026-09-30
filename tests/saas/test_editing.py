@@ -617,6 +617,51 @@ def test_reframe_mode_uses_the_chosen_format_and_fit(client, sample_video, monke
     assert r.status_code == 400
 
 
+def test_metrics_admin_account_and_cost_panel(client, sample_video, monkeypatch):
+    job_id, _ = processed_job(client, sample_video, monkeypatch)
+    with session_scope(client.app.state.sessions) as s:
+        metrics = s.get(Job, job_id).metrics
+    assert metrics["worker_s"] >= 0 and metrics["compute_usd"] >= 0 and metrics["source_mb"] > 0
+    assert metrics["source_res"] == "320x180" and "llm_usd" in metrics
+
+    # Sin cuenta de desarrollo, el panel no existe; al añadir el email a la configuración pasa al plan «dev».
+    assert client.get("/admin/usage", headers=AUTH).status_code == 404
+    assert client.get("/me", headers=AUTH).json()["is_admin"] is False
+    client.app.state.settings.admin_emails = ["ANA@example.com"]
+    me = client.get("/me", headers=AUTH).json()
+    assert me["is_admin"] and me["plan"]["code"] == "dev" and me["plan"]["unlimited"]
+    assert me["plan"]["watermark"] is False and me["plan"]["max_export_quality"] == "2160p"
+    usage = client.get("/admin/usage?days=7", headers=AUTH).json()
+    assert usage["jobs"] == 1 and usage["modes"][0]["mode"] == "clips" and usage["modes"][0]["measured"] == 1
+    assert usage["recent"][0]["id"] == job_id and usage["rates"]["gpu_usd_s"] > 0
+    # Sin cuota: aunque se hayan gastado los minutos del mes, puede seguir creando proyectos.
+    with session_scope(client.app.state.sessions) as s:
+        from clipaso.saas.models import Plan
+        s.get(Plan, "dev").monthly_minutes = 0
+    r = client.post("/jobs", json={"upload_id": upload_video(client, sample_video)}, headers=AUTH)
+    assert r.status_code == 201
+
+
+def test_high_resolution_counts_double_minutes():
+    from clipaso.saas.models import Upload
+    from clipaso.saas.services import billable_minutes, minutes_factor
+
+    assert minutes_factor(Upload(width=3840, height=2160)) == 2  # 4K
+    assert minutes_factor(Upload(width=2160, height=3840)) == 2  # 4K en vertical
+    assert minutes_factor(Upload(width=1920, height=1080)) == 1
+    assert minutes_factor(Upload(width=None, height=None)) == 1  # audio
+    assert billable_minutes(61) * minutes_factor(Upload(width=3840, height=2160)) == 2.2
+
+
+def test_public_plans_and_4k_is_for_ultra(client):
+    plans = client.get("/plans").json()
+    assert [p["code"] for p in plans] == ["free", "pro", "ultra"]  # «dev» no se ofrece
+    free, pro, ultra = plans
+    assert free["watermark"] and not pro["watermark"] and not ultra["watermark"]
+    assert ultra["max_export_quality"] == "2160p" and pro["max_export_quality"] == "1080p"
+    assert free["price_eur_cents"] == 0 < pro["price_eur_cents"] < ultra["price_eur_cents"]
+
+
 def test_delete_a_clip_with_all_its_files(client, sample_video, monkeypatch):
     storage = client.app.state.storage
     job_id, _ = processed_job(client, sample_video, monkeypatch, pipeline=FakePipeline(clips=2))
@@ -642,13 +687,13 @@ def test_delete_a_clip_with_all_its_files(client, sample_video, monkeypatch):
 def test_watermark_follows_the_current_plan(client, sample_video, monkeypatch):
     from clipaso.saas.models import Plan
 
-    _, pipeline = processed_job(client, sample_video, monkeypatch)
-    assert pipeline.calls[0]["opts"].branding is None  # sin marca personal ni marca de agua
-    with session_scope(client.app.state.sessions) as s:
-        s.get(Plan, "free").watermark = True
     _, pipeline = processed_job(client, sample_video, monkeypatch, branding=False)
     branding = pipeline.calls[0]["opts"].branding
-    assert branding is not None and branding.watermark and not branding.active
+    assert branding is not None and branding.watermark and not branding.active  # el plan Gratis la lleva
+    with session_scope(client.app.state.sessions) as s:
+        s.get(Plan, "free").watermark = False  # p. ej. al pasar a un plan de pago
+    _, pipeline = processed_job(client, sample_video, monkeypatch)
+    assert pipeline.calls[0]["opts"].branding is None  # sin marca personal ni marca de agua
 
 
 def test_subtitles_are_off_by_default_except_in_subtitle_mode(client, sample_video, monkeypatch):
@@ -723,9 +768,10 @@ def test_thumbnail_without_uploading_the_video(client, sample_video, cover_llm, 
 
     # No se puede crear por la vía normal, y hay límite diario
     assert client.post("/jobs", json={"upload_id": "x", "mode": "thumbnail"}, headers=AUTH).status_code == 400
-    from clipaso.saas import thumbnails
+    from clipaso.saas.models import Plan
 
-    monkeypatch.setattr(thumbnails, "DAILY_LIMIT", 1)
+    with session_scope(client.app.state.sessions) as s:
+        s.get(Plan, "free").daily_thumbnails = 1  # el límite diario sale del plan
     r = client.post("/jobs/thumbnail", json={"filename": "b.mp4", "frames": frames[:1]}, headers=AUTH)
     assert r.status_code == 429
     bad = client.post("/jobs/thumbnail", json={"filename": "c.mp4", "frames": [{"time": 0, "image": "no"}]},

@@ -63,6 +63,12 @@ def qualities_for(session: Session, job: Job) -> list[str]:
     return out
 
 
+def locked_qualities(session: Session, job: Job, user: User) -> list[str]:
+    """Calidades posibles para este vídeo que el plan del usuario no incluye (se ofrecen para mejorar de plan)."""
+    top = QUALITIES.get(user.plan.max_export_quality, QUALITIES["1080p"]) if user.plan else QUALITIES["1080p"]
+    return [q for q in qualities_for(session, job) if QUALITIES[q] > top]
+
+
 def _current(clip: Clip, name: str) -> dict | None:
     item = (clip.exports or {}).get(name)
     return item if item and item.get("version") == clip.version else None
@@ -102,6 +108,8 @@ def request_quality(session: Session, user: User, job: Job, clip: Clip, quality:
     """Pide el clip en otra calidad. Devuelve la tarea creada (None si ya está lista o en marcha)."""
     if quality not in qualities_for(session, job):
         raise AppError("validation_error", key="export_quality_unavailable")
+    if quality in locked_qualities(session, job, user):
+        raise AppError("plan_required", 402, key="plan_quality", params={"quality": quality})
     if quality == BASE_QUALITY or _current(clip, quality):
         return None
     running = _latest_export_task(session, clip, quality)

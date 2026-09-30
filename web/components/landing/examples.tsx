@@ -49,7 +49,7 @@ export function Examples() {
                 <span
                   key={k}
                   className={hit ? "flex-1 rounded-full bg-primary" : "flex-1 rounded-full bg-foreground/15"}
-                  style={{ height: `${Math.min(h, 90)}%` }}
+                  style={{ height: `${Math.min(h, 90).toFixed(1)}%` }}  // redondeado: igual en servidor y navegador
                 />
               );
             })}

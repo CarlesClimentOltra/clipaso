@@ -34,7 +34,8 @@ def to_out(upload: Upload) -> UploadOut:
     return UploadOut(
         id=upload.id, filename=upload.filename, status=upload.status, size_bytes=upload.size_bytes,
         duration_seconds=upload.duration_seconds,
-        billable_minutes=services.billable_minutes(upload.duration_seconds) if upload.duration_seconds else None,
+        billable_minutes=services.billable_minutes(upload.duration_seconds) * services.minutes_factor(upload)
+        if upload.duration_seconds else None,
     )
 
 

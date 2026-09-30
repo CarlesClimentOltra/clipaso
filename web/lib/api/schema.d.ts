@@ -556,10 +556,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Usage */
+        get: operations["usage_admin_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminJobOut */
+        AdminJobOut: {
+            /** Id */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** User */
+            user: string;
+            /** Mode */
+            mode: string;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+            /** Minutes */
+            minutes: number;
+            /** Source Mb */
+            source_mb: number | null;
+            /** Source Res */
+            source_res: string | null;
+            /** Worker S */
+            worker_s: number | null;
+            /** Cpu S */
+            cpu_s: number | null;
+            /** Compute Usd */
+            compute_usd: number | null;
+            /** Llm Usd */
+            llm_usd: number;
+            /** Stages */
+            stages: {
+                [key: string]: number;
+            };
+        };
+        /** AdminModeOut */
+        AdminModeOut: {
+            /** Mode */
+            mode: string;
+            /** Jobs */
+            jobs: number;
+            /**
+             * Measured
+             * @description Proyectos con consumo medido (los anteriores a la medición no lo tienen).
+             */
+            measured: number;
+            /** Minutes */
+            minutes: number;
+            /** Worker S */
+            worker_s: number;
+            /** Compute Usd */
+            compute_usd: number;
+            /** Llm Usd */
+            llm_usd: number;
+            /** Source Mb */
+            source_mb: number;
+            /**
+             * Usd Per Minute
+             * @description Coste medio (cómputo + IA) por minuto de vídeo.
+             */
+            usd_per_minute: number | null;
+        };
+        /** AdminUsageOut */
+        AdminUsageOut: {
+            /** Days */
+            days: number;
+            /** Jobs */
+            jobs: number;
+            /** Tasks */
+            tasks: number;
+            /** Compute Usd */
+            compute_usd: number;
+            /** Llm Usd */
+            llm_usd: number;
+            /** Task Compute Usd */
+            task_compute_usd: number;
+            /** Modes */
+            modes: components["schemas"]["AdminModeOut"][];
+            /** Recent */
+            recent: components["schemas"]["AdminJobOut"][];
+            /** Rates */
+            rates: {
+                [key: string]: unknown;
+            };
+        };
         /** ArchiveOut */
         ArchiveOut: {
             /** Url */
@@ -929,10 +1032,10 @@ export interface components {
             quality: ("480p" | "720p" | "1080p" | "2160p") | null;
             /**
              * Status
-             * @description ready: se puede descargar · pending: generándose · available: se puede pedir
+             * @description ready: se puede descargar · pending: generándose · available: se puede pedir · locked: la incluye un plan superior
              * @enum {string}
              */
-            status: "ready" | "pending" | "failed" | "available";
+            status: "ready" | "pending" | "failed" | "available" | "locked";
             /** Url */
             url?: string | null;
             /** Size Bytes */
@@ -1280,6 +1383,12 @@ export interface components {
             locale: ("es" | "en") | null;
             plan: components["schemas"]["PlanOut"];
             usage: components["schemas"]["UsageOut"];
+            /**
+             * Is Admin
+             * @description Cuenta de desarrollo: ve el panel de costes.
+             * @default false
+             */
+            is_admin: boolean;
         };
         /** MoreClipsIn */
         MoreClipsIn: {
@@ -1351,6 +1460,27 @@ export interface components {
             max_upload_mb: number;
             /** Retention Days */
             retention_days: number;
+            /**
+             * Watermark
+             * @description Los vídeos llevan la marca de agua de Clipaso.
+             */
+            watermark: boolean;
+            /**
+             * Max Export Quality
+             * @description Calidad máxima de descarga (1080p o 2160p).
+             */
+            max_export_quality: string;
+            /**
+             * Daily Thumbnails
+             * @description Miniaturas sin subir el vídeo por día.
+             */
+            daily_thumbnails: number;
+            /**
+             * Unlimited
+             * @description Cuenta de desarrollo: sin cuota ni límites.
+             * @default false
+             */
+            unlimited: boolean;
         };
         /** PreferencesIn */
         PreferencesIn: {
@@ -3711,6 +3841,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClipOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    usage_admin_usage_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUsageOut"];
                 };
             };
             /** @description Bad Request */

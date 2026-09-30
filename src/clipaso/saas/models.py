@@ -90,6 +90,11 @@ class Plan(Base):
     retention_days: Mapped[int] = mapped_column(Integer)
     # Marca de agua de Clipaso en los vídeos (los planes de pago la quitan).
     watermark: Mapped[bool] = mapped_column(default=False, server_default=false())
+    # Calidad máxima de las descargas (el 4K cuesta mucho más de generar).
+    max_export_quality: Mapped[str] = mapped_column(String(8), default="1080p", server_default="1080p")
+    daily_thumbnails: Mapped[int] = mapped_column(Integer, default=10, server_default="10")
+    # Cuenta de desarrollo: sin cuota de minutos ni límites (se asigna por email en la configuración).
+    unlimited: Mapped[bool] = mapped_column(default=False, server_default=false())
     price_eur_cents: Mapped[int] = mapped_column(Integer, default=0)
     is_public: Mapped[bool] = mapped_column(default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
@@ -148,6 +153,8 @@ class Job(Base):
     profile: Mapped[str] = mapped_column(String(64), default="vertical_9x16")
     options: Mapped[dict] = mapped_column(JSON, default=dict)
     llm_cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    # Consumo real en el worker (tiempo por etapa, CPU, coste estimado, peso): ver saas/metering.py.
+    metrics: Mapped[dict | None] = mapped_column(JSON)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
@@ -210,6 +217,7 @@ class Task(Base):
     kind: Mapped[str] = mapped_column(String(32))
     status: Mapped[str] = mapped_column(String(16), default=TaskStatus.QUEUED)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    metrics: Mapped[dict | None] = mapped_column(JSON)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     error_code: Mapped[str | None] = mapped_column(String(64))
     error_detail: Mapped[str | None] = mapped_column(Text)

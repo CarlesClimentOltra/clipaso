@@ -31,6 +31,7 @@ from clipaso.saas import cover_service
 from clipaso.saas.artifacts import make_preview, preview_key, save_analysis
 from clipaso.saas.db import session_scope, utcnow
 from clipaso.saas.maintenance import run_cleanup
+from clipaso.saas.metering import Meter
 from clipaso.saas.models import Clip, Job, JobStatus, Upload, User
 from clipaso.saas.notifications import Notifier, build_notifier, clips_ready, deliver, processing_failed
 from clipaso.saas.rendering import project_branding, project_profile
@@ -129,7 +130,9 @@ class JobRunner:
     def run(self, job_id: str) -> None:
         bind_job(job_id=job_id)
         tmp = Path(tempfile.mkdtemp(prefix=f"clipaso-{job_id[:8]}-"))
-        state = {"stage": "starting", "last_write": 0.0}
+        meter = Meter(self.settings.costs)
+        state = {"stage": "starting", "last_write": 0.0, "meter": meter}
+        source_info: dict = {}
         try:
             with session_scope(self.sessions) as s:
                 job = s.get(Job, job_id)
@@ -143,6 +146,9 @@ class JobRunner:
                 language = options.get("language", self.settings.language)
                 upload_key, upload_ext = upload.storage_key, PurePath(upload.filename).suffix.lower() or ".mp4"
                 upload_type = upload.content_type
+                source_info = {"source_mb": round((upload.size_bytes or 0) / 1e6, 2),
+                               "source_res": f"{upload.width}x{upload.height}" if upload.width else "audio",
+                               "minutes": round((upload.duration_seconds or 0) / 60, 2)}
                 branding = project_branding(self.storage, s.get(User, user_id), options, tmp / "brand")
 
             self._write_progress(job_id, "ingest", 0.0, state, force=True)
@@ -163,7 +169,8 @@ class JobRunner:
             )
             on_progress = lambda stage, overall: self._write_progress(job_id, stage, overall, state)  # noqa: E731
             if options.get("mode") == "text":
-                self._run_text(job_id, pipeline, Path(source), opts, options, user_id, title, state, on_progress)
+                self._run_text(job_id, pipeline, Path(source), opts, options, user_id, title, state, on_progress,
+                               source_info)
                 return
             # Modos que montan un vídeo nuevo (sin silencios, tráiler, audiograma): a partir de ahí es el vídeo de
             # trabajo (el editor y los re-renders parten de él).
@@ -253,6 +260,8 @@ class JobRunner:
                 job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0
                 job.finished_at = utcnow()
                 job.llm_cost_usd = round(result.cost_usd + cover_cost, 5)
+                job.metrics = meter.finish(**source_info, llm_usd=job.llm_cost_usd,
+                                           output_mb=round(sum(c.size_bytes or 0 for c in clips) / 1e6, 1))
                 # Si el usuario no quiere editar ni pedir más clips, el original se borra ya (almacenamiento
                 # y RGPD); si no, se conserva hasta que caduque el proyecto.
                 if not keep_source and job.upload_id and (upload := s.get(Upload, job.upload_id)):
@@ -281,6 +290,8 @@ class JobRunner:
             with session_scope(self.sessions) as s:
                 job = s.get(Job, job_id)
                 if job is not None:
+                    # Un proyecto que falla también ha gastado GPU: se registra igual.
+                    job.metrics = meter.finish(**source_info, failed=True)
                     self._mark_failed(s, job, code, detail)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
@@ -297,7 +308,7 @@ class JobRunner:
 
     def _run_text(
         self, job_id: str, pipeline, source: Path, opts: PipelineOptions, options: dict, user_id: str, title: str,
-        state: dict, on_progress,
+        state: dict, on_progress, source_info: dict,
     ) -> None:
         """Del vídeo al texto: transcripción + textos escritos por la IA. No hay vídeo que generar."""
         from clipaso.application.writer import TextWriter
@@ -317,6 +328,7 @@ class JobRunner:
             job.status, job.stage, job.progress = JobStatus.DONE, "done", 1.0
             job.finished_at = utcnow()
             job.llm_cost_usd = round(cost.spent, 5)
+            job.metrics = state["meter"].finish(**source_info, llm_usd=job.llm_cost_usd, output_mb=0.0)
             if job.upload_id and (upload := s.get(Upload, job.upload_id)):
                 purge_upload(self.storage, upload)  # la transcripción ya está guardada: el original sobra
             user = s.get(User, user_id)
@@ -368,6 +380,8 @@ class JobRunner:
         now = time.monotonic()
         changed = stage != state["stage"]
         state["stage"] = stage
+        if meter := state.get("meter"):
+            meter.at(stage)
         if not (force or changed or now - state["last_write"] >= PROGRESS_MIN_INTERVAL):
             return
         state["last_write"] = now

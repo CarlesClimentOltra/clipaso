@@ -11,3 +11,6 @@ build/
 .env
 data/
 output/
+
+# Vídeos y resultados del banco de medidas de coste (deploy/benchmark.py)
+.bench/

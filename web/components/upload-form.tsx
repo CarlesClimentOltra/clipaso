@@ -62,6 +62,8 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [sourceFrame, setSourceFrame] = useState<ClipFormat>("horizontal");
+  // Más de 1080p (2.7K, 4K…): cuenta el doble de minutos (procesarlo cuesta mucho más).
+  const [highRes, setHighRes] = useState(false);
   const [trim, setTrim] = useState<TrimRange | null>(null);
   const [trimProgress, setTrimProgress] = useState(0);
   const uploadingRef = useRef<File | null>(null);
@@ -330,6 +332,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
           onDuration={(d, w, h) => {
             setDuration(d);
             if (!w || !h) return;
+            setHighRes(Math.min(w, h) > 1080);
             const frame: ClipFormat = w / h < 0.8 ? "vertical" : w / h < 1.25 ? "square" : "horizontal";
             setSourceFrame(frame);
             // Al cambiar de formato, el destino por defecto es el contrario al del vídeo.
@@ -339,6 +342,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
             }
           }}
           maxSeconds={maxSeconds}
+          minutesFactor={highRes ? 2 : 1}
           disabled={busy}
         />
       )}

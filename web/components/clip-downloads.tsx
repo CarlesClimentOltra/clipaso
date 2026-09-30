@@ -8,6 +8,7 @@ import {
   DownloadIcon,
   FilmIcon,
   Loader2Icon,
+  LockIcon,
   MusicIcon,
   RotateCcwIcon,
   SparklesIcon,
@@ -90,6 +91,10 @@ export function ClipDownloads({
       return;
     }
     if (item.status === "pending") return;
+    if (item.status === "locked") {
+      toast.info(d.lockedHint(label(item)));
+      return;
+    }
     try {
       const data = await request.mutateAsync({ format: item.format, quality: item.quality });
       const now = data.items.find((i) => i.format === item.format && i.quality === item.quality);
@@ -122,6 +127,11 @@ export function ClipDownloads({
     }
     if (item.status === "failed") {
       return <span className="ml-auto flex items-center gap-1 text-xs text-destructive"><RotateCcwIcon className="size-3" /> {d.retry}</span>;
+    }
+    if (item.status === "locked") {
+      return <span className="ml-auto flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-ink">
+        <LockIcon className="size-3" /> Ultra
+      </span>;
     }
     return <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground"><SparklesIcon className="size-3" /> {d.generate}</span>;
   }

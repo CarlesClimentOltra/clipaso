@@ -90,6 +90,7 @@ export function TrimSelector({
   onChange,
   onDuration,
   maxSeconds,
+  minutesFactor = 1,
   disabled,
 }: {
   src: string;
@@ -98,6 +99,8 @@ export function TrimSelector({
   onChange: (range: TrimRange | null) => void;
   onDuration: (seconds: number, width: number, height: number) => void;
   maxSeconds: number;
+  /** Los vídeos de más de 1080p cuentan el doble de minutos. */
+  minutesFactor?: number;
   disabled?: boolean;
 }) {
   const { t, intl } = useI18n();
@@ -110,7 +113,7 @@ export function TrimSelector({
   const length = range.end - range.start;
   const partial = !!value && (value.start > 0.5 || value.end < total - 0.5);
   const tooLong = total > 0 && length > maxSeconds + 0.5;
-  const minutes = Math.ceil(length / 6) / 10;
+  const minutes = (Math.ceil(length / 6) / 10) * minutesFactor;
 
   function set(next: TrimRange) {
     const start = Math.max(0, Math.min(next.start, total - 1));
@@ -228,6 +231,7 @@ export function TrimSelector({
                 {tt.length(formatClock(length, false))}
               </span>
               <span className="text-xs text-muted-foreground">{tt.minutes(minutes.toLocaleString(intl))}</span>
+              {minutesFactor > 1 && <span className="text-xs text-brand-ink">{tt.highRes}</span>}
             </div>
           </div>
           {tooLong && <p className="text-sm text-destructive" role="alert">{tt.tooLong(Math.round(maxSeconds / 60))}</p>}

@@ -26,6 +26,7 @@ from clipaso.infra.logging import bind_job, clear_job, get_logger
 from clipaso.saas import cover_service, exports
 from clipaso.saas.artifacts import SourceCache, apply_edits, load_signals, load_transcript
 from clipaso.saas.db import session_scope, utcnow
+from clipaso.saas.metering import Meter
 from clipaso.saas.models import Clip, ClipStatus, Job, Task, TaskKind, TaskStatus, Upload, UploadStatus, User
 from clipaso.saas.rendering import project_branding, project_profile
 from clipaso.saas.services import clips_prefix
@@ -98,6 +99,7 @@ class TaskRunner:
     def run(self, task_id: str) -> None:
         bind_job(task_id=task_id)
         tmp = Path(tempfile.mkdtemp(prefix=f"clipaso-task-{task_id[:8]}-"))
+        meter = Meter(self.settings.costs)
         try:
             with session_scope(self.sessions) as s:
                 task = s.get(Task, task_id)
@@ -117,6 +119,7 @@ class TaskRunner:
             with session_scope(self.sessions) as s:
                 task = s.get(Task, task_id)
                 task.status, task.finished_at = TaskStatus.DONE, utcnow()
+                task.metrics = meter.finish()
             log.info("task.done", kind=kind)
         except Exception as exc:
             if isinstance(exc, TaskError):
@@ -127,6 +130,7 @@ class TaskRunner:
                 sentry_sdk.capture_exception(exc)
             with session_scope(self.sessions) as s:
                 if task := s.get(Task, task_id):
+                    task.metrics = meter.finish(failed=True)
                     self._finish_failed(s, task, code, detail=f"{type(exc).__name__}: {exc}")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
