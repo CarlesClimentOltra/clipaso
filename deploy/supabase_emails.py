@@ -7,11 +7,14 @@ Authentication → Emails → Templates. Los textos salen en el idioma de la cue
 metadatos del usuario, que la web guarda al registrarse); sin idioma, en español.
 """
 
+# ruff: noqa: E501  (el HTML de los emails va en líneas largas a propósito)
 from __future__ import annotations
 
 from pathlib import Path
 
 OUT = Path(__file__).with_name("supabase_emails")
+LOGO_PNG = Path(__file__).resolve().parents[1] / "web" / "public" / "email-logo.png"
+LOGO_URL = "https://clipaso.com/email-logo.png"  # Gmail y Outlook no muestran SVG: PNG a 3x
 
 LIME = "#b6e34a"
 LIME_INK = "#1f2d0c"
@@ -97,7 +100,7 @@ def page(name: str) -> str:
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
     <tr><td style="padding:0 8px 20px">
       <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-        <td style="width:32px;height:32px;background:#121a05;border-radius:9px;text-align:center;vertical-align:middle;color:{LIME};font-size:15px;font-weight:800;line-height:32px">C</td>
+        <td style="width:32px;height:32px;vertical-align:middle"><img src="{LOGO_URL}" width="32" height="32" alt="Clipaso" style="display:block;border:0;border-radius:9px"></td>
         <td style="padding-left:10px;font-size:19px;font-weight:700;color:#111;letter-spacing:-0.02em">Clip<span style="color:{INK}">aso</span></td>
       </tr></table>
     </td></tr>
@@ -115,6 +118,9 @@ def page(name: str) -> str:
 
 
 def main() -> None:
+    from clipaso.adapters.exporters.watermark import draw_mark
+
+    draw_mark(96).save(LOGO_PNG)
     OUT.mkdir(exist_ok=True)
     for name, t in TEMPLATES.items():
         (OUT / f"{name}.html").write_text(page(name), encoding="utf-8")

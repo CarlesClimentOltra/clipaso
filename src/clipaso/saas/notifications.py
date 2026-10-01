@@ -135,17 +135,30 @@ def _t(lang: str) -> dict[str, str]:
 
 
 def _layout(title: str, body: str, button: tuple[str, str] | None, lang: str) -> str:
+    """Mismo diseño que los emails de cuenta (deploy/supabase_emails.py): logo, tarjeta blanca y botón lima."""
     cta = ""
     if button:
         label, url = button
-        cta = (f'<p style="margin:28px 0"><a href="{escape(url)}" style="background:#b6e34a;color:#1f2d0c;'
-               f'padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600">{escape(label)}</a></p>')
+        cta = (f'<p style="margin:28px 0 0"><a href="{escape(url)}" style="display:inline-block;background:#b6e34a;'
+               f'color:#1f2d0c;font-size:15px;font-weight:700;text-decoration:none;padding:14px 28px;'
+               f'border-radius:999px">{escape(label)}</a></p>')
     return (
-        '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;'
-        'color:#1a1a1a;line-height:1.5">'
-        '<p style="font-weight:700;font-size:18px;margin:0 0 20px">Clip<span style="color:#4d7c0f">aso</span></p>'
-        f'<h1 style="font-size:20px;margin:0 0 12px">{escape(title)}</h1>{body}{cta}'
-        f'<p style="color:#888;font-size:12px;margin-top:32px">{escape(_t(lang)["footer"])}</p></div>'
+        '<div style="margin:0;padding:40px 16px;background:#f4f6ee;font-family:-apple-system,BlinkMacSystemFont,'
+        "'Segoe UI',Roboto,Helvetica,Arial,sans-serif\">"
+        '<div style="max-width:520px;margin:0 auto">'
+        '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 8px 20px"><tr>'
+        '<td style="vertical-align:middle"><img src="https://clipaso.com/email-logo.png" width="32" height="32" '
+        'alt="Clipaso" style="display:block;border:0;border-radius:9px"></td>'
+        '<td style="padding-left:10px;font-size:19px;font-weight:700;color:#111">Clip'
+        '<span style="color:#4d7c0f">aso</span></td></tr></table>'
+        '<div style="background:#fff;border:1px solid #e6e9dc;border-radius:20px;overflow:hidden">'
+        '<div style="height:6px;background:#b6e34a;font-size:0;line-height:0">&nbsp;</div>'
+        '<div style="padding:40px;color:#404040;font-size:15px;line-height:1.6">'
+        f'<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#111">{escape(title)}</h1>{body}{cta}'
+        '</div></div>'
+        '<p style="text-align:center;color:#8a8f7c;font-size:12px;margin:20px 0 0">'
+        f'{escape(_t(lang)["footer"])}</p>'
+        '</div></div>'
     )
 
 
