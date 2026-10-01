@@ -9,7 +9,7 @@ import type { Locale } from "@/lib/i18n/store";
 // Los diccionarios se importan directamente: este módulo se usa en el servidor (metadatos).
 const DICTIONARIES = { es, en };
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://clipaso.vercel.app").replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://clipaso.com").replace(/\/$/, "");
 const PATHS: Record<Locale, string> = { es: "/", en: "/en" };
 const OG_LOCALE: Record<Locale, string> = { es: "es_ES", en: "en_GB" };
 

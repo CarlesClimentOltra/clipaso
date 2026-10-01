@@ -81,7 +81,7 @@ entorno; con eso `dev.cmd` ya no abre el worker local.
 
 ## API en Fly.io
 
-La API corre en Fly.io (Frankfurt) con el `Dockerfile` de la raíz: https://clipaso-api.fly.dev.
+La API corre en Fly.io (Frankfurt) con el `Dockerfile` de la raíz: https://api.clipaso.com (también https://clipaso-api.fly.dev).
 Sin tráfico la máquina se suspende y despierta en menos de un segundo. Las migraciones se aplican
 solas en cada despliegue (`release_command`), antes de publicar la nueva versión.
 

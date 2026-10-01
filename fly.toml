@@ -20,7 +20,7 @@ primary_region = "fra"
   CLIPASO_WORKER__DISPATCHER = "modal"
   # Orígenes de la web autorizados (CORS): la web en Vercel y la local para pruebas.
   # La antigua dirección de Vercel sigue activa mientras haya enlaces a ella.
-  CLIPASO_API__WEB_ORIGINS = '["https://clipaso.vercel.app", "https://smartcuts-kohl.vercel.app", "http://localhost:3000"]'
+  CLIPASO_API__WEB_ORIGINS = '["https://clipaso.com", "https://www.clipaso.com", "https://clipaso.vercel.app", "http://localhost:3000"]'
   # Fly hace de proxy: así los logs registran la IP real del cliente.
   FORWARDED_ALLOW_IPS = "*"
 
