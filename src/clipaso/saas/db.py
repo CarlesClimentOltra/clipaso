@@ -34,7 +34,14 @@ def make_engine(url: str, echo: bool = False) -> Engine:
             cur.close()
 
         return engine
-    return create_engine(url, echo=echo, pool_pre_ping=True, pool_size=5, max_overflow=5)
+    # Fly congela la API cuando no hay tráfico: al despertar, las conexiones abiertas antes están muertas y
+    # una consulta sobre ellas se queda colgada. pool_recycle las renueva a los 5 min y los timeouts y keepalives
+    # hacen que una conexión rota falle en segundos en vez de bloquear la petición.
+    return create_engine(
+        url, echo=echo, pool_pre_ping=True, pool_size=5, max_overflow=5, pool_recycle=300, pool_timeout=10,
+        connect_args={"connect_timeout": 10, "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10,
+                      "keepalives_count": 3},
+    )
 
 
 @lru_cache
