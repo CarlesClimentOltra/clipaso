@@ -1,12 +1,12 @@
 // Datos que aparecen en las páginas legales. Cambiar aquí si cambia el titular, el dominio o un proveedor.
 
 export const legal = {
-  updatedAt: "30 de septiembre de 2026",
+  updatedAt: "1 de octubre de 2026",
   owner: {
     name: "Carles Climent Oltra",
     taxId: "20496132G", // NIF
     address: "Calle Cervantes, 3, Llocnou d'En Fenollet (Valencia), España",
-    email: "carlesco03@gmail.com",
+    email: "hola@clipaso.com",
   },
   site: "clipaso.com",
   minAge: 18,
@@ -47,7 +47,7 @@ export const legal = {
     },
     {
       name: "Vercel",
-      role: "Alojamiento de la web",
+      role: "Alojamiento de la web y estadísticas de visitas sin cookies (Web Analytics)",
       location: "Red global; funciones en Frankfurt (UE)",
       company: "Vercel Inc. (EE. UU.)",
     },

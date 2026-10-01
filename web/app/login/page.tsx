@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { ApiError, unwrap } from "@/lib/api/client";
 import { useApi } from "@/lib/api/hooks";
 import { useAuth } from "@/lib/auth";
+import { track } from "@vercel/analytics";
 import { config } from "@/lib/config";
 import { useI18n } from "@/lib/i18n";
 
@@ -88,6 +89,7 @@ export default function LoginPage() {
         await signIn(email, password, token);
       } else if (await signupAllowed()) {
         const { needsConfirmation } = await signUp(email, password, token);
+        track("signup", { method: "email" });
         if (needsConfirmation) setNotice(l.confirmSent);
       }
     } catch (err) {

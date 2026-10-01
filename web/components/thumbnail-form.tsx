@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FileVideoIcon, ImageIcon, SparklesIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ export function ThumbnailForm() {
       const job = await create.mutateAsync({
         filename: file.name, topic: topic.trim(), language: locale, branding: branding && hasBrand, frames,
       });
+      track("project_created", { mode: "thumbnail" });
       toast.success(m.done);
       router.push(`/projects/${job.id}`);
     } catch (err) {

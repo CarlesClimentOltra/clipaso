@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -85,7 +86,10 @@ export function Pricing({ current }: { current?: string } = {}) {
                 <Button variant="outline" className="w-full" disabled>{t.plansPage.currentButton}</Button>
               ) : plan.price_eur_cents > currentPrice ? (
                 // Sin pasarela de pago todavía: con Stripe, este botón llevará al pago.
-                <Button className="w-full" onClick={() => toast.info(t.plansPage.soonHint)}>
+                <Button className="w-full" onClick={() => {
+                  track("upgrade_click", { plan: plan.code });
+                  toast.info(t.plansPage.soonHint);
+                }}>
                   {t.plansPage.upgrade} · {t.plansPage.soon}
                 </Button>
               ) : null}

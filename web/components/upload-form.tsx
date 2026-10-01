@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckIcon, FileAudioIcon, FileVideoIcon, UploadCloudIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { toast } from "sonner";
+import { track } from "@vercel/analytics";
 
 import type { ClipFormat } from "@/components/caption-preview";
 import { PlansLink } from "@/components/error-toast";
@@ -199,6 +200,7 @@ export function UploadForm({ me, mode }: { me: Me; mode: VideoMode }) {
         onPhase: setPhase,
         signal: abortRef.current.signal,
       });
+      track("project_created", { mode });
       toast.success(u.received);
       router.push(`/projects/${job.id}`);
     } catch (err) {

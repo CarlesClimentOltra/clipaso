@@ -65,6 +65,10 @@ export default function CookiesPage() {
         para esa comprobación.
       </p>
       <p>
+        Para saber cuántas personas visitan la web usamos Vercel Web Analytics, que no usa cookies ni guarda datos que
+        te identifiquen: cuenta visitas de forma agregada y anónima.
+      </p>
+      <p>
         Puedes borrar estos datos en cualquier momento desde la configuración de tu navegador (borrando los datos del
         sitio). Si lo haces, se cerrará tu sesión.
       </p>

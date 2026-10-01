@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Zona privada de la app: no aporta nada a los buscadores.
-      disallow: ["/dashboard", "/new", "/projects", "/account", "/customize", "/reset-password"],
+      disallow: ["/dashboard", "/new", "/projects", "/account", "/customize", "/plans", "/admin", "/reset-password"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
