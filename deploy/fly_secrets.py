@@ -31,6 +31,15 @@ COPY = [
     "CLIPASO_SENTRY_DSN",
     "ANTHROPIC_API_KEY",  # miniaturas sin subir el vídeo: la API elige el fotograma y escribe el texto
 ]
+# Cobros con Paddle (ver saas/billing.py). Con --billing se cargan solo estas, sin tocar las demás.
+BILLING = [
+    "CLIPASO_BILLING__PROVIDER",
+    "CLIPASO_BILLING__PADDLE_ENVIRONMENT",
+    "CLIPASO_BILLING__PADDLE_API_KEY",
+    "CLIPASO_BILLING__PADDLE_WEBHOOK_SECRET",
+    "CLIPASO_BILLING__PADDLE_CLIENT_TOKEN",
+    "CLIPASO_BILLING__PADDLE_PRICES",
+]
 REQUIRED = ["CLIPASO_DATABASE__URL", "CLIPASO_AUTH__SUPABASE_URL", "CLIPASO_STORAGE__R2_ACCESS_KEY_ID"]
 
 
@@ -42,16 +51,25 @@ def modal_token() -> dict[str, str]:
 
 def main() -> int:
     env = dotenv_values(ROOT / ".env")
+    if "--billing" in sys.argv:
+        values = {k: env[k] for k in BILLING if env.get(k)}
+        if len(values) < len(BILLING):
+            print(f"Faltan en .env: {', '.join(k for k in BILLING if not env.get(k))}")
+            return 1
+        return _import(values)
     missing = [k for k in REQUIRED if not env.get(k)]
     if missing:
         print(f"Faltan en .env: {', '.join(missing)}")
         return 1
-    values = {k: env[k] for k in COPY if env.get(k)}
+    values = {k: env[k] for k in COPY + BILLING if env.get(k)}
     values |= modal_token()
     # Solo firma URLs del almacenamiento local (no se usa con R2), pero prod exige una clave propia.
     values["CLIPASO_API__SECRET_KEY"] = secrets.token_urlsafe(48)
+    return _import(values)
 
-    payload = "\n".join(f"{k}={v}" for k, v in values.items())
+
+def _import(values: dict[str, str]) -> int:
+    payload ="\n".join(f"{k}={v}" for k, v in values.items())
     # --stage: se aplican en el próximo despliegue (no reinicia nada ahora).
     result = subprocess.run([str(FLYCTL), "secrets", "import", "--stage", "--config", str(ROOT / "fly.toml")],
                             input=payload, capture_output=True, text=True)
