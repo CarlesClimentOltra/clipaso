@@ -35,7 +35,6 @@ export function AppHeader() {
     { href: "/dashboard", label: t.header.projects, match: ["/dashboard", "/projects"] },
     { href: "/customize", label: t.header.customize, match: ["/customize"] },
     { href: "/plans", label: t.header.plans, match: ["/plans"] },
-    { href: "/account", label: t.header.account, match: ["/account"] },
   ];
 
   return (
@@ -106,7 +105,7 @@ export function AppHeader() {
               <DropdownMenuItem className="sm:hidden" onClick={() => router.push("/customize")}>
                 <PaletteIcon /> {t.header.customize}
               </DropdownMenuItem>
-              <DropdownMenuItem className="sm:hidden" onClick={() => router.push("/account")}>
+              <DropdownMenuItem onClick={() => router.push("/account")}>
                 <UserIcon /> {t.header.account}
               </DropdownMenuItem>
               <DropdownMenuItem className="sm:hidden" onClick={() => router.push("/plans")}>
