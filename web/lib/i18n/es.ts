@@ -4,9 +4,9 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export const es = {
   meta: {
-    title: "Clipaso · Clips verticales con IA",
+    title: "Clipaso · Editor de vídeo para clips verticales",
     description:
-      "Clipaso convierte tus vídeos largos en clips con subtítulos para TikTok, Reels y Shorts, y además subtitula vídeos enteros, quita silencios y muletillas, cambia el formato, monta tráileres, convierte audios en audiogramas, pasa vídeos a texto y crea miniaturas con IA.",
+      "Clipaso convierte tus vídeos largos en clips con subtítulos para TikTok, Reels y Shorts, y además subtitula vídeos enteros, quita silencios y muletillas, cambia el formato, monta tráileres, convierte audios en audiogramas, pasa vídeos a texto y crea miniaturas con tus propios fotogramas.",
   },
   common: {
     cancel: "Cancelar",
@@ -76,7 +76,7 @@ export const es = {
     navLabel: "Principal",
     signIn: "Entrar",
     startFree: "Empieza gratis",
-    badge: "Clips con IA para creadores",
+    badge: "Editor de vídeo para creadores",
     titleStart: "Convierte tus vídeos largos en",
     titleAccent: "clips virales",
     lead:
@@ -85,13 +85,13 @@ export const es = {
     trust: ["20 min gratis al mes", "Sin tarjeta", "Datos en la UE"],
     marqueeLabel: "Ventajas de Clipaso",
     marquee: [
-      ["IA que elige", "Los mejores momentos"],
+      ["Selección automática", "Los mejores momentos"],
       ["Subtítulos automáticos", "Palabra a palabra"],
       ["Reencuadre 9:16", "Sigue a quien habla"],
       ["Editor integrado", "Corrige en segundos"],
       ["Tu marca", "Logo y @usuario"],
       ["Sin silencios", "Ni «eh» ni «mmm»"],
-      ["Portadas con IA", "Para TikTok y YouTube"],
+      ["Portadas de tus fotogramas", "Para TikTok y YouTube"],
       ["Datos en la UE", "Privacidad RGPD"],
     ],
     hero: {
@@ -116,7 +116,7 @@ export const es = {
       title: "De una hora de vídeo a una semana de contenido",
       steps: [
         ["Sube tu vídeo", "Entrevistas, podcasts, charlas o directos. Si se corta la conexión, la subida continúa donde se quedó."],
-        ["La IA elige los mejores momentos", "Frases con gancho, historias completas y remates que funcionan solos, con su texto para publicar."],
+        ["Detecta los mejores momentos", "Frases con gancho, historias completas y remates que funcionan solos, con su texto para publicar."],
         ["Encuadre y subtítulos automáticos", "Sigue la cara de quien habla, adapta el plano al formato y, si quieres, añade subtítulos palabra a palabra."],
         ["Retoca y descarga", "Ajusta el corte o corrige una palabra en el editor, y descarga todos tus clips de una vez."],
       ],
@@ -302,7 +302,7 @@ export const es = {
     asideTitleStart: "De un vídeo largo a",
     asideTitleAccent: "clips virales",
     asideTitleEnd: ", en minutos",
-    asideLead: "La IA elige los mejores momentos y los deja listos para publicar.",
+    asideLead: "Edita tus vídeos largos y conviértelos en clips listos para publicar.",
   },
   reset: {
     invalidTitle: "Enlace no válido o caducado",
@@ -393,8 +393,8 @@ export const es = {
     tipsTitle: "Consejos",
     modes: {
       clips: {
-        title: "Crear clips con IA",
-        card: "La IA encuentra los mejores momentos de tu vídeo y los convierte en clips listos para publicar.",
+        title: "Crear clips",
+        card: "Detecta los mejores momentos de tu vídeo y los recorta en clips listos para publicar.",
         gets: ["Clips en vertical, cuadrado u horizontal", "Título, descripción y hashtags para cada uno",
                "Portada y miniatura automáticas"],
         lead: "Sube tu vídeo y elige cuántos clips quieres. La IA busca los momentos con más gancho.",

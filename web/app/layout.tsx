@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "Clipaso · Clips verticales con IA", template: "%s · Clipaso" },
+  title: { default: "Clipaso · Editor de vídeo para clips verticales", template: "%s · Clipaso" },
   description:
     "Sube tu vídeo y Clipaso encuentra los mejores momentos y los convierte en clips verticales con subtítulos para TikTok, Reels y Shorts.",
   applicationName: "Clipaso",

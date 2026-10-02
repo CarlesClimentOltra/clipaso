@@ -4,9 +4,9 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export const en: Dict = {
   meta: {
-    title: "Clipaso · AI vertical clips",
+    title: "Clipaso · Video editor for vertical clips",
     description:
-      "Clipaso turns your long videos into captioned clips for TikTok, Reels and Shorts, and also captions whole videos, removes silences and fillers, changes the format, cuts trailers, turns audio into audiograms, turns videos into text and creates thumbnails with AI.",
+      "Clipaso turns your long videos into captioned clips for TikTok, Reels and Shorts, and also captions whole videos, removes silences and fillers, changes the format, cuts trailers, turns audio into audiograms, turns videos into text and creates thumbnails from your own frames.",
   },
   common: {
     cancel: "Cancel",
@@ -76,7 +76,7 @@ export const en: Dict = {
     navLabel: "Main",
     signIn: "Sign in",
     startFree: "Start for free",
-    badge: "AI clips for creators",
+    badge: "Video editor for creators",
     titleStart: "Turn your long videos into",
     titleAccent: "viral clips",
     lead:
@@ -85,13 +85,13 @@ export const en: Dict = {
     trust: ["20 free minutes a month", "No card required", "Data in the EU"],
     marqueeLabel: "Clipaso benefits",
     marquee: [
-      ["AI that picks", "The best moments"],
+      ["Automatic selection", "The best moments"],
       ["Automatic captions", "Word by word"],
       ["9:16 reframing", "Follows the speaker"],
       ["Built-in editor", "Fix in seconds"],
       ["Your brand", "Logo and @handle"],
       ["No silences", "No \"um\" or \"uh\""],
-      ["AI covers", "For TikTok and YouTube"],
+      ["Covers from your frames", "For TikTok and YouTube"],
       ["Data in the EU", "GDPR privacy"],
     ],
     hero: {
@@ -116,7 +116,7 @@ export const en: Dict = {
       title: "From one hour of video to a week of content",
       steps: [
         ["Upload your video", "Interviews, podcasts, talks or streams. If the connection drops, the upload resumes where it left off."],
-        ["AI picks the best moments", "Hooks, complete stories and punchlines that work on their own, with copy ready to post."],
+        ["Finds the best moments", "Hooks, complete stories and punchlines that work on their own, with copy ready to post."],
         ["Automatic framing and captions", "Follows the speaker's face, adapts the shot to the format and, if you want, adds word-by-word captions."],
         ["Tweak and download", "Adjust the cut or fix a word in the editor, and download all your clips at once."],
       ],
@@ -302,7 +302,7 @@ export const en: Dict = {
     asideTitleStart: "From a long video to",
     asideTitleAccent: "viral clips",
     asideTitleEnd: ", in minutes",
-    asideLead: "AI picks the best moments and gets them ready to post.",
+    asideLead: "Edit your long videos and turn them into clips ready to post.",
   },
   reset: {
     invalidTitle: "Invalid or expired link",
@@ -393,8 +393,8 @@ export const en: Dict = {
     tipsTitle: "Tips",
     modes: {
       clips: {
-        title: "Create clips with AI",
-        card: "The AI finds the best moments in your video and turns them into clips ready to post.",
+        title: "Create clips",
+        card: "Finds the best moments in your video and cuts them into clips ready to post.",
         gets: ["Vertical, square or horizontal clips", "Title, description and hashtags for each one",
                "Automatic cover and thumbnail"],
         lead: "Upload your video and choose how many clips you want. The AI looks for the moments with the best hooks.",

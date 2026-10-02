@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 // Imagen que aparece al compartir un enlace de Clipaso en redes o mensajería.
-export const alt = "Clipaso · Clips verticales con IA";
+export const alt = "Clipaso · Editor de vídeo para clips verticales";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -36,7 +36,7 @@ export default function OpengraphImage() {
               De un vídeo largo a clips virales
             </span>
             <span style={{ fontSize: 30, color: "rgba(255,255,255,0.72)", maxWidth: 760 }}>
-              La IA elige los mejores momentos y los convierte en clips verticales con subtítulos.
+              Edita tu vídeo en clips verticales con subtítulos, listos para publicar.
             </span>
           </div>
         </div>
