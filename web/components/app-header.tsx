@@ -100,16 +100,16 @@ export function AppHeader() {
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+              <DropdownMenuItem className="sm:hidden" onClick={() => router.push("/dashboard")}>
                 <FolderIcon /> {t.header.myProjects}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/customize")}>
+              <DropdownMenuItem className="sm:hidden" onClick={() => router.push("/customize")}>
                 <PaletteIcon /> {t.header.customize}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/account")}>
+              <DropdownMenuItem className="sm:hidden" onClick={() => router.push("/account")}>
                 <UserIcon /> {t.header.account}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/plans")}>
+              <DropdownMenuItem className="sm:hidden" onClick={() => router.push("/plans")}>
                 <SparklesIcon /> {t.header.plans}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push(`/contacto?desde=${encodeURIComponent(pathname)}`)}>
