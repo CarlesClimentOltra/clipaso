@@ -4,7 +4,7 @@ import { SITE_URL } from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const languages = { es: `${SITE_URL}/`, en: `${SITE_URL}/en` };
-  const legal = ["privacidad", "terminos", "cookies", "aviso-legal"].map((slug) => ({
+  const legal = ["privacidad", "terminos", "cookies", "reembolsos", "aviso-legal"].map((slug) => ({
     url: `${SITE_URL}/legal/${slug}`,
     changeFrequency: "yearly" as const,
     priority: 0.2,

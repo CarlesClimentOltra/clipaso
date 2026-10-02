@@ -61,7 +61,7 @@ export default function TermsPage() {
           proporcional del periodo en curso.
         </li>
         <li>
-          <strong>Reembolsos:</strong> si no estás satisfecho, puedes pedir el reembolso de tu primer pago en los 14 días
+          <strong>Reembolsos</strong> (detalle en la <Link href="/legal/reembolsos">política de reembolsos</Link>): si no estás satisfecho, puedes pedir el reembolso de tu primer pago en los 14 días
           siguientes escribiendo a {legal.owner.email}. Fuera de ese caso, los periodos ya iniciados no se reembolsan,
           salvo cuando la ley lo exija o si el servicio no ha funcionado por causas atribuibles a nosotros.
         </li>

@@ -59,6 +59,8 @@ export const en: Dict = {
     terms: "Terms",
     cookies: "Cookies",
     notice: "Legal notice",
+    refunds: "Refunds",
+    contact: "Contact",
   },
   landing: {
     nav: { how: "How it works", examples: "Examples", features: "Features", pricing: "Pricing", faq: "FAQ" },

@@ -59,6 +59,8 @@ export const es = {
     terms: "Términos",
     cookies: "Cookies",
     notice: "Aviso legal",
+    refunds: "Reembolsos",
+    contact: "Contacto",
   },
   landing: {
     nav: { how: "Cómo funciona", examples: "Ejemplos", features: "Funciones", pricing: "Precios", faq: "Preguntas" },
