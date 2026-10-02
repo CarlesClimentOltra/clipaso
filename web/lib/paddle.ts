@@ -3,7 +3,11 @@
 type PaddleEvent = { name?: string };
 type PaddleApi = {
   Environment: { set: (env: string) => void };
-  Initialize: (opts: { token: string; eventCallback?: (e: PaddleEvent) => void }) => void;
+  Initialize: (opts: {
+    token: string;
+    pwCustomer?: { email?: string };
+    eventCallback?: (e: PaddleEvent) => void;
+  }) => void;
   Checkout: { open: (opts: Record<string, unknown>) => void };
 };
 
@@ -17,13 +21,14 @@ const SCRIPT_URL = "https://cdn.paddle.com/paddle/v2/paddle.js";
 let ready: Promise<PaddleApi> | null = null;
 let onEvent: ((name: string) => void) | null = null;
 
-function load(environment: string, token: string): Promise<PaddleApi> {
+function load(environment: string, token: string, email?: string): Promise<PaddleApi> {
   ready ??= new Promise((resolve, reject) => {
     const init = () => {
       const paddle = window.Paddle;
       if (!paddle) return reject(new Error("paddle"));
       if (environment === "sandbox") paddle.Environment.set("sandbox");
-      paddle.Initialize({ token, eventCallback: (e) => onEvent?.(e.name ?? "") });
+      // pwCustomer: Paddle Retain (recuperar cobros fallidos y bajas) identifica al cliente por su email.
+      paddle.Initialize({ token, pwCustomer: email ? { email } : {}, eventCallback: (e) => onEvent?.(e.name ?? "") });
       resolve(paddle);
     };
     if (window.Paddle) return init();
@@ -51,7 +56,7 @@ export async function openCheckout(opts: {
   onEvent: (name: string) => void;
 }) {
   onEvent = opts.onEvent;
-  const paddle = await load(opts.environment, opts.token);
+  const paddle = await load(opts.environment, opts.token, opts.email);
   paddle.Checkout.open({
     items: [{ priceId: opts.priceId, quantity: 1 }],
     customer: opts.email ? { email: opts.email } : undefined,
