@@ -21,6 +21,7 @@ from clipaso.saas.errors import AppError, NotFound
 from clipaso.saas.models import (
     Clip,
     ClipStatus,
+    DailyAction,
     Job,
     JobStatus,
     Task,
@@ -77,21 +78,40 @@ def _active_tasks(session: Session, user: User) -> int:
     ) or 0
 
 
-def check_daily_limit(session: Session, user: User, kind: TaskKind, now: datetime) -> None:
-    """429 si el usuario ya ha pedido hoy (últimas 24 h) todas las tareas de este tipo que permite su plan."""
+def daily_used(session: Session, user: User, field: str, now: datetime) -> int:
+    return session.scalar(
+        select(func.count()).select_from(DailyAction).where(
+            DailyAction.user_id == user.id, DailyAction.kind == field,
+            DailyAction.created_at >= now - timedelta(days=1),
+        )
+    ) or 0
+
+
+def check_daily(session: Session, user: User, field: str, now: datetime, *, code: str = "daily_limit") -> None:
+    """429 si el usuario ya ha usado hoy (últimas 24 h) todo el cupo `field` de su plan."""
     plan = user.plan
     if plan is None or plan.unlimited:
         return
-    field = DAILY_LIMITS[kind]
     limit = getattr(plan, field)
-    used = session.scalar(
-        select(func.count()).select_from(Task).where(
-            Task.user_id == user.id, Task.kind == kind, Task.created_at >= now - timedelta(days=1),
-            Task.status != TaskStatus.FAILED,  # lo que falla no cuenta
-        )
-    ) or 0
-    if used >= limit:
-        raise AppError("daily_limit", 429, key=field, params={"limit": str(limit)})
+    if daily_used(session, user, field, now) >= limit:
+        key = field if code == "daily_limit" else code
+        raise AppError(code, 429, key=key, params={"limit": str(limit), "max": str(limit)})
+
+
+def record_daily(session: Session, user: User, field: str, now: datetime, task_id: str | None = None) -> None:
+    session.add(DailyAction(user_id=user.id, kind=field, task_id=task_id, created_at=now))
+
+
+def check_daily_limit(session: Session, user: User, kind: TaskKind, now: datetime) -> None:
+    check_daily(session, user, DAILY_LIMITS[kind], now)
+
+
+def _queue(session: Session, user: User, task: Task, now: datetime) -> Task:
+    """Guarda la tarea y gasta su cupo diario."""
+    session.add(task)
+    session.flush()
+    record_daily(session, user, DAILY_LIMITS[task.kind], now, task.id)
+    return task
 
 
 def is_subtitle_job(job: Job) -> bool:
@@ -239,9 +259,7 @@ def request_render(
     clip.status, clip.render_error = ClipStatus.RENDERING, None
     task = Task(user_id=user.id, job_id=job.id, clip_id=clip.id, kind=TaskKind.RENDER_CLIP,
                 payload={"start": start, "end": end}, created_at=now)
-    session.add(task)
-    session.flush()
-    return task
+    return _queue(session, user, task, now)
 
 
 def request_cover(session: Session, user: User, clip: Clip, job: Job, *, now: datetime) -> Task:
@@ -256,9 +274,7 @@ def request_cover(session: Session, user: User, clip: Clip, job: Job, *, now: da
     clip.cover = {**(clip.cover or {}), "pending": True}
     task = Task(user_id=user.id, job_id=job.id, clip_id=clip.id, kind=TaskKind.COVER_CLIP, payload={},
                 created_at=now)
-    session.add(task)
-    session.flush()
-    return task
+    return _queue(session, user, task, now)
 
 
 def request_more_clips(session: Session, user: User, job: Job, *, count: int, topic: str, now: datetime) -> Task:
@@ -276,9 +292,7 @@ def request_more_clips(session: Session, user: User, job: Job, *, count: int, to
     count = max(1, min(count, available, user.plan.max_clips_per_job))
     task = Task(user_id=user.id, job_id=job.id, kind=TaskKind.MORE_CLIPS,
                 payload={"count": count, "topic": topic.strip()[:200]}, created_at=now)
-    session.add(task)
-    session.flush()
-    return task
+    return _queue(session, user, task, now)
 
 
 # --------------------------------------------------------------------------- preferencias y logo

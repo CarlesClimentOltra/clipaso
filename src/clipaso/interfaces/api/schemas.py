@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from clipaso.saas.presets import (
     BrandingPrefs,
@@ -54,6 +54,14 @@ class PlanOut(BaseModel):
     daily_exports: int = Field(description="Descargas en otra calidad por día.")
     daily_covers: int = Field(description="Portadas nuevas con IA por día.")
     unlimited: bool = Field(False, description="Cuenta de desarrollo: sin cuota ni límites.")
+    max_clips_per_project: int = Field(0, description="Clips por proyecto contando «Más clips».")
+
+    @model_validator(mode="after")
+    def _clips_per_project(self) -> PlanOut:
+        from clipaso.saas.editing import MORE_CLIPS_FACTOR
+
+        self.max_clips_per_project = self.max_clips_per_job * MORE_CLIPS_FACTOR
+        return self
 
 
 class UsageOut(BaseModel):

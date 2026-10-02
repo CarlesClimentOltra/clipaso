@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Política de cookies · Clipaso" };
+export const metadata: Metadata = { title: "Política de cookies" };
 
 const ITEMS = [
   {

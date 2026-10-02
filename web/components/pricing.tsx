@@ -199,7 +199,7 @@ export function Pricing({ current }: { current?: string } = {}) {
                     p.allModes,
                     p.maxVideo(plan.max_video_minutes, plan.max_upload_mb >= 1024
                       ? `${Math.round(plan.max_upload_mb / 1024)} GB` : `${plan.max_upload_mb} MB`),
-                    p.maxClips(plan.max_clips_per_job),
+                    p.maxClips(plan.max_clips_per_job, plan.max_clips_per_project),
                     plan.watermark ? p.withWatermark : p.noWatermark,
                     plan.max_export_quality === "2160p" ? p.quality4k : p.quality1080,
                     p.thumbnails(plan.daily_thumbnails),

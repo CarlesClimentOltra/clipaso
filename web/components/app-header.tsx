@@ -34,6 +34,7 @@ export function AppHeader() {
   const nav = [
     { href: "/dashboard", label: t.header.projects, match: ["/dashboard", "/projects"] },
     { href: "/customize", label: t.header.customize, match: ["/customize"] },
+    { href: "/plans", label: t.header.plans, match: ["/plans"] },
     { href: "/account", label: t.header.account, match: ["/account"] },
   ];
 

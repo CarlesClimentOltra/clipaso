@@ -148,6 +148,8 @@ def shortlist(frames: list[Frame], k: int = SHORTLIST) -> list[Frame]:
         return []
     span = max(f.time for f in frames) - min(f.time for f in frames)
     gap = span / (k * 2.5) if span else 0
+    if any(f.face_x is not None for f in frames):  # hay caras: fuera diapositivas y planos sin nadie
+        frames = [f for f in frames if f.face_x is not None]
     chosen: list[Frame] = []
     for f in sorted(frames, key=lambda f: f.score, reverse=True):
         if all(abs(f.time - c.time) >= gap for c in chosen):
@@ -356,7 +358,8 @@ def _system(language: str, with_images: bool, avoid_text: str | None, teaser: bo
     frames = (
         "You receive numbered candidate frames (in order: 0, 1, 2…). Pick the one that makes the most "
         "clickable thumbnail: a clear, well-lit face with an expressive look, eyes open, no awkward "
-        "mid-word mouth, no motion blur. "
+        "mid-word mouth, no motion blur. Avoid frames that already show text on screen (slides, captions, "
+        "banners, logos): the cover text goes on top and would clash with it. "
         if with_images else "Set frame to 0. "
     )
     avoid = f' Write something clearly different from the previous cover text: "{avoid_text}".' if avoid_text else ""

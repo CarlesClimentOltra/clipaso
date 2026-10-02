@@ -12,7 +12,7 @@ from datetime import timedelta
 from pathlib import Path, PurePath
 
 import sentry_sdk
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from clipaso.application.pipeline import PipelineOptions
@@ -27,7 +27,18 @@ from clipaso.saas import cover_service, exports
 from clipaso.saas.artifacts import SourceCache, apply_edits, load_signals, load_transcript
 from clipaso.saas.db import session_scope, utcnow
 from clipaso.saas.metering import Meter
-from clipaso.saas.models import Clip, ClipStatus, Job, Task, TaskKind, TaskStatus, Upload, UploadStatus, User
+from clipaso.saas.models import (
+    Clip,
+    ClipStatus,
+    DailyAction,
+    Job,
+    Task,
+    TaskKind,
+    TaskStatus,
+    Upload,
+    UploadStatus,
+    User,
+)
 from clipaso.saas.rendering import project_branding, project_profile
 from clipaso.saas.services import clips_prefix
 
@@ -139,6 +150,7 @@ class TaskRunner:
     def _finish_failed(self, s: Session, task: Task, code: str, detail: str = "") -> None:
         task.status, task.finished_at = TaskStatus.FAILED, utcnow()
         task.error_code, task.error_detail = code, (detail or code)[:8000]
+        s.execute(delete(DailyAction).where(DailyAction.task_id == task.id))  # lo que falla no gasta cupo
         # Solo un re-render fallido deja el clip en error; una exportación fallida no toca el clip.
         if task.kind == TaskKind.COVER_CLIP and task.clip_id and (clip := s.get(Clip, task.clip_id)) and clip.cover:
             clip.cover = {**clip.cover, "pending": False}

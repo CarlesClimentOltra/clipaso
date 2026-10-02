@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Aviso legal · Clipaso" };
+export const metadata: Metadata = { title: "Aviso legal" };
 
 export default function LegalNoticePage() {
   const { owner } = legal;

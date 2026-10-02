@@ -13,12 +13,12 @@ import binascii
 from datetime import datetime, timedelta
 from pathlib import PurePath
 
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from clipaso.domain.ports import Storage
 from clipaso.infra.logging import get_logger
 from clipaso.saas import cover_service, covers
+from clipaso.saas.db import utcnow
 from clipaso.saas.errors import AppError
 from clipaso.saas.models import Clip, Job, JobStatus, User
 from clipaso.saas.services import clips_prefix
@@ -44,15 +44,9 @@ def decode_frame(data_b64: str):
 
 
 def check_limit(session: Session, user: User, now: datetime) -> None:
-    recent = session.scalar(
-        select(func.count()).select_from(Job).where(
-            Job.user_id == user.id, Job.created_at >= now - timedelta(days=1),
-            Job.options["mode"].as_string() == "thumbnail",
-        )
-    ) or 0
-    limit = user.plan.daily_thumbnails if user.plan else DAILY_LIMIT
-    if recent >= limit and not (user.plan and user.plan.unlimited):
-        raise AppError("too_many_thumbnails", 429, params={"max": str(limit)})
+    from clipaso.saas import editing
+
+    editing.check_daily(session, user, "daily_thumbnails", now, code="too_many_thumbnails")
 
 
 def create(
@@ -96,6 +90,7 @@ def create(
     )
     session.add(job)
     session.flush()
+    editing.record_daily(session, user, "daily_thumbnails", now)
     clip = Clip(job_id=job.id, rank=1, title=title, reason="", start=scored[0].time, end=scored[-1].time,
                 score=1.0, video_key="", size_bytes=0, description="", hashtags=[])
     session.add(clip)
@@ -125,6 +120,8 @@ def regenerate(session: Session, storage: Storage, settings, user: User, job: Jo
     from clipaso.bootstrap import build_cost_tracker, build_fast_llm
     from clipaso.saas import editing
 
+    now = utcnow()
+    editing.check_daily(session, user, "daily_covers", now)  # cuenta como «portada nueva» del día
     current = clip.cover or {}
     frames = []
     for c in current.get("candidates", []):
@@ -157,4 +154,5 @@ def regenerate(session: Session, storage: Storage, settings, user: User, job: Jo
     style = editing.effective_style(job, clip)
     logo, position = cover_service.branding_logo(storage, user, options)
     cover_service.save_choice(storage, user.id, job.id, clip, choice, style=style, logo=logo, logo_position=position)
+    editing.record_daily(session, user, "daily_covers", now)
     job.llm_cost_usd = round((job.llm_cost_usd or 0) + cost.spent, 5)

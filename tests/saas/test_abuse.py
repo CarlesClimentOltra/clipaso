@@ -14,7 +14,7 @@ from clipaso.interfaces.api.routers.admin import duplicates
 from clipaso.saas import abuse, editing
 from clipaso.saas.db import session_scope, utcnow
 from clipaso.saas.errors import AppError
-from clipaso.saas.models import Job, JobStatus, Task, TaskKind, TaskStatus, Upload, User
+from clipaso.saas.models import Job, JobStatus, Task, TaskKind, Upload, User
 
 
 def bearer(email: str) -> dict:
@@ -74,22 +74,12 @@ def test_daily_limits(client, kind, field, limit):
     now = utcnow()
     with session_scope(client.app.state.sessions) as s:
         user = s.query(User).one()
-        upload = Upload(user_id=user.id, storage_key="k", filename="v.mp4", content_type="video/mp4", size_bytes=1)
-        s.add(upload)
-        s.flush()
-        job = Job(user_id=user.id, upload_id=upload.id, title="t", status=JobStatus.DONE, stage="done",
-                  video_minutes=1, max_clips=1, options={}, created_at=now, expires_at=now + timedelta(days=7))
-        s.add(job)
-        s.flush()
-        s.add(Task(user_id=user.id, job_id=job.id, kind=kind, status=TaskStatus.DONE, payload={},
-                   created_at=now - timedelta(days=2)))  # de otro día: no cuenta
-        s.add(Task(user_id=user.id, job_id=job.id, kind=kind, status=TaskStatus.FAILED, payload={},
-                   created_at=now))  # fallida: no cuenta
+        editing.record_daily(s, user, field, now - timedelta(days=2))  # de otro día: no cuenta
         for _ in range(limit - 1):
-            s.add(Task(user_id=user.id, job_id=job.id, kind=kind, status=TaskStatus.DONE, payload={}, created_at=now))
+            editing.record_daily(s, user, field, now)
         s.flush()
         editing.check_daily_limit(s, user, kind, now)
-        s.add(Task(user_id=user.id, job_id=job.id, kind=kind, status=TaskStatus.DONE, payload={}, created_at=now))
+        editing.record_daily(s, user, field, now)
         s.flush()
         with pytest.raises(AppError) as err:
             editing.check_daily_limit(s, user, kind, now)
@@ -98,6 +88,39 @@ def test_daily_limits(client, kind, field, limit):
         s.flush()
         s.expire(user, ["plan"])
         editing.check_daily_limit(s, user, kind, now)  # la cuenta de desarrollo no tiene tope
+
+
+def test_daily_quota_survives_deleting_projects_and_ignores_failures(client):
+    """Borrar el proyecto no devuelve el cupo; una tarea que falla, sí."""
+    from clipaso.saas.tasks import TaskRunner
+
+    client.get("/me", headers=bearer("ana@example.com"))
+    now = utcnow()
+    with session_scope(client.app.state.sessions) as s:
+        user = s.query(User).one()
+        upload = Upload(user_id=user.id, storage_key="k", filename="v.mp4", content_type="video/mp4", size_bytes=1)
+        s.add(upload)
+        s.flush()
+        job = Job(user_id=user.id, upload_id=upload.id, title="t", status=JobStatus.DONE, stage="done",
+                  video_minutes=1, max_clips=1, options={}, created_at=now, expires_at=now + timedelta(days=7))
+        s.add(job)
+        s.flush()
+        ok = editing._queue(s, user, Task(user_id=user.id, job_id=job.id, kind=TaskKind.MORE_CLIPS, payload={},
+                                          created_at=now), now)
+        failed = editing._queue(s, user, Task(user_id=user.id, job_id=job.id, kind=TaskKind.MORE_CLIPS,
+                                              payload={}, created_at=now), now)
+        assert editing.daily_used(s, user, "daily_more_clips", now) == 2
+        TaskRunner._finish_failed(None, s, failed, "processing_failed")
+        s.flush()
+        assert editing.daily_used(s, user, "daily_more_clips", now) == 1
+        s.delete(job)  # borra también sus tareas
+        s.flush()
+        assert ok.id and editing.daily_used(s, user, "daily_more_clips", now) == 1
+        editing.check_daily_limit(s, user, TaskKind.MORE_CLIPS, now)  # Gratis: 2 al día; queda 1
+        editing.record_daily(s, user, "daily_more_clips", now)
+        s.flush()
+        with pytest.raises(AppError):
+            editing.check_daily_limit(s, user, TaskKind.MORE_CLIPS, now)
 
 
 def test_same_video_in_several_free_accounts_is_flagged():
@@ -112,3 +135,13 @@ def test_same_video_in_several_free_accounts_is_flagged():
 
     flagged = duplicates([job("a", "1:2.0"), job("b", "1:2.0"), job("a", "9:9.0"), job("c", "9:9.0")], owners)
     assert [(d.users, d.jobs) for d in flagged] == [(["a@x.com", "b@x.com"], 2)]
+
+
+def test_cover_shortlist_prefers_frames_with_faces():
+    """Una diapositiva nítida no gana a un fotograma con cara (el texto de la portada chocaría con el suyo)."""
+    from clipaso.saas import covers
+
+    slide = covers.Frame(time=1.0, image=None, face_x=None, score=0.9)
+    face = covers.Frame(time=5.0, image=None, face_x=0.5, score=0.6)
+    assert [f.time for f in covers.shortlist([slide, face])] == [5.0]
+    assert [f.time for f in covers.shortlist([slide])] == [1.0]  # sin caras, se usa lo que hay

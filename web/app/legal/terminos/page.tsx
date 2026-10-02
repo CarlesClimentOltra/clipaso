@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Términos del servicio · Clipaso" };
+export const metadata: Metadata = { title: "Términos del servicio" };
 
 export default function TermsPage() {
   const { owner } = legal;

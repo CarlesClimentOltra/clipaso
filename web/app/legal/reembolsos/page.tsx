@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Política de reembolsos · Clipaso" };
+export const metadata: Metadata = { title: "Política de reembolsos" };
 
 export default function RefundsPage() {
   const { owner } = legal;

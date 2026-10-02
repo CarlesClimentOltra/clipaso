@@ -1683,6 +1683,12 @@ export interface components {
              * @default false
              */
             unlimited: boolean;
+            /**
+             * Max Clips Per Project
+             * @description Clips por proyecto contando «Más clips».
+             * @default 0
+             */
+            max_clips_per_project: number;
         };
         /** PortalOut */
         PortalOut: {

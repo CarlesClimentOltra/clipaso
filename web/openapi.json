@@ -5351,6 +5351,12 @@
             "title": "Unlimited",
             "description": "Cuenta de desarrollo: sin cuota ni límites.",
             "default": false
+          },
+          "max_clips_per_project": {
+            "type": "integer",
+            "title": "Max Clips Per Project",
+            "description": "Clips por proyecto contando «Más clips».",
+            "default": 0
           }
         },
         "type": "object",

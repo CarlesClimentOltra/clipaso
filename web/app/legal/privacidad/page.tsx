@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { legal } from "@/lib/legal";
 
-export const metadata: Metadata = { title: "Política de privacidad · Clipaso" };
+export const metadata: Metadata = { title: "Política de privacidad" };
 
 export default function PrivacyPage() {
   const { owner } = legal;

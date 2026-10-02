@@ -131,6 +131,23 @@ class User(Base):
     plan: Mapped[Plan] = relationship(lazy="joined")
 
 
+class DailyAction(Base):
+    """Uso de un cupo diario del plan (ediciones, «Más clips», descargas, portadas, miniaturas).
+
+    Es un registro aparte de las tareas y proyectos: borrar un proyecto no devuelve el cupo del día.
+    Si la tarea falla, su fila se borra (lo que falla no cuenta).
+    """
+
+    __tablename__ = "daily_actions"
+    __table_args__ = (Index("ix_daily_actions_user_kind_created", "user_id", "kind", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(24))  # campo del plan: daily_renders, daily_covers…
+    task_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
 class Upload(Base):
     __tablename__ = "uploads"
 
