@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRightIcon, CheckIcon, ChevronDownIcon } from "lucide-react";
+import { ArrowRightIcon, CheckIcon, ChevronDownIcon, MessageCircleIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
 import { Examples } from "@/components/landing/examples";
@@ -34,6 +34,7 @@ export function LandingPage() {
     { href: "#funciones", label: l.nav.features },
     { href: "#precios", label: l.nav.pricing },
     { href: "#preguntas", label: l.nav.faq },
+    { href: "/contacto?desde=/", label: l.nav.contact },
   ];
 
   return (
@@ -136,7 +137,12 @@ export function LandingPage() {
 
         <section id="preguntas" className="scroll-mt-20">
           <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-24 lg:grid-cols-[1fr_1.6fr]">
-            <SectionHeading eyebrow={l.faq.eyebrow} title={l.faq.title} lead={l.faq.lead} />
+            <div className="flex flex-col items-start gap-5">
+              <SectionHeading eyebrow={l.faq.eyebrow} title={l.faq.title} lead={l.faq.lead} />
+              <Link href="/contacto?desde=/%23preguntas" className={cn(buttonVariants({ variant: "outline" }), "rounded-full px-5")}>
+                <MessageCircleIcon /> {l.faq.contact}
+              </Link>
+            </div>
             <div className="flex flex-col gap-3">
               {l.faq.items.map(([q, a]) => (
                 <details key={q} className="group rounded-2xl border bg-card px-5 py-4 open:shadow-sm">

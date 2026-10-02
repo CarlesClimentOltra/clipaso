@@ -104,7 +104,7 @@ export const es = {
     contact: "Contacto",
   },
   landing: {
-    nav: { how: "Cómo funciona", examples: "Ejemplos", features: "Funciones", pricing: "Planes", faq: "Preguntas" },
+    nav: { how: "Cómo funciona", examples: "Ejemplos", features: "Funciones", pricing: "Planes", faq: "Preguntas", contact: "Contacto" },
     navLabel: "Principal",
     signIn: "Entrar",
     startFree: "Empieza gratis",
@@ -230,6 +230,7 @@ export const es = {
       eyebrow: "Preguntas frecuentes",
       title: "¿Tienes dudas?",
       lead: "Si no encuentras la respuesta, escríbenos y te ayudamos.",
+      contact: "Escríbenos",
       items: [
         ["¿Qué vídeos funcionan mejor?", "Los que tienen conversación: podcasts, entrevistas, charlas, clases o directos. Clipaso elige los momentos a partir de lo que se dice, así que necesita diálogo."],
         ["¿Qué más puedo hacer, además de clips?", "Subtitular un vídeo entero (también traducido), quitarle los silencios y las muletillas como «eh» o «mmm», pasarlo a otro formato (de TikTok a YouTube, por ejemplo), montar un tráiler corto para promocionarlo, generar una miniatura, convertir un audio (un podcast) en un vídeo con onda animada o sacar del vídeo la transcripción, un resumen, capítulos para YouTube, un artículo y posts para redes para YouTube y una portada para TikTok. La miniatura no necesita subir el vídeo y no gasta minutos."],

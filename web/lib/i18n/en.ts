@@ -104,7 +104,7 @@ export const en: Dict = {
     contact: "Contact",
   },
   landing: {
-    nav: { how: "How it works", examples: "Examples", features: "Features", pricing: "Plans", faq: "FAQ" },
+    nav: { how: "How it works", examples: "Examples", features: "Features", pricing: "Plans", faq: "FAQ", contact: "Contact" },
     navLabel: "Main",
     signIn: "Sign in",
     startFree: "Start for free",
@@ -230,6 +230,7 @@ export const en: Dict = {
       eyebrow: "FAQ",
       title: "Questions?",
       lead: "If you can't find the answer, write to us and we'll help.",
+      contact: "Contact us",
       items: [
         ["Which videos work best?", "The ones with conversation: podcasts, interviews, talks, classes or streams. Clipaso picks moments based on what's said, so it needs dialogue."],
         ["What else can I do besides clips?", "Caption a whole video (translated too), remove its silences and fillers like \"um\" or \"uh\", convert it to another format (TikTok to YouTube, for example), cut a short trailer to promote it, turn audio (a podcast) into a video with an animated waveform, get the transcript, a summary, YouTube chapters, a blog post and social posts, and generate a YouTube thumbnail and a TikTok cover. The thumbnail doesn't need the video to be uploaded and doesn't use minutes."],
