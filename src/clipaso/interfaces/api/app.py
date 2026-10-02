@@ -20,7 +20,7 @@ from clipaso.infra.config import Settings, get_settings
 from clipaso.infra.logging import configure_logging, get_logger
 from clipaso.infra.observability import init_sentry
 from clipaso.infra.tls import use_system_trust_store
-from clipaso.interfaces.api.routers import account, admin, clips, dev_storage, jobs, uploads
+from clipaso.interfaces.api.routers import account, admin, billing, clips, dev_storage, jobs, uploads
 from clipaso.interfaces.api.schemas import ErrorResponse
 from clipaso.saas.abuse import RateLimiter, client_ip
 from clipaso.saas.db import session_factory, session_scope
@@ -133,6 +133,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
         return JSONResponse({"status": "ok"})
 
     app.include_router(account.router)
+    app.include_router(billing.router)
     app.include_router(uploads.router)
     app.include_router(jobs.router)
     app.include_router(clips.router)

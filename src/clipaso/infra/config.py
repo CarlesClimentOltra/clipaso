@@ -161,6 +161,17 @@ class WorkerSettings(BaseModel):
     cleanup_every_seconds: int = 3600
 
 
+class BillingSettings(BaseModel):
+    # none: sin cobros (desarrollo). paddle: suscripciones con Paddle Billing (Merchant of Record).
+    provider: Literal["none", "paddle"] = "none"
+    paddle_environment: Literal["sandbox", "production"] = "sandbox"
+    paddle_api_key: str = ""  # clave de servidor (pdl_…): portal del cliente, cambios de plan y cancelaciones
+    paddle_webhook_secret: str = ""  # secreto del destino de notificaciones (pdl_ntfset_…)
+    paddle_client_token: str = ""  # token público para Paddle.js (test_… / live_…): se envía a la web
+    # Precio de Paddle por plan y periodo: {"pro_month": "pri_…", "pro_year": "pri_…", "ultra_month": …}
+    paddle_prices: dict[str, str] = Field(default_factory=dict)
+
+
 class NotificationSettings(BaseModel):
     # none: no se envían emails (desarrollo). brevo: API transaccional de Brevo (UE).
     provider: Literal["none", "brevo"] = "none"
@@ -207,6 +218,7 @@ class Settings(BaseSettings):
     api: ApiSettings = Field(default_factory=ApiSettings)
     worker: WorkerSettings = Field(default_factory=WorkerSettings)
     notifications: NotificationSettings = Field(default_factory=NotificationSettings)
+    billing: BillingSettings = Field(default_factory=BillingSettings)
 
     @model_validator(mode="after")
     def _production_safety(self) -> Settings:

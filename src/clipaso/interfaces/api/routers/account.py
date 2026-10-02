@@ -6,6 +6,7 @@ from sqlalchemy import select
 from clipaso.interfaces.api.auth import delete_identity
 from clipaso.interfaces.api.deps import SessionDep, SettingsDep, StorageDep, UserDep
 from clipaso.interfaces.api.schemas import (
+    BillingOut,
     DefaultStyleIn,
     LocaleIn,
     MeOut,
@@ -20,7 +21,7 @@ from clipaso.interfaces.api.schemas import (
     StyleUpdateIn,
     UsageOut,
 )
-from clipaso.saas import abuse, editing, services, styles
+from clipaso.saas import abuse, billing, editing, services, styles
 from clipaso.saas.artifacts import logo_key
 from clipaso.saas.db import utcnow
 from clipaso.saas.errors import AppError
@@ -55,6 +56,9 @@ def me(user: UserDep, session: SessionDep) -> MeOut:
         locale=(user.preferences or {}).get("locale"),
         plan=PlanOut.model_validate(user.plan, from_attributes=True),
         is_admin=services.is_admin(user),
+        billing=BillingOut(status=user.billing_status, interval=user.billing_interval,
+                           renews_at=user.billing_renews_at, cancels_at=user.billing_cancels_at,
+                           can_manage=bool(user.billing_customer_id)) if user.billing_subscription_id else None,
         usage=UsageOut(period=usage.period, used_minutes=usage.used_minutes,
                        limit_minutes=usage.limit_minutes, remaining_minutes=usage.remaining_minutes),
     )
@@ -64,6 +68,7 @@ def me(user: UserDep, session: SessionDep) -> MeOut:
 def delete_me(user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep) -> Response:
     """Elimina la cuenta: vídeos, clips, historial y consumo, y después el usuario de Supabase Auth."""
     subject = user.id
+    billing.cancel_for_deletion(settings.billing, user)  # antes de borrar nada: que no se le siga cobrando
     services.delete_account(session, storage, user)
     session.commit()  # los datos primero: si falla Supabase, se puede reintentar
     delete_identity(subject, settings.auth)

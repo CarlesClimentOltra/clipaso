@@ -39,14 +39,39 @@ export default function TermsPage() {
           Al enviar un vídeo se reservan sus minutos. <strong>Si el procesamiento falla por causas técnicas, los minutos
           se devuelven automáticamente.</strong> Los minutos no usados no se acumulan al mes siguiente.
         </li>
+      </ul>
+
+      <h2>3. Pagos, renovación, cancelación y reembolsos</h2>
+      <ul>
         <li>
-          Durante la fase de lanzamiento el servicio puede ofrecerse solo en su versión gratuita. Cuando haya planes de
-          pago, sus precios, impuestos, forma de pago, renovación y cancelación se indicarán antes de la contratación y
-          formarán parte de estos términos.
+          Los pedidos los gestiona nuestro revendedor online <strong>Paddle.com</strong>, que actúa como vendedor
+          (Merchant of Record) de todos los pedidos: cobra el pago, aplica el IVA de tu país, emite la factura y atiende
+          las consultas sobre cobros y devoluciones.
+        </li>
+        <li>
+          Los planes de pago son suscripciones <strong>mensuales o anuales</strong> que se renuevan automáticamente al
+          final de cada periodo. El precio, con los impuestos incluidos, se muestra antes de pagar.
+        </li>
+        <li>
+          Puedes <strong>cancelar cuando quieras</strong> desde «Planes → Gestionar suscripción». Conservas el plan
+          hasta el final del periodo pagado y después pasas al plan Gratis; no se cobran más renovaciones.
+        </li>
+        <li>
+          Si cambias de plan o de periodo, la diferencia se prorratea al momento: se cobra o se abona la parte
+          proporcional del periodo en curso.
+        </li>
+        <li>
+          <strong>Reembolsos:</strong> si no estás satisfecho, puedes pedir el reembolso de tu primer pago en los 14 días
+          siguientes escribiendo a {legal.owner.email}. Fuera de ese caso, los periodos ya iniciados no se reembolsan,
+          salvo cuando la ley lo exija o si el servicio no ha funcionado por causas atribuibles a nosotros.
+        </li>
+        <li>
+          Si un cobro falla, Paddle lo reintenta durante unos días. Si no se consigue cobrar, la cuenta pasa al plan
+          Gratis; tus proyectos se mantienen según los días de conservación de ese plan.
         </li>
       </ul>
 
-      <h2>3. Tu contenido</h2>
+      <h2>4. Tu contenido</h2>
       <ul>
         <li>
           <strong>Tus vídeos y los clips generados son tuyos.</strong> Clipaso no adquiere ningún derecho sobre ellos.
@@ -67,7 +92,7 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>4. Usos prohibidos</h2>
+      <h2>5. Usos prohibidos</h2>
       <p>No puedes usar Clipaso para subir o generar contenido que:</p>
       <ul>
         <li>Infrinja derechos de propiedad intelectual o de imagen de otras personas.</li>
@@ -80,14 +105,14 @@ export default function TermsPage() {
         (por ejemplo, con cuentas múltiples) ni hacer ingeniería inversa del servicio.
       </p>
 
-      <h2>5. Resultados generados con IA</h2>
+      <h2>6. Resultados generados con IA</h2>
       <p>
         La selección de momentos, los títulos, el reencuadre y los subtítulos se generan de forma automática y pueden
         contener errores (por ejemplo, palabras mal transcritas o un encuadre imperfecto). Revisa cada clip antes de
         publicarlo: eres responsable de lo que publiques.
       </p>
 
-      <h2>6. Disponibilidad y conservación</h2>
+      <h2>7. Disponibilidad y conservación</h2>
       <ul>
         <li>
           Trabajamos para que el servicio esté disponible y funcione bien, pero puede sufrir interrupciones por
@@ -101,29 +126,29 @@ export default function TermsPage() {
         <li>Podemos mejorar o cambiar funciones del servicio; si un cambio te perjudica de forma relevante, te avisaremos.</li>
       </ul>
 
-      <h2>7. Responsabilidad</h2>
+      <h2>8. Responsabilidad</h2>
       <p>
         Clipaso responde de los daños que cause por dolo o negligencia grave y en los demás casos que establezca la ley.
         No respondemos del uso que hagas de los clips ni del contenido que subas. Si eres consumidor, nada de lo previsto
         en estos términos limita los derechos que te reconoce la legislación de consumidores y usuarios.
       </p>
 
-      <h2>8. Suspensión y baja</h2>
+      <h2>9. Suspensión y baja</h2>
       <ul>
         <li>Puedes dejar de usar el servicio y eliminar tu cuenta cuando quieras desde «Mi cuenta».</li>
         <li>
-          Podemos suspender o cerrar una cuenta que incumpla gravemente estos términos, en particular el apartado 4. Salvo
+          Podemos suspender o cerrar una cuenta que incumpla gravemente estos términos, en particular el apartado 5. Salvo
           casos urgentes o ilegales, te avisaremos antes y podrás descargar tus clips.
         </li>
       </ul>
 
-      <h2>9. Cambios en los términos</h2>
+      <h2>10. Cambios en los términos</h2>
       <p>
         Si modificamos estos términos te avisaremos por email o en la aplicación con al menos 15 días de antelación. Si no
         estás de acuerdo con los cambios, puedes dar de baja tu cuenta antes de que entren en vigor.
       </p>
 
-      <h2>10. Ley aplicable y contacto</h2>
+      <h2>11. Ley aplicable y contacto</h2>
       <p>
         Estos términos se rigen por la ley española. Si eres consumidor, podrás acudir a los tribunales de tu domicilio.
         Para cualquier duda o reclamación, escríbenos a <a href={`mailto:${owner.email}`}>{owner.email}</a>. También

@@ -246,6 +246,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Config
+         * @description Lo que necesita Paddle.js en la web (todo público: token de cliente e ids de precio).
+         */
+        get: operations["config_billing_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/portal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Portal
+         * @description Enlace al portal de Paddle: tarjeta, facturas y cancelar la suscripción.
+         */
+        post: operations["portal_billing_portal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/billing/change-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Plan */
+        post: operations["change_plan_billing_change_plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads": {
         parameters: {
             query?: never;
@@ -729,6 +786,50 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** BillingConfigOut */
+        BillingConfigOut: {
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Environment
+             * @enum {string}
+             */
+            environment: "sandbox" | "production";
+            /** Client Token */
+            client_token: string;
+            /**
+             * Prices
+             * @description Precio de Paddle por plan y periodo ("pro_month": "pri_…").
+             */
+            prices: {
+                [key: string]: string;
+            };
+        };
+        /** BillingOut */
+        BillingOut: {
+            /**
+             * Status
+             * @description Estado de la suscripción en Paddle (active, past_due, canceled…).
+             */
+            status: string | null;
+            /** Interval */
+            interval: ("month" | "year") | null;
+            /**
+             * Renews At
+             * @description Próximo cobro.
+             */
+            renews_at: string | null;
+            /**
+             * Cancels At
+             * @description Si está cancelada, cuándo termina (hasta entonces sigue activa).
+             */
+            cancels_at: string | null;
+            /**
+             * Can Manage
+             * @description Puede abrir el portal de Paddle (tarjeta, facturas, cancelar).
+             */
+            can_manage: boolean;
+        };
         /**
          * BrandingPrefs
          * @description Marca personal del usuario (el logo se sube aparte; aquí solo si hay uno).
@@ -857,6 +958,19 @@ export interface components {
              * @default 3
              */
             max_words: number;
+        };
+        /** ChangePlanIn */
+        ChangePlanIn: {
+            /**
+             * Plan
+             * @enum {string}
+             */
+            plan: "pro" | "ultra";
+            /**
+             * Interval
+             * @enum {string}
+             */
+            interval: "month" | "year";
         };
         /** ChapterOut */
         ChapterOut: {
@@ -1450,6 +1564,7 @@ export interface components {
              * @default false
              */
             is_admin: boolean;
+            billing?: components["schemas"]["BillingOut"] | null;
         };
         /** MoreClipsIn */
         MoreClipsIn: {
@@ -1537,6 +1652,12 @@ export interface components {
              */
             daily_thumbnails: number;
             /**
+             * Price Eur Cents Yearly
+             * @description Precio del pago anual (0 si no hay).
+             * @default 0
+             */
+            price_eur_cents_yearly: number;
+            /**
              * Daily Renders
              * @description Ediciones de clip (volver a renderizar) por día.
              */
@@ -1562,6 +1683,11 @@ export interface components {
              * @default false
              */
             unlimited: boolean;
+        };
+        /** PortalOut */
+        PortalOut: {
+            /** Url */
+            url: string;
         };
         /** PreferencesIn */
         PreferencesIn: {
@@ -2674,6 +2800,158 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StylesOut"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    config_billing_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingConfigOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    portal_billing_portal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    change_plan_billing_change_plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {

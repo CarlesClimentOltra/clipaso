@@ -1025,6 +1025,174 @@
         }
       }
     },
+    "/billing/config": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Config",
+        "description": "Lo que necesita Paddle.js en la web (todo público: token de cliente e ids de precio).",
+        "operationId": "config_billing_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingConfigOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billing/portal": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Portal",
+        "description": "Enlace al portal de Paddle: tarjeta, facturas y cancelar la suscripción.",
+        "operationId": "portal_billing_portal_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalOut"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billing/change-plan": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Change Plan",
+        "operationId": "change_plan_billing_change_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePlanIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/uploads": {
       "post": {
         "tags": [
@@ -3127,6 +3295,113 @@
         ],
         "title": "ArchiveOut"
       },
+      "BillingConfigOut": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ],
+            "title": "Environment"
+          },
+          "client_token": {
+            "type": "string",
+            "title": "Client Token"
+          },
+          "prices": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Prices",
+            "description": "Precio de Paddle por plan y periodo (\"pro_month\": \"pri_…\")."
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "environment",
+          "client_token",
+          "prices"
+        ],
+        "title": "BillingConfigOut"
+      },
+      "BillingOut": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "Estado de la suscripción en Paddle (active, past_due, canceled…)."
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "month",
+                  "year"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval"
+          },
+          "renews_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renews At",
+            "description": "Próximo cobro."
+          },
+          "cancels_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancels At",
+            "description": "Si está cancelada, cuándo termina (hasta entonces sigue activa)."
+          },
+          "can_manage": {
+            "type": "boolean",
+            "title": "Can Manage",
+            "description": "Puede abrir el portal de Paddle (tarjeta, facturas, cancelar)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "interval",
+          "renews_at",
+          "cancels_at",
+          "can_manage"
+        ],
+        "title": "BillingOut"
+      },
       "BrandingPrefs": {
         "properties": {
           "enabled": {
@@ -3322,6 +3597,32 @@
         "type": "object",
         "title": "CaptionStyle",
         "description": "Estilo de subtítulos tal como lo elige el usuario."
+      },
+      "ChangePlanIn": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "pro",
+              "ultra"
+            ],
+            "title": "Plan"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ],
+            "title": "Interval"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "interval"
+        ],
+        "title": "ChangePlanIn"
       },
       "ChapterOut": {
         "properties": {
@@ -4810,6 +5111,16 @@
             "title": "Is Admin",
             "description": "Cuenta de desarrollo: ve el panel de costes.",
             "default": false
+          },
+          "billing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BillingOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -5009,6 +5320,12 @@
             "title": "Daily Thumbnails",
             "description": "Miniaturas sin subir el vídeo por día."
           },
+          "price_eur_cents_yearly": {
+            "type": "integer",
+            "title": "Price Eur Cents Yearly",
+            "description": "Precio del pago anual (0 si no hay).",
+            "default": 0
+          },
           "daily_renders": {
             "type": "integer",
             "title": "Daily Renders",
@@ -5056,6 +5373,19 @@
           "daily_covers"
         ],
         "title": "PlanOut"
+      },
+      "PortalOut": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "PortalOut"
       },
       "PreferencesIn": {
         "properties": {

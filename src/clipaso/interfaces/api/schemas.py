@@ -48,6 +48,7 @@ class PlanOut(BaseModel):
     watermark: bool = Field(description="Los vídeos llevan la marca de agua de Clipaso.")
     max_export_quality: str = Field(description="Calidad máxima de descarga (1080p o 2160p).")
     daily_thumbnails: int = Field(description="Miniaturas sin subir el vídeo por día.")
+    price_eur_cents_yearly: int = Field(0, description="Precio del pago anual (0 si no hay).")
     daily_renders: int = Field(description="Ediciones de clip (volver a renderizar) por día.")
     daily_more_clips: int = Field(description="Peticiones de «Más clips» por día.")
     daily_exports: int = Field(description="Descargas en otra calidad por día.")
@@ -62,6 +63,30 @@ class UsageOut(BaseModel):
     remaining_minutes: float
 
 
+class BillingOut(BaseModel):
+    status: str | None = Field(description="Estado de la suscripción en Paddle (active, past_due, canceled…).")
+    interval: Literal["month", "year"] | None
+    renews_at: datetime | None = Field(description="Próximo cobro.")
+    cancels_at: datetime | None = Field(description="Si está cancelada, cuándo termina (hasta entonces sigue activa).")
+    can_manage: bool = Field(description="Puede abrir el portal de Paddle (tarjeta, facturas, cancelar).")
+
+
+class BillingConfigOut(BaseModel):
+    enabled: bool
+    environment: Literal["sandbox", "production"]
+    client_token: str
+    prices: dict[str, str] = Field(description='Precio de Paddle por plan y periodo ("pro_month": "pri_…").')
+
+
+class ChangePlanIn(BaseModel):
+    plan: Literal["pro", "ultra"]
+    interval: Literal["month", "year"]
+
+
+class PortalOut(BaseModel):
+    url: str
+
+
 class MeOut(BaseModel):
     id: str
     email: str
@@ -69,6 +94,7 @@ class MeOut(BaseModel):
     plan: PlanOut
     usage: UsageOut
     is_admin: bool = Field(False, description="Cuenta de desarrollo: ve el panel de costes.")
+    billing: BillingOut | None = None
 
 
 class LocaleIn(BaseModel):

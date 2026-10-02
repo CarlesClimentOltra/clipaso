@@ -56,6 +56,29 @@ export function usePlans() {
   return useQuery({ queryKey: ["plans"], queryFn: () => unwrap(api.GET("/plans")), staleTime: 60 * 60_000 });
 }
 
+/** Configuración pública de Paddle (token de cliente e ids de precio). */
+export function useBillingConfig() {
+  const api = useApi();
+  return useQuery({ queryKey: ["billing-config"], queryFn: () => unwrap(api.GET("/billing/config")), staleTime: 60 * 60_000 });
+}
+
+/** Cambia el plan o el periodo de una suscripción activa (Paddle prorratea al momento). */
+export function useChangePlan() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { plan: "pro" | "ultra"; interval: "month" | "year" }) =>
+      unwrap(api.POST("/billing/change-plan", { body })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
+  });
+}
+
+/** Enlace al portal de Paddle (tarjeta, facturas, cancelar). */
+export function useBillingPortal() {
+  const api = useApi();
+  return useMutation({ mutationFn: () => unwrap(api.POST("/billing/portal")) });
+}
+
 export function useJobs() {
   const api = useApi();
   const { session } = useAuth();

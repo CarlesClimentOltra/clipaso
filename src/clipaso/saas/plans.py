@@ -1,7 +1,8 @@
 """Catálogo de planes.
 
-Los precios son provisionales: todavía no se cobra. Cuando se integre Stripe
-se rellenará `stripe_price_id` y el webhook actualizará `users.plan_code`.
+Los cobros los hace Paddle (saas/billing.py): sus precios (ids `pri_…`) se configuran en
+`CLIPASO_BILLING__PADDLE_PRICES` y su webhook actualiza `users.plan_code`. Aquí van los
+importes que se muestran; deben coincidir con los de Paddle. El anual lleva un 20 % de descuento.
 """
 
 from __future__ import annotations
@@ -12,21 +13,21 @@ from clipaso.saas.models import Plan
 
 PLANS: list[dict] = [
     {
-        "code": "free", "name": "Gratis", "price_eur_cents": 0, "sort_order": 0,
+        "code": "free", "name": "Gratis", "price_eur_cents": 0, "price_eur_cents_yearly": 0, "sort_order": 0,
         "monthly_minutes": 20, "max_video_minutes": 10, "max_clips_per_job": 3,
         "max_concurrent_jobs": 1, "max_upload_mb": 1024, "retention_days": 7,
         "watermark": True, "max_export_quality": "1080p", "daily_thumbnails": 5,
         "daily_renders": 10, "daily_more_clips": 2, "daily_exports": 5, "daily_covers": 5,
     },
     {
-        "code": "pro", "name": "Pro", "price_eur_cents": 1900, "sort_order": 1,
+        "code": "pro", "name": "Pro", "price_eur_cents": 1900, "price_eur_cents_yearly": 18200, "sort_order": 1,
         "monthly_minutes": 300, "max_video_minutes": 90, "max_clips_per_job": 10,
         "max_concurrent_jobs": 2, "max_upload_mb": 10240, "retention_days": 30,
         "watermark": False, "max_export_quality": "1080p", "daily_thumbnails": 40,
         "daily_renders": 100, "daily_more_clips": 20, "daily_exports": 50, "daily_covers": 50,
     },
     {
-        "code": "ultra", "name": "Ultra", "price_eur_cents": 4900, "sort_order": 2,
+        "code": "ultra", "name": "Ultra", "price_eur_cents": 4900, "price_eur_cents_yearly": 47000, "sort_order": 2,
         "monthly_minutes": 1000, "max_video_minutes": 180, "max_clips_per_job": 20,
         "max_concurrent_jobs": 4, "max_upload_mb": 25600, "retention_days": 60,
         "watermark": False, "max_export_quality": "2160p", "daily_thumbnails": 150,

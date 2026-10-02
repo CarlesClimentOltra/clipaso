@@ -76,7 +76,7 @@ class UploadStatus(StrEnum):
 
 
 class Plan(Base):
-    """Límites de cada plan. `stripe_price_id` queda listo para la fase de cobros."""
+    """Límites y precios de cada plan (los cobros los hace Paddle: ver saas/billing.py)."""
 
     __tablename__ = "plans"
 
@@ -101,9 +101,9 @@ class Plan(Base):
     # Cuenta de desarrollo: sin cuota de minutos ni límites (se asigna por email en la configuración).
     unlimited: Mapped[bool] = mapped_column(default=False, server_default=false())
     price_eur_cents: Mapped[int] = mapped_column(Integer, default=0)
+    price_eur_cents_yearly: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     is_public: Mapped[bool] = mapped_column(default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    stripe_price_id: Mapped[str | None] = mapped_column(String(128))
 
 
 class User(Base):
@@ -114,7 +114,14 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     email: Mapped[str] = mapped_column(String(320), index=True)
     plan_code: Mapped[str] = mapped_column(ForeignKey("plans.code"), default="free")
-    stripe_customer_id: Mapped[str | None] = mapped_column(String(128))
+    # Suscripción de pago en Paddle (la actualiza su webhook). `billing_interval`: "month" o "year".
+    billing_customer_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    billing_subscription_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    billing_status: Mapped[str | None] = mapped_column(String(32))
+    billing_interval: Mapped[str | None] = mapped_column(String(8))
+    billing_renews_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    billing_cancels_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    billing_event_at: Mapped[datetime | None] = mapped_column(UTCDateTime)  # descarta eventos atrasados
     # Estilo de subtítulos por defecto y marca personal (ver saas/presets.py).
     preferences: Mapped[dict] = mapped_column(JSON, default=dict)
     # Huella (HMAC) de la IP desde la que se creó la cuenta, para limitar cuentas gratis por red.

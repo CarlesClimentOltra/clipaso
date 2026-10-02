@@ -52,6 +52,12 @@ export const legal = {
       company: "Vercel Inc. (EE. UU.)",
     },
     {
+      name: "Paddle",
+      role: "Cobro de las suscripciones de pago como revendedor (Merchant of Record): pago, IVA y facturas",
+      location: "Reino Unido y UE",
+      company: "Paddle.com Market Ltd (Reino Unido)",
+    },
+    {
       name: "Brevo",
       role: "Envío de emails (confirmación de cuenta y avisos de tus vídeos)",
       location: "UE",
