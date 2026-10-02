@@ -178,6 +178,7 @@ class NotificationSettings(BaseModel):
     brevo_api_key: str = ""
     sender_email: str = ""  # debe estar verificado como remitente en Brevo
     sender_name: str = "Clipaso"
+    support_email: str = "hola@clipaso.com"  # buzón que recibe los mensajes del formulario de contacto
     web_url: str = "http://localhost:3000"  # para los enlaces de los emails
 
 

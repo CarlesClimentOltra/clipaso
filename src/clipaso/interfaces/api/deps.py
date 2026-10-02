@@ -16,6 +16,7 @@ from clipaso.saas.db import utcnow
 from clipaso.saas.dispatch import JobDispatcher
 from clipaso.saas.errors import AppError
 from clipaso.saas.models import User
+from clipaso.saas.notifications import Notifier
 
 
 def get_settings(request: Request) -> Settings:
@@ -28,6 +29,10 @@ def get_storage(request: Request) -> Storage:
 
 def get_dispatcher(request: Request) -> JobDispatcher:
     return request.app.state.dispatcher
+
+
+def get_notifier(request: Request) -> Notifier:
+    return request.app.state.notifier
 
 
 def get_session(request: Request) -> Iterator[Session]:
@@ -46,6 +51,7 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 StorageDep = Annotated[Storage, Depends(get_storage)]
 SessionDep = Annotated[Session, Depends(get_session)]
 DispatcherDep = Annotated[JobDispatcher, Depends(get_dispatcher)]
+NotifierDep = Annotated[Notifier, Depends(get_notifier)]
 
 
 def current_user(request: Request, session: SessionDep, settings: SettingsDep) -> User:
@@ -66,3 +72,13 @@ def current_user(request: Request, session: SessionDep, settings: SettingsDep) -
 
 
 UserDep = Annotated[User, Depends(current_user)]
+
+
+def optional_user(request: Request, session: SessionDep, settings: SettingsDep) -> User | None:
+    """El usuario si la petición trae sesión (p. ej. el formulario de contacto, que también es público)."""
+    if not request.headers.get("authorization"):
+        return None
+    return current_user(request, session, settings)
+
+
+OptionalUserDep = Annotated[User | None, Depends(optional_user)]

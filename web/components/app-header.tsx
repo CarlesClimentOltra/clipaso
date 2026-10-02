@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FolderIcon, GaugeIcon, LogOutIcon, PaletteIcon, PlusIcon, SparklesIcon, UserIcon } from "lucide-react";
+import { FolderIcon, GaugeIcon, LifeBuoyIcon, LogOutIcon, PaletteIcon, PlusIcon, SparklesIcon, UserIcon } from "lucide-react";
 
 import { Brand } from "@/components/brand";
 import { LanguageSwitcher, ThemeToggle } from "@/components/preferences-controls";
@@ -111,6 +111,9 @@ export function AppHeader() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/plans")}>
                 <SparklesIcon /> {t.header.plans}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(`/contacto?desde=${encodeURIComponent(pathname)}`)}>
+                <LifeBuoyIcon /> {t.contact.menu}
               </DropdownMenuItem>
               {me?.is_admin && (
                 <DropdownMenuItem onClick={() => router.push("/admin")}>

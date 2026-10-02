@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { AdminMessages } from "@/components/admin-messages";
 import { PageHeader } from "@/components/page-header";
 import { Segmented } from "@/components/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,6 +118,7 @@ export default function AdminPage() {
           </section>
         </>
       )}
+      {me?.is_admin && <AdminMessages />}
     </div>
   );
 }

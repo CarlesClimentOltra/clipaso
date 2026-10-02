@@ -20,13 +20,14 @@ from clipaso.infra.config import Settings, get_settings
 from clipaso.infra.logging import configure_logging, get_logger
 from clipaso.infra.observability import init_sentry
 from clipaso.infra.tls import use_system_trust_store
-from clipaso.interfaces.api.routers import account, admin, billing, clips, dev_storage, jobs, uploads
+from clipaso.interfaces.api.routers import account, admin, billing, clips, contact, dev_storage, jobs, uploads
 from clipaso.interfaces.api.schemas import ErrorResponse
 from clipaso.saas.abuse import RateLimiter, client_ip
 from clipaso.saas.db import session_factory, session_scope
 from clipaso.saas.dispatch import get_dispatcher
 from clipaso.saas.errors import AppError, normalize_lang, request_lang, user_message
 from clipaso.saas.migrations import upgrade_database
+from clipaso.saas.notifications import build_notifier
 from clipaso.saas.plans import sync_plans
 
 log = get_logger(__name__)
@@ -59,6 +60,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
     app.state.sessions = session_factory(settings)
     app.state.storage = build_storage(settings)
     app.state.dispatcher = get_dispatcher(settings)
+    app.state.notifier = build_notifier(settings.notifications)
 
     # Errores inesperados capturados DENTRO de CORS: si no, la respuesta 500 sale sin cabeceras
     # CORS y el navegador solo muestra un error de CORS en vez del mensaje.
@@ -76,7 +78,8 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
             )
 
     limiter = RateLimiter()
-    heavy = {("POST", "/uploads"), ("POST", "/jobs"), ("POST", "/jobs/thumbnail"), ("POST", "/signup-check")}
+    heavy = {("POST", "/uploads"), ("POST", "/jobs"), ("POST", "/jobs/thumbnail"), ("POST", "/signup-check"),
+             ("POST", "/contact")}
 
     @app.middleware("http")
     async def rate_limit(request: Request, call_next):
@@ -134,6 +137,7 @@ def create_app(settings: Settings | None = None, *, migrate: bool = True) -> Fas
 
     app.include_router(account.router)
     app.include_router(billing.router)
+    app.include_router(contact.router)
     app.include_router(uploads.router)
     app.include_router(jobs.router)
     app.include_router(clips.router)

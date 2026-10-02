@@ -7,12 +7,19 @@ from datetime import timedelta
 from fastapi import APIRouter, Query
 from sqlalchemy import select
 
-from clipaso.interfaces.api.deps import SessionDep, SettingsDep, UserDep
-from clipaso.interfaces.api.schemas import AdminDuplicateOut, AdminJobOut, AdminModeOut, AdminUsageOut
+from clipaso.interfaces.api.deps import SessionDep, SettingsDep, StorageDep, UserDep
+from clipaso.interfaces.api.schemas import (
+    AdminDuplicateOut,
+    AdminJobOut,
+    AdminMessageOut,
+    AdminMessageStatusIn,
+    AdminModeOut,
+    AdminUsageOut,
+)
 from clipaso.saas import services
 from clipaso.saas.db import utcnow
 from clipaso.saas.errors import NotFound
-from clipaso.saas.models import Job, Task, User
+from clipaso.saas.models import ContactMessage, Job, Task, User
 from clipaso.saas.plans import DEFAULT_PLAN
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -81,3 +88,27 @@ def duplicates(jobs: list[Job], owners: dict[str, User]) -> list[AdminDuplicateO
             out.append(AdminDuplicateOut(title=group[0].title, minutes=group[0].video_minutes or 0.0, users=users,
                                          jobs=len(group), last_at=max(j.created_at for j in group)))
     return sorted(out, key=lambda d: d.last_at, reverse=True)
+
+
+@router.get("/messages", response_model=list[AdminMessageOut])
+def messages(user: UserDep, session: SessionDep, storage: StorageDep, settings: SettingsDep) -> list[AdminMessageOut]:
+    """Mensajes del formulario de contacto (los más recientes primero)."""
+    if not services.is_admin(user):
+        raise NotFound()
+    ttl = settings.api.signed_url_ttl_seconds
+    rows = session.scalars(select(ContactMessage).order_by(ContactMessage.created_at.desc()).limit(200)).all()
+    return [AdminMessageOut(
+        id=m.id, created_at=m.created_at, email=m.email, kind=m.kind, message=m.message, context=m.context or {},
+        status=m.status, has_account=m.user_id is not None,
+        attachment_url=storage.signed_url(m.attachment_key, expires=ttl) if m.attachment_key else None,
+    ) for m in rows]
+
+
+@router.patch("/messages/{message_id}", status_code=204)
+def set_message_status(message_id: str, body: AdminMessageStatusIn, user: UserDep, session: SessionDep) -> None:
+    if not services.is_admin(user):
+        raise NotFound()
+    msg = session.get(ContactMessage, message_id)
+    if msg is None:
+        raise NotFound()
+    msg.status = body.status

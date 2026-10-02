@@ -148,6 +148,24 @@ class DailyAction(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
 
+class ContactMessage(Base):
+    """Mensaje del formulario de contacto: duda, sugerencia, error, pagos u otro."""
+
+    __tablename__ = "contact_messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    email: Mapped[str] = mapped_column(String(320))
+    kind: Mapped[str] = mapped_column(String(16))
+    message: Mapped[str] = mapped_column(Text)
+    # Página, navegador, plan y proyecto desde donde se escribió (ayuda a reproducir errores).
+    context: Mapped[dict] = mapped_column(JSON, default=dict)
+    attachment_key: Mapped[str | None] = mapped_column(String(512))
+    status: Mapped[str] = mapped_column(String(16), default="new")  # new | resolved
+    ip_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow, index=True)
+
+
 class Upload(Base):
     __tablename__ = "uploads"
 

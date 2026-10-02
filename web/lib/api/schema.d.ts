@@ -303,6 +303,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Contact */
+        post: operations["contact_contact_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads": {
         parameters: {
             query?: never;
@@ -670,6 +687,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Messages
+         * @description Mensajes del formulario de contacto (los más recientes primero).
+         */
+        get: operations["messages_admin_messages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/messages/{message_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set Message Status */
+        patch: operations["set_message_status_admin_messages__message_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -728,6 +782,43 @@ export interface components {
             stages: {
                 [key: string]: number;
             };
+        };
+        /** AdminMessageOut */
+        AdminMessageOut: {
+            /** Id */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Email */
+            email: string;
+            /** Kind */
+            kind: string;
+            /** Message */
+            message: string;
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            };
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "resolved";
+            /** Has Account */
+            has_account: boolean;
+            /** Attachment Url */
+            attachment_url: string | null;
+        };
+        /** AdminMessageStatusIn */
+        AdminMessageStatusIn: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "resolved";
         };
         /** AdminModeOut */
         AdminModeOut: {
@@ -1049,6 +1140,39 @@ export interface components {
             part_number: number;
             /** Etag */
             etag: string;
+        };
+        /** ContactIn */
+        ContactIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "question" | "idea" | "bug" | "billing" | "other";
+            /** Message */
+            message: string;
+            /**
+             * Email
+             * @description Solo sin sesión: con sesión se usa el de la cuenta.
+             */
+            email?: string | null;
+            /**
+             * Context
+             * @description Página, navegador, proyecto… (para errores).
+             */
+            context?: {
+                [key: string]: string;
+            };
+            /**
+             * Attachment
+             * @description Captura opcional como data URL.
+             */
+            attachment?: string | null;
+            /**
+             * Website
+             * @description Campo trampa para bots: debe ir vacío.
+             * @default
+             */
+            website: string;
         };
         /** CoverIn */
         CoverIn: {
@@ -2997,6 +3121,64 @@ export interface operations {
             };
         };
     };
+    contact_contact_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_upload_uploads_post: {
         parameters: {
             query?: never;
@@ -4375,6 +4557,113 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AdminUsageOut"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    messages_admin_messages_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMessageOut"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    set_message_status_admin_messages__message_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminMessageStatusIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {

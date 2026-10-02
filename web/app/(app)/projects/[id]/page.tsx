@@ -15,6 +15,7 @@ import {
   ScissorsIcon,
   SmartphoneIcon,
   Trash2Icon,
+  LifeBuoyIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -203,9 +204,15 @@ export default function ProjectPage() {
           <AlertTitle>{p.failedTitle}</AlertTitle>
           <AlertDescription className="flex flex-col items-start gap-3">
             <span>{job.error_message}</span>
-            <Link href="/new" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <RotateCcwIcon /> {p.tryAnother}
-            </Link>
+            <span className="flex flex-wrap gap-2">
+              <Link href="/new" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <RotateCcwIcon /> {p.tryAnother}
+              </Link>
+              <Link href={`/contacto?tipo=bug&proyecto=${job.id}&desde=${encodeURIComponent(`/projects/${job.id}`)}`}
+                    className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                <LifeBuoyIcon /> {t.contact.report}
+              </Link>
+            </span>
           </AlertDescription>
         </Alert>
       )}

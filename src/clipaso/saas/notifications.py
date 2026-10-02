@@ -6,6 +6,7 @@ enviar nunca afecta al procesamiento: se registra y se sigue.
 
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 from html import escape
 from typing import Protocol
@@ -27,6 +28,9 @@ class Email:
     subject: str
     html: str
     text: str
+    reply_to: str | None = None
+    attachments: tuple[tuple[str, bytes], ...] = ()  # (nombre, contenido)
+    tag: str = "job-notification"
 
 
 class Notifier(Protocol):
@@ -43,19 +47,21 @@ class BrevoNotifier:
         self.api_key, self.sender_email, self.sender_name = api_key, sender_email, sender_name
 
     def send(self, email: Email) -> None:
-        r = httpx.post(
-            BREVO_URL,
-            headers={"api-key": self.api_key, "accept": "application/json"},
-            json={
-                "sender": {"email": self.sender_email, "name": self.sender_name},
-                "to": [{"email": email.to}],
-                "subject": email.subject,
-                "htmlContent": email.html,
-                "textContent": email.text,
-                "tags": ["job-notification"],
-            },
-            timeout=15,
-        )
+        body = {
+            "sender": {"email": self.sender_email, "name": self.sender_name},
+            "to": [{"email": email.to}],
+            "subject": email.subject,
+            "htmlContent": email.html,
+            "textContent": email.text,
+            "tags": [email.tag],
+        }
+        if email.reply_to:
+            body["replyTo"] = {"email": email.reply_to}
+        if email.attachments:
+            body["attachment"] = [{"name": name, "content": base64.b64encode(data).decode()}
+                                  for name, data in email.attachments]
+        r = httpx.post(BREVO_URL, headers={"api-key": self.api_key, "accept": "application/json"}, json=body,
+                       timeout=30)
         r.raise_for_status()
 
 
@@ -134,7 +140,7 @@ def _t(lang: str) -> dict[str, str]:
     return TEXTS.get(lang, TEXTS["es"])
 
 
-def _layout(title: str, body: str, button: tuple[str, str] | None, lang: str) -> str:
+def _layout(title: str, body: str, button: tuple[str, str] | None, lang: str, footer: str | None = None) -> str:
     """Mismo diseño que los emails de cuenta (deploy/supabase_emails.py): logo, tarjeta blanca y botón lima."""
     cta = ""
     if button:
@@ -157,7 +163,7 @@ def _layout(title: str, body: str, button: tuple[str, str] | None, lang: str) ->
         f'<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#111">{escape(title)}</h1>{body}{cta}'
         '</div></div>'
         '<p style="text-align:center;color:#8a8f7c;font-size:12px;margin:20px 0 0">'
-        f'{escape(_t(lang)["footer"])}</p>'
+        f'{escape(footer or _t(lang)["footer"])}</p>'
         '</div></div>'
     )
 

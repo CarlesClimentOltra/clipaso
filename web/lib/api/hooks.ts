@@ -42,6 +42,34 @@ export function useMe() {
 }
 
 /** Panel de costes (solo cuentas de desarrollo). */
+export type ContactKind = "question" | "idea" | "bug" | "billing" | "other";
+
+/** Formulario de contacto (con o sin sesión). */
+export function useSendContact() {
+  const api = useApi();
+  return useMutation({
+    mutationFn: (body: { kind: ContactKind; message: string; email?: string | null; context: Record<string, string>;
+                         attachment?: string | null; website: string }) =>
+      unwrap(api.POST("/contact", { body })),
+  });
+}
+
+/** Mensajes de contacto (solo cuentas de desarrollo). */
+export function useAdminMessages(enabled: boolean) {
+  const api = useApi();
+  return useQuery({ queryKey: ["admin-messages"], queryFn: () => unwrap(api.GET("/admin/messages")), enabled });
+}
+
+export function useSetMessageStatus() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "new" | "resolved" }) =>
+      unwrap(api.PATCH("/admin/messages/{message_id}", { params: { path: { message_id: id } }, body: { status } })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-messages"] }),
+  });
+}
+
 export function useAdminUsage(days: number, enabled: boolean) {
   const api = useApi();
   return useQuery({

@@ -51,6 +51,14 @@ def modal_token() -> dict[str, str]:
 
 def main() -> int:
     env = dotenv_values(ROOT / ".env")
+    if "--notifications" in sys.argv:  # emails desde la API (formulario de contacto)
+        key, sender = env.get("CLIPASO_NOTIFICATIONS__BREVO_API_KEY"), env.get("CLIPASO_NOTIFICATIONS__SENDER_EMAIL")
+        if not (key and sender):
+            print("Faltan en .env: CLIPASO_NOTIFICATIONS__BREVO_API_KEY y CLIPASO_NOTIFICATIONS__SENDER_EMAIL")
+            return 1
+        return _import({"CLIPASO_NOTIFICATIONS__PROVIDER": "brevo", "CLIPASO_NOTIFICATIONS__BREVO_API_KEY": key,
+                        "CLIPASO_NOTIFICATIONS__SENDER_EMAIL": sender,
+                        "CLIPASO_NOTIFICATIONS__WEB_URL": "https://clipaso.com"})
     if "--billing" in sys.argv:
         values = {k: env[k] for k in BILLING if env.get(k)}
         if len(values) < len(BILLING):

@@ -1193,6 +1193,70 @@
         }
       }
     },
+    "/contact": {
+      "post": {
+        "tags": [
+          "contact"
+        ],
+        "summary": "Contact",
+        "operationId": "contact_contact_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/uploads": {
       "post": {
         "tags": [
@@ -2994,6 +3058,137 @@
           }
         }
       }
+    },
+    "/admin/messages": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Messages",
+        "description": "Mensajes del formulario de contacto (los más recientes primero).",
+        "operationId": "messages_admin_messages_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdminMessageOut"
+                  },
+                  "type": "array",
+                  "title": "Response Messages Admin Messages Get"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/messages/{message_id}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Set Message Status",
+        "operationId": "set_message_status_admin_messages__message_id__patch",
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminMessageStatusIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3152,6 +3347,89 @@
           "stages"
         ],
         "title": "AdminJobOut"
+      },
+      "AdminMessageOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "resolved"
+            ],
+            "title": "Status"
+          },
+          "has_account": {
+            "type": "boolean",
+            "title": "Has Account"
+          },
+          "attachment_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachment Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "email",
+          "kind",
+          "message",
+          "context",
+          "status",
+          "has_account",
+          "attachment_url"
+        ],
+        "title": "AdminMessageOut"
+      },
+      "AdminMessageStatusIn": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "resolved"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "AdminMessageStatusIn"
       },
       "AdminModeOut": {
         "properties": {
@@ -3868,6 +4146,74 @@
           "etag"
         ],
         "title": "CompletedPart"
+      },
+      "ContactIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "question",
+              "idea",
+              "bug",
+              "billing",
+              "other"
+            ],
+            "title": "Kind"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "Solo sin sesión: con sesión se usa el de la cuenta."
+          },
+          "context": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Context",
+            "description": "Página, navegador, proyecto… (para errores)."
+          },
+          "attachment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 9000000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachment",
+            "description": "Captura opcional como data URL."
+          },
+          "website": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Website",
+            "description": "Campo trampa para bots: debe ir vacío.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "message"
+        ],
+        "title": "ContactIn"
       },
       "CoverIn": {
         "properties": {

@@ -4,7 +4,6 @@ import Link from "next/link";
 
 import { LanguageSwitcher, ThemeToggle } from "@/components/preferences-controls";
 import { useI18n } from "@/lib/i18n";
-import { legal } from "@/lib/legal";
 
 export function SiteFooter() {
   const { t } = useI18n();
@@ -26,9 +25,9 @@ export function SiteFooter() {
                 {l.label}
               </Link>
             ))}
-            <a href={`mailto:${legal.owner.email}`} className="underline-offset-4 hover:text-foreground hover:underline">
+            <Link href="/contacto" className="underline-offset-4 hover:text-foreground hover:underline">
               {t.footer.contact}
-            </a>
+            </Link>
           </nav>
           <span className="flex items-center gap-1">
             <LanguageSwitcher />

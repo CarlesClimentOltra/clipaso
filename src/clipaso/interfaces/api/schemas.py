@@ -491,6 +491,31 @@ class AdminJobOut(BaseModel):
     stages: dict[str, float]
 
 
+class ContactIn(BaseModel):
+    kind: Literal["question", "idea", "bug", "billing", "other"]
+    message: str = Field(min_length=1, max_length=5000)
+    email: str | None = Field(None, max_length=320, description="Solo sin sesión: con sesión se usa el de la cuenta.")
+    context: dict[str, str] = Field(default_factory=dict, description="Página, navegador, proyecto… (para errores).")
+    attachment: str | None = Field(None, max_length=9_000_000, description="Captura opcional como data URL.")
+    website: str = Field("", max_length=200, description="Campo trampa para bots: debe ir vacío.")
+
+
+class AdminMessageOut(BaseModel):
+    id: str
+    created_at: datetime
+    email: str
+    kind: str
+    message: str
+    context: dict
+    status: Literal["new", "resolved"]
+    has_account: bool
+    attachment_url: str | None
+
+
+class AdminMessageStatusIn(BaseModel):
+    status: Literal["new", "resolved"]
+
+
 class AdminDuplicateOut(BaseModel):
     title: str
     minutes: float

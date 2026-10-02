@@ -13,6 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1, alternates: { languages } },
     { url: `${SITE_URL}/en`, changeFrequency: "weekly", priority: 0.9, alternates: { languages } },
     { url: `${SITE_URL}/login`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE_URL}/contacto`, changeFrequency: "yearly", priority: 0.3 },
     ...legal,
   ];
 }
