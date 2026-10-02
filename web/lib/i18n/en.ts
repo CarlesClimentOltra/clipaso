@@ -72,7 +72,7 @@ export const en: Dict = {
     contact: "Contact",
   },
   landing: {
-    nav: { how: "How it works", examples: "Examples", features: "Features", pricing: "Pricing", faq: "FAQ" },
+    nav: { how: "How it works", examples: "Examples", features: "Features", pricing: "Plans", faq: "FAQ" },
     navLabel: "Main",
     signIn: "Sign in",
     startFree: "Start for free",
@@ -190,7 +190,7 @@ export const en: Dict = {
       gdpr: "GDPR compliant",
     },
     pricing: {
-      eyebrow: "Pricing",
+      eyebrow: "Plans",
       title: "Simple plans",
       lead: "You pay for minutes of video processed (videos above 1080p, like 4K, count double). Editing, asking for more clips and creating thumbnails don't use minutes.",
     },

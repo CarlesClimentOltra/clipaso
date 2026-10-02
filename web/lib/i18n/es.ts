@@ -72,7 +72,7 @@ export const es = {
     contact: "Contacto",
   },
   landing: {
-    nav: { how: "Cómo funciona", examples: "Ejemplos", features: "Funciones", pricing: "Precios", faq: "Preguntas" },
+    nav: { how: "Cómo funciona", examples: "Ejemplos", features: "Funciones", pricing: "Planes", faq: "Preguntas" },
     navLabel: "Principal",
     signIn: "Entrar",
     startFree: "Empieza gratis",
@@ -190,7 +190,7 @@ export const es = {
       gdpr: "Cumple el RGPD",
     },
     pricing: {
-      eyebrow: "Precios",
+      eyebrow: "Planes",
       title: "Planes sencillos",
       lead: "Pagas por minutos de vídeo procesados (los vídeos de más de 1080p, como el 4K, cuentan el doble). Editar, pedir más clips y crear miniaturas no gasta minutos.",
     },
